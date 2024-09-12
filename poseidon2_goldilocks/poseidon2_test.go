@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	f "github.com/consensys/gnark-crypto/field/goldilocks"
-)
 
-// Test cases generated from Plonky3 implementation
+	"github.com/stretchr/testify/assert"
+)
 
 func TestPermute(t *testing.T) {
 	inp := [WIDTH]f.Element{
@@ -88,4 +88,30 @@ func TestHashNToMNoPad(t *testing.T) {
 			t.Fail()
 		}
 	}
+}
+
+func TestDigest(t *testing.T) {
+	hFunc := NewPoseidon2()
+
+	inputs := make([][]byte, 2)
+	inputs[0] = make([]byte, 1)
+	inputs[0][0] = 1
+	inputs[1] = make([]byte, 1)
+	inputs[1][0] = 2
+
+	hFunc.Write(inputs[0])
+	hFunc.Write(inputs[1])
+
+	hash1 := f.Element{}
+	hash1.SetBytes(hFunc.Sum(nil))
+
+	one := f.Element{0}
+	one.SetBytes(inputs[0])
+	two := f.Element{0}
+	two.SetBytes(inputs[1])
+
+	p := Poseidon2{}
+	hash2 := p.HashNToMNoPad([]f.Element{one, two}, 1)[0]
+
+	assert.True(t, hash1.Equal(&hash2), "%s != %s", hash1, hash2)
 }

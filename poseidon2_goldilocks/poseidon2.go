@@ -1,6 +1,8 @@
 package poseidon2
 
 import (
+	"errors"
+	"hash"
 	"math/big"
 
 	f "github.com/consensys/gnark-crypto/field/goldilocks"
@@ -124,4 +126,72 @@ func (p *Poseidon2) applyMat4(x *[4]f.Element) {
 	x[1].Add(&t01123, &x_2_sq)
 	x[0].Add(&t01123, &t01)
 	x[2].Add(&t01233, &t23)
+}
+
+const BlockSize = f.Bytes // BlockSize size that poseidon consumes
+
+func Poseidon2Bytes(input ...[]byte) []byte {
+	inputElements := make([]f.Element, len(input))
+	for i, ele := range input {
+		num := new(big.Int).SetBytes(ele)
+		if num.Cmp(f.Modulus()) >= 0 {
+			panic("not support bytes bigger than modulus")
+		}
+		e := f.Element{0}
+		e.SetBigInt(num)
+		inputElements[i] = e
+	}
+
+	p := Poseidon2{}
+	outputBytes := p.HashNToMNoPad(inputElements, 1)[0].Bytes()
+	return outputBytes[:]
+}
+
+type digest struct {
+	h    f.Element
+	data [][]byte // data to hash
+}
+
+func NewPoseidon2() hash.Hash {
+	d := new(digest)
+	d.Reset()
+	return d
+}
+
+// Reset resets the Hash to its initial state.
+func (d *digest) Reset() {
+	d.data = nil
+	d.h = f.Element{0}
+}
+
+// Only receive byte slice less than f.Modulus()
+func (d *digest) Write(p []byte) (n int, err error) {
+	n = len(p)
+	num := new(big.Int).SetBytes(p)
+	if num.Cmp(f.Modulus()) >= 0 {
+		return 0, errors.New("not support bytes bigger than modulus")
+	}
+	d.data = append(d.data, p)
+	return n, nil
+}
+
+func (d *digest) Size() int {
+	return BlockSize
+}
+
+// BlockSize returns the number of bytes Sum will return.
+func (d *digest) BlockSize() int {
+	return BlockSize
+}
+
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
+func (d *digest) Sum(b []byte) []byte {
+	e := f.Element{0}
+	e.SetBigInt(new(big.Int).SetBytes(Poseidon2Bytes(d.data...)))
+	d.h = e
+	d.data = nil // flush the data already hashed
+	hash := d.h.Bytes()
+	b = append(b, hash[:]...)
+	return b
 }

@@ -1,57 +1,11 @@
 package ecgfp5
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
-	f "github.com/consensys/gnark-crypto/field/goldilocks"
 )
-
-func TestQuadraticExtensionField(t *testing.T) {
-	goldilocks, _ := config.NewFieldConfig("goldilocks", "Element", "0xFFFFFFFF00000001", false)
-	quadratic := config.NewTower(goldilocks, 2, -1)
-
-	a := int64(112213)
-	b := int64(4234324)
-	c := int64(234234)
-	d := int64(234324)
-
-	mul := quadratic.Mul(
-		quadratic.FromInt64(a, b),
-		quadratic.FromInt64(c, d),
-	)
-
-	aF := f.NewElement(uint64(a))
-	bF := f.NewElement(uint64(b))
-	cF := f.NewElement(uint64(c))
-	dF := f.NewElement(uint64(d))
-
-	// ac - bd
-	ac := f.NewElement(0)
-	ac.Mul(&aF, &cF)
-	bd := f.NewElement(0)
-	bd.Mul(&bF, &dF)
-	ac_minus_bd := f.NewElement(0)
-	ac_minus_bd.Sub(&ac, &bd)
-
-	if mul[0].Uint64() != ac_minus_bd.Bits()[0] {
-		panic(fmt.Errorf("ac_minus_bd %d, mul[1] %d", ac_minus_bd.Bits()[0], mul[1].Uint64()))
-	}
-
-	// ad + bc
-	ad := f.NewElement(0)
-	ad.Mul(&aF, &dF)
-	bc := f.NewElement(0)
-	bc.Mul(&bF, &cF)
-	ad_plus_bc := f.NewElement(0)
-	ad_plus_bc.Add(&ad, &bc)
-
-	if mul[1].Uint64() != ad_plus_bc.Bits()[0] {
-		panic(fmt.Errorf("ad_plus_bc %d, mul[0] %d", ad_plus_bc.Bits()[0], mul[0].Uint64()))
-	}
-}
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	val1 := config.Element{

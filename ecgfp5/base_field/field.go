@@ -10,55 +10,6 @@ import (
 	f "github.com/consensys/gnark-crypto/field/goldilocks"
 )
 
-// tested
-func FAdd(elems ...*f.Element) f.Element {
-	res := f.NewElement(0)
-	for _, elem := range elems {
-		res.Add(&res, elem)
-	}
-	return res
-}
-
-// tested
-func FSub(a, b *f.Element) f.Element {
-	res := f.NewElement(0)
-	res.Sub(a, b)
-	return res
-}
-
-// tested
-func FMul(elems ...*f.Element) f.Element {
-	res := f.NewElement(1)
-	for _, elem := range elems {
-		res.Mul(&res, elem)
-	}
-	return res
-}
-
-// Powers starting from 1
-// tested
-func FPowers(e *f.Element, count int) []f.Element {
-	ret := make([]f.Element, count)
-	ret[0] = f.One()
-	for i := 1; i < int(count); i++ {
-		ret[i].Mul(&ret[i-1], e)
-	}
-	return ret
-}
-
-func FDeepCopy(source *f.Element) f.Element {
-	ret := f.Element{
-		source[0],
-	}
-	return ret
-}
-
-func FNegOne() *f.Element {
-	res := f.One()
-	res.Neg(&res)
-	return &res
-}
-
 var (
 	FP5_D = 5
 
@@ -88,9 +39,9 @@ var (
 	FP5_DTH_ROOT = f.NewElement(1041288259238279555)
 )
 
-func Fp5() config.Extension {
-	f, _ := config.NewFieldConfig("goldilocks", "Element", "0xFFFFFFFF00000001", false)
-	return config.NewTower(f, 5, -1)
+// tested
+func Fp5IsZero(e config.Element) bool {
+	return e[0].Sign() == 0 && e[1].Sign() == 0 && e[2].Sign() == 0 && e[3].Sign() == 0 && e[4].Sign() == 0
 }
 
 func Fp5DeepCopy(e config.Element) config.Element {
@@ -103,6 +54,7 @@ func Fp5DeepCopy(e config.Element) config.Element {
 	}
 }
 
+// tested
 func Fp5ToFArray(e config.Element) [5]*f.Element {
 	e1 := f.NewElement(e[0].Uint64())
 	e2 := f.NewElement(e[1].Uint64())
@@ -112,6 +64,7 @@ func Fp5ToFArray(e config.Element) [5]*f.Element {
 	return [5]*f.Element{&e1, &e2, &e3, &e4, &e5}
 }
 
+// tested
 func FArrayToFp5(e [5]*f.Element) config.Element {
 	return config.Element{
 		*new(big.Int).SetUint64(e[0].Uint64()),
@@ -122,6 +75,7 @@ func FArrayToFp5(e [5]*f.Element) config.Element {
 	}
 }
 
+// tested
 func Fp5Add(a, b config.Element) config.Element {
 	aCopy := Fp5ToFArray(a)
 	bCopy := Fp5ToFArray(b)
@@ -136,6 +90,7 @@ func Fp5Add(a, b config.Element) config.Element {
 	return res
 }
 
+// tested
 func Fp5Sub(a, b config.Element) config.Element {
 	aCopy := Fp5ToFArray(a)
 	bCopy := Fp5ToFArray(b)
@@ -293,8 +248,7 @@ func Fp5NegOne() config.Element {
 
 // tested
 func Fp5InverseOrZero(a config.Element) config.Element {
-	fp5 := Fp5()
-	if fp5.IsZero(a) {
+	if Fp5IsZero(a) {
 		return FP5_ZERO
 	}
 

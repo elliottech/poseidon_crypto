@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	config "github.com/consensys/gnark-crypto/field/generator/config"
 	fp5 "github.com/elliottech/poseidon_crypto/ecgfp5/base_field"
 	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
 )
@@ -503,5 +504,197 @@ func TestScalarMul(t *testing.T) {
 		),
 	}) {
 		t.Fail()
+	}
+}
+
+func testVectors() [8]config.Element {
+	w0 := fp5.Fp5DeepCopy(fp5.FP5_ZERO)
+	w1 := config.Element{
+		*new(big.Int).SetUint64(12539254003028696409),
+		*new(big.Int).SetUint64(15524144070600887654),
+		*new(big.Int).SetUint64(15092036948424041984),
+		*new(big.Int).SetUint64(11398871370327264211),
+		*new(big.Int).SetUint64(10958391180505708567),
+	}
+	w2 := config.Element{
+		*new(big.Int).SetUint64(11001943240060308920),
+		*new(big.Int).SetUint64(17075173755187928434),
+		*new(big.Int).SetUint64(3940989555384655766),
+		*new(big.Int).SetUint64(15017795574860011099),
+		*new(big.Int).SetUint64(5548543797011402287),
+	}
+	w3 := config.Element{
+		*new(big.Int).SetUint64(246872606398642312),
+		*new(big.Int).SetUint64(4900963247917836450),
+		*new(big.Int).SetUint64(7327006728177203977),
+		*new(big.Int).SetUint64(13945036888436667069),
+		*new(big.Int).SetUint64(3062018119121328861),
+	}
+	w4 := config.Element{
+		*new(big.Int).SetUint64(8058035104653144162),
+		*new(big.Int).SetUint64(16041715455419993830),
+		*new(big.Int).SetUint64(7448530016070824199),
+		*new(big.Int).SetUint64(11253639182222911208),
+		*new(big.Int).SetUint64(6228757819849640866),
+	}
+	w5 := config.Element{
+		*new(big.Int).SetUint64(10523134687509281194),
+		*new(big.Int).SetUint64(11148711503117769087),
+		*new(big.Int).SetUint64(9056499921957594891),
+		*new(big.Int).SetUint64(13016664454465495026),
+		*new(big.Int).SetUint64(16494247923890248266),
+	}
+	w6 := config.Element{
+		*new(big.Int).SetUint64(12173306542237620),
+		*new(big.Int).SetUint64(6587231965341539782),
+		*new(big.Int).SetUint64(17027985748515888117),
+		*new(big.Int).SetUint64(17194831817613584995),
+		*new(big.Int).SetUint64(10056734072351459010),
+	}
+	w7 := config.Element{
+		*new(big.Int).SetUint64(9420857400785992333),
+		*new(big.Int).SetUint64(4695934009314206363),
+		*new(big.Int).SetUint64(14471922162341187302),
+		*new(big.Int).SetUint64(13395190104221781928),
+		*new(big.Int).SetUint64(16359223219913018041),
+	}
+
+	return [8]config.Element{w0, w1, w2, w3, w4, w5, w6, w7}
+}
+
+func TestBasicOps(t *testing.T) {
+	// Values that should not decode successfully.
+	bww := [6]config.Element{
+		{
+			*new(big.Int).SetUint64(13557832913345268708),
+			*new(big.Int).SetUint64(15669280705791538619),
+			*new(big.Int).SetUint64(8534654657267986396),
+			*new(big.Int).SetUint64(12533218303838131749),
+			*new(big.Int).SetUint64(5058070698878426028),
+		},
+		{
+			*new(big.Int).SetUint64(135036726621282077),
+			*new(big.Int).SetUint64(17283229938160287622),
+			*new(big.Int).SetUint64(13113167081889323961),
+			*new(big.Int).SetUint64(1653240450380825271),
+			*new(big.Int).SetUint64(520025869628727862),
+		},
+		{
+			*new(big.Int).SetUint64(6727960962624180771),
+			*new(big.Int).SetUint64(17240764188796091916),
+			*new(big.Int).SetUint64(3954717247028503753),
+			*new(big.Int).SetUint64(1002781561619501488),
+			*new(big.Int).SetUint64(4295357288570643789),
+		},
+		{
+			*new(big.Int).SetUint64(4578929270179684956),
+			*new(big.Int).SetUint64(3866930513245945042),
+			*new(big.Int).SetUint64(7662265318638150701),
+			*new(big.Int).SetUint64(9503686272550423634),
+			*new(big.Int).SetUint64(12241691520798116285),
+		},
+		{
+			*new(big.Int).SetUint64(16890297404904119082),
+			*new(big.Int).SetUint64(6169724643582733633),
+			*new(big.Int).SetUint64(9725973298012340311),
+			*new(big.Int).SetUint64(5977049210035183790),
+			*new(big.Int).SetUint64(11379332130141664883),
+		},
+		{
+			*new(big.Int).SetUint64(13777379982711219130),
+			*new(big.Int).SetUint64(14715168412651470168),
+			*new(big.Int).SetUint64(17942199593791635585),
+			*new(big.Int).SetUint64(6188824164976547520),
+			*new(big.Int).SetUint64(15461469634034461986),
+		},
+	}
+	for _, w := range bww {
+		if Validate(w) {
+			t.Fatalf("Validation should fail for element: %v", w)
+		}
+		if _, success := Decode(w); success {
+			t.Fatalf("Decoding should fail for element: %v", w)
+		}
+	}
+
+	vectors := testVectors()
+	for _, w := range vectors {
+		if !Validate(w) {
+			t.Fatalf("Validation failed for element: %v", w)
+		}
+	}
+
+	p0, s := Decode(vectors[0])
+	if !s {
+		t.Fatalf("Decoding failed for p0")
+	}
+	p1, s := Decode(vectors[1])
+	if !s {
+		t.Fatalf("Decoding failed for p1")
+	}
+	p2, s := Decode(vectors[2])
+	if !s {
+		t.Fatalf("Decoding failed for p2")
+	}
+	p3, s := Decode(vectors[3])
+	if !s {
+		t.Fatalf("Decoding failed for p3")
+	}
+	p4, s := Decode(vectors[4])
+	if !s {
+		t.Fatalf("Decoding failed for p4")
+	}
+	p5, s := Decode(vectors[5])
+	if !s {
+		t.Fatalf("Decoding failed for p5")
+	}
+	p6, s := Decode(vectors[6])
+	if !s {
+		t.Fatalf("Decoding failed for p6")
+	}
+	p7, s := Decode(vectors[7])
+	if !s {
+		t.Fatalf("Decoding failed for p7")
+	}
+
+	if !p0.IsNeutral() {
+		t.Fatalf("p0 should be neutral")
+	}
+	if p1.IsNeutral() || p2.IsNeutral() || p3.IsNeutral() || p4.IsNeutral() || p5.IsNeutral() || p6.IsNeutral() || p7.IsNeutral() {
+		t.Fatalf("p1...p7 should not be neutral")
+	}
+	if !p0.Equals(p0) || !p1.Equals(p1) || p0.Equals(p1) || p1.Equals(p0) || p1.Equals(p2) {
+		t.Fatalf("Equality checks failed")
+	}
+
+	if !fp5.Fp5Equals(p0.Encode(), vectors[0]) || !fp5.Fp5Equals(p1.Encode(), vectors[1]) || !fp5.Fp5Equals(p2.Encode(), vectors[2]) || !fp5.Fp5Equals(p3.Encode(), vectors[3]) || !fp5.Fp5Equals(p4.Encode(), vectors[4]) || !fp5.Fp5Equals(p5.Encode(), vectors[5]) || !fp5.Fp5Equals(p6.Encode(), vectors[6]) || !fp5.Fp5Equals(p7.Encode(), vectors[7]) {
+		t.Fatalf("Encoding checks failed")
+	}
+
+	if !fp5.Fp5Equals(p1.Add(p2).Encode(), vectors[3]) || !fp5.Fp5Equals(p1.Add(p1).Encode(), vectors[4]) || !fp5.Fp5Equals(p2.Double().Encode(), vectors[5]) || !fp5.Fp5Equals(p1.Double().Add(p2).Encode(), vectors[6]) || !fp5.Fp5Equals(p1.Add(p2).Add(p2).Encode(), vectors[7]) {
+		t.Fatalf("Addition and doubling checks failed")
+	}
+
+	if !fp5.Fp5Equals(p0.Double().Encode(), fp5.FP5_ZERO) || !fp5.Fp5Equals(p0.Add(p0).Encode(), fp5.FP5_ZERO) || !fp5.Fp5Equals(p0.Add(p1).Encode(), vectors[1]) || !fp5.Fp5Equals(p1.Add(p0).Encode(), vectors[1]) {
+		t.Fatalf("Zero addition and doubling checks failed")
+	}
+
+	for i := uint32(0); i < 10; i++ {
+		q1 := p1.MDouble(i)
+		q2 := p1.DeepCopy()
+		for j := uint32(0); j < i; j++ {
+			q2 = q2.Double()
+		}
+		if !q1.Equals(q2) {
+			t.Fatalf("MDouble check failed for i=%d", i)
+		}
+	}
+
+	p2Affine := AffinePoint{
+		x: fp5.Fp5Mul(p2.x, fp5.Fp5InverseOrZero(p2.z)),
+		u: fp5.Fp5Mul(p2.u, fp5.Fp5InverseOrZero(p2.t)),
+	}
+	if !p1.AddAffine(p2Affine).Equals(p1.Add(p2)) {
+		t.Fatalf("Affine addition check failed")
 	}
 }

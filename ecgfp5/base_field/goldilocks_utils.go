@@ -32,6 +32,15 @@ func FMul(elems ...*f.Element) f.Element {
 	return res
 }
 
+func FSqrt(elem *f.Element) *f.Element {
+	elemCopy := FDeepCopy(elem)
+	retVal := elemCopy.Sqrt(&elemCopy)
+	if retVal == nil {
+		return nil
+	}
+	return &elemCopy
+}
+
 // Powers starting from 1
 func FPowers(e *f.Element, count int) []f.Element {
 	ret := make([]f.Element, count)

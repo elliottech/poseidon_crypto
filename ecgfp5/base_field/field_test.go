@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
+	f "github.com/consensys/gnark-crypto/field/goldilocks"
 )
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
@@ -158,5 +159,66 @@ func TestSqrtFunctions(t *testing.T) {
 
 	if !Fp5Equals(result2, expected) {
 		t.Fatalf("Expected sqrt to be %v, but got %v", expected, result2)
+	}
+}
+
+func TestSqrtNonExistent(t *testing.T) {
+	_, exists := Fp5Sqrt(config.Element{
+		*new(big.Int).SetUint64(3558249639744866495),
+		*new(big.Int).SetUint64(2615658757916804776),
+		*new(big.Int).SetUint64(14375546700029059319),
+		*new(big.Int).SetUint64(16160052538060569780),
+		*new(big.Int).SetUint64(8366525948816396307),
+	})
+	if exists {
+		t.Fatalf("Expected sqrt not to exist, but it does")
+	}
+}
+
+func TestLegendre(t *testing.T) {
+	// Test zero
+	zeroLegendre := Fp5Legendre(FP5_ZERO)
+	if !zeroLegendre.IsZero() {
+		t.Fatalf("Expected Legendre symbol of zero to be zero")
+	}
+
+	// Test non-squares
+	for i := 0; i < 32; i++ {
+		var x config.Element
+		for {
+			attempt := Fp5Sample()
+			if _, exists := Fp5Sqrt(attempt); !exists {
+				x = attempt
+				break
+			}
+		}
+		legendreSym := Fp5Legendre(x)
+
+		zero := f.NewElement(0)
+		one := f.NewElement(1)
+		negOne := zero.Sub(&zero, &one)
+
+		if !negOne.Equal(&legendreSym) {
+			t.Fatalf("Expected Legendre symbol of non-square to be -1, but got %v", legendreSym)
+		}
+	}
+
+	// Test squares
+	for i := 0; i < 32; i++ {
+		x := Fp5Sample()
+		square := Fp5Square(x)
+		legendreSym := Fp5Legendre(square)
+
+		if !legendreSym.IsOne() {
+			t.Fatalf("Expected Legendre symbol of square to be 1, but got %v", legendreSym)
+		}
+	}
+
+	// Test zero again
+	x := FP5_ZERO
+	square := Fp5Mul(x, x)
+	legendreSym := Fp5Legendre(square)
+	if !legendreSym.IsZero() {
+		t.Fatalf("Expected Legendre symbol of zero to be zero")
 	}
 }

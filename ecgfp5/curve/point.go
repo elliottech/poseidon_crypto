@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
+	f "github.com/consensys/gnark-crypto/field/goldilocks"
 	fp5 "github.com/elliottech/poseidon_crypto/ecgfp5/base_field"
 	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
 )
@@ -83,53 +84,66 @@ func (p ECgFp5Point) Encode() config.Element {
 	return fp5.Fp5Mul(p.t, fp5.Fp5InverseOrZero(p.u))
 }
 
-// // Attempt to decode a point from an gFp5 element
-// func Decode(w config.Element) (ECgFp5Point, bool) {
-// 	// Curve equation is y^2 = x*(x^2 + a*x + b); encoded value
-// 	// is w = y/x. Dividing by x, we get the equation:
-// 	//   x^2 - (w^2 - a)*x + b = 0
-// 	// We solve for x and keep the solution which is not itself a
-// 	// square (if there are solutions, exactly one of them will be
-// 	// a square, and the other will not be a square).
+// Test whether a field element can be decoded into a point.
+// returns `true` if decoding would work, `false` otherwise.
+func Validate(w config.Element) bool {
+	// Value w can be decoded if and only if it is zero, or
+	// (w^2 - a)^2 - 4*b is a quadratic residue.
+	e := fp5.Fp5Sub(fp5.Fp5Square(w), A_ECgFp5Point)
+	delta := fp5.Fp5Sub(fp5.Fp5Square(e), B_MUL4_ECgFp5Point)
+	deltaLegendre := fp5.Fp5Legendre(delta)
+	return fp5.Fp5IsZero(w) || deltaLegendre.IsOne()
+}
 
-// 	e := fp5.Fp5Sub(fp5.Fp5Square(w), A_ECgFp5Point)
-// 	delta := fp5.Fp5Sub(fp5.Fp5Square(e), B_MUL4_ECgFp5Point)
-// 	r, c := fp5.Fp5CanonicalSqrt(delta)
-// 	if !c {
-// 		r = fp5.Fp5DeepCopy(fp5.FP5_ZERO)
-// 	}
+// Attempt to decode a point from an gFp5 element
+func Decode(w config.Element) (ECgFp5Point, bool) {
+	// Curve equation is y^2 = x*(x^2 + a*x + b); encoded value
+	// is w = y/x. Dividing by x, we get the equation:
+	//   x^2 - (w^2 - a)*x + b = 0
+	// We solve for x and keep the solution which is not itself a
+	// square (if there are solutions, exactly one of them will be
+	// a square, and the other will not be a square).
 
-// 	x1 := fp5.Fp5Div(fp5.Fp5Add(e, r), fp5.Fp5DeepCopy(fp5.FP5_TWO))
-// 	x2 := fp5.Fp5Div(fp5.Fp5Sub(e, r), fp5.Fp5DeepCopy(fp5.FP5_TWO))
-// 	x := x2
-// 	one := f.One()
-// 	if !one.Equal(fp5.Fp5Legendre(x1)) {
-// 		x = x1
-// 	}
+	e := fp5.Fp5Sub(fp5.Fp5Square(w), A_ECgFp5Point)
+	delta := fp5.Fp5Sub(fp5.Fp5Square(e), B_MUL4_ECgFp5Point)
+	r, c := fp5.Fp5CanonicalSqrt(delta)
+	if !c {
+		r = fp5.Fp5DeepCopy(fp5.FP5_ZERO)
+	}
 
-// 	// If c == true (delta is not a sqrt) then we want to get the neutral here; note that if
-// 	// w == 0, then delta = a^2 - 4*b, which is not a square, and
-// 	// thus we also get c == 0.
-// 	if !c {
-// 		x = fp5.Fp5DeepCopy(fp5.FP5_ZERO)
-// 	}
-// 	z := fp5.Fp5DeepCopy(fp5.FP5_ONE)
-// 	u := fp5.Fp5DeepCopy(fp5.FP5_ONE)
-// 	if !c {
-// 		u = fp5.Fp5DeepCopy(fp5.FP5_ZERO)
-// 	}
-// 	t := fp5.Fp5DeepCopy(w)
-// 	if !c {
-// 		t = fp5.Fp5DeepCopy(fp5.FP5_ONE)
-// 	}
+	x1 := fp5.Fp5Div(fp5.Fp5Add(e, r), fp5.Fp5DeepCopy(fp5.FP5_TWO))
+	x2 := fp5.Fp5Div(fp5.Fp5Sub(e, r), fp5.Fp5DeepCopy(fp5.FP5_TWO))
+	x := x2
 
-// 	// If w == 0 then this is in fact a success.
-// 	if c || fp5.Fp5IsZero(w) {
-// 		return ECgFp5Point{x: x, z: z, u: u, t: t}, true
-// 	}
+	x1Legendre := fp5.Fp5Legendre(x1)
+	one := f.One()
+	if !one.Equal(&x1Legendre) {
+		x = x1
+	}
 
-// 	return ECgFp5Point{}, false
-// }
+	// If c == true (delta is not a sqrt) then we want to get the neutral here; note that if
+	// w == 0, then delta = a^2 - 4*b, which is not a square, and
+	// thus we also get c == 0.
+	if !c {
+		x = fp5.Fp5DeepCopy(fp5.FP5_ZERO)
+	}
+	z := fp5.Fp5DeepCopy(fp5.FP5_ONE)
+	u := fp5.Fp5DeepCopy(fp5.FP5_ONE)
+	if !c {
+		u = fp5.Fp5DeepCopy(fp5.FP5_ZERO)
+	}
+	t := fp5.Fp5DeepCopy(w)
+	if !c {
+		t = fp5.Fp5DeepCopy(fp5.FP5_ONE)
+	}
+
+	// If w == 0 then this is in fact a success.
+	if c || fp5.Fp5IsZero(w) {
+		return ECgFp5Point{x: x, z: z, u: u, t: t}, true
+	}
+
+	return ECgFp5Point{}, false
+}
 
 func (p ECgFp5Point) IsNeutral() bool {
 	return fp5.Fp5IsZero(p.u)
@@ -203,6 +217,12 @@ func (p ECgFp5Point) Sub(rhs ECgFp5Point) ECgFp5Point {
 func (p ECgFp5Point) Double() ECgFp5Point {
 	newPoint := p.DeepCopy()
 	newPoint.SetDouble()
+	return newPoint
+}
+
+func (p *ECgFp5Point) MDouble(n uint32) ECgFp5Point {
+	newPoint := p.DeepCopy()
+	newPoint.SetMDouble(n)
 	return newPoint
 }
 

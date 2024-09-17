@@ -39,6 +39,22 @@ var (
 	FP5_DTH_ROOT = f.NewElement(1041288259238279555)
 )
 
+func Fp5Sample() config.Element {
+	e1 := f.NewElement(0)
+	e2 := f.NewElement(0)
+	e3 := f.NewElement(0)
+	e4 := f.NewElement(0)
+	e5 := f.NewElement(0)
+
+	e1.SetRandom()
+	e2.SetRandom()
+	e3.SetRandom()
+	e4.SetRandom()
+	e5.SetRandom()
+
+	return FArrayToFp5([5]*f.Element{&e1, &e2, &e3, &e4, &e5})
+}
+
 func Fp5Equals(a, b config.Element) bool {
 	return a[0].Cmp(&b[0]) == 0 && a[1].Cmp(&b[1]) == 0 && a[2].Cmp(&b[2]) == 0 && a[3].Cmp(&b[3]) == 0 && a[4].Cmp(&b[4]) == 0
 }
@@ -296,7 +312,7 @@ func Fp5Sqrt(x config.Element) (config.Element, bool) {
 	x0f0 := FMul(x0, f0)
 	g := FAdd(&x0f0, &muld)
 
-	s := g.Sqrt(&g)
+	s := FSqrt(&g)
 	if s == nil {
 		return nil, false
 	}
@@ -435,4 +451,26 @@ func Fp5RepeatedFrobenius(x config.Element, count int) config.Element {
 
 	res2 := FArrayToFp5(res)
 	return res2
+}
+
+func Fp5Legendre(x config.Element) f.Element {
+	frob1 := Fp5Frobenius(x)
+	frob2 := Fp5Frobenius(frob1)
+
+	frob1TimesFrob2 := Fp5Mul(frob1, frob2)
+	frob2Frob1TimesFrob2 := Fp5RepeatedFrobenius(frob1TimesFrob2, 2)
+
+	xrExt := Fp5Mul(Fp5Mul(x, frob1TimesFrob2), frob2Frob1TimesFrob2)
+	xr := Fp5ToFArray(xrExt)[0]
+
+	xr31 := xr.Exp(*xr, new(big.Int).SetUint64(1<<31))
+	xr31Copy := FDeepCopy(xr31)
+	xr63 := xr31Copy.Exp(*xr31, new(big.Int).SetUint64(1<<32))
+
+	// only way `xr_31` can be zero is if `xr` is zero, in which case `self` is zero,
+	// in which case we want to return zero.
+	xr31InvOrZero := f.NewElement(0)
+	xr31InvOrZero = *xr31InvOrZero.Inverse(xr31)
+
+	return FMul(xr63, &xr31InvOrZero)
 }

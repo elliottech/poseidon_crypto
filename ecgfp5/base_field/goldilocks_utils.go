@@ -2,9 +2,13 @@ package ecgfp5
 
 // Utilities missing in gnark-crypto
 
-// tested
-
 import f "github.com/consensys/gnark-crypto/field/goldilocks"
+
+func FNeg(e *f.Element) f.Element {
+	res := f.NewElement(0)
+	res.Neg(e)
+	return res
+}
 
 func FAdd(elems ...*f.Element) f.Element {
 	res := f.NewElement(0)

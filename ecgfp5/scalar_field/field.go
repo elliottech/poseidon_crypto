@@ -1,7 +1,5 @@
 package ecgfp5
 
-// TESTED
-
 import (
 	"math/big"
 	"math/bits"
@@ -11,8 +9,7 @@ import (
 
 /*
 	TODO:
-		- Add lagrange after signed161 and signed640
-		- Get rid of all unused functions
+		- Add lagrange
 		- Remove //tested comments
 */
 
@@ -145,9 +142,7 @@ func (s ECgFp5Scalar) SubInner(a ECgFp5Scalar) (ECgFp5Scalar, *big.Int) {
 		aValPlusCval := new(big.Int).Add(aVal, cVal)
 		z := new(big.Int).Sub(sVal, aValPlusCval)
 
-		if z.Sign() < 0 {
-			z.Add(z, two128) // TODO: try mod
-		}
+		z.Mod(z, two128) // Simulate u128 wrapping
 
 		r.Value[i] = *new(big.Int).SetUint64(z.Uint64())
 		c.SetUint64(new(big.Int).Rsh(z, 64).Uint64() & 1)

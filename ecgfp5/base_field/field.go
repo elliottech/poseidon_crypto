@@ -39,7 +39,10 @@ var (
 	FP5_DTH_ROOT = f.NewElement(1041288259238279555)
 )
 
-// tested
+func Fp5Equals(a, b config.Element) bool {
+	return a[0].Cmp(&b[0]) == 0 && a[1].Cmp(&b[1]) == 0 && a[2].Cmp(&b[2]) == 0 && a[3].Cmp(&b[3]) == 0 && a[4].Cmp(&b[4]) == 0
+}
+
 func Fp5IsZero(e config.Element) bool {
 	return e[0].Sign() == 0 && e[1].Sign() == 0 && e[2].Sign() == 0 && e[3].Sign() == 0 && e[4].Sign() == 0
 }
@@ -54,7 +57,6 @@ func Fp5DeepCopy(e config.Element) config.Element {
 	}
 }
 
-// tested
 func Fp5ToFArray(e config.Element) [5]*f.Element {
 	e1 := f.NewElement(e[0].Uint64())
 	e2 := f.NewElement(e[1].Uint64())
@@ -64,7 +66,6 @@ func Fp5ToFArray(e config.Element) [5]*f.Element {
 	return [5]*f.Element{&e1, &e2, &e3, &e4, &e5}
 }
 
-// tested
 func FArrayToFp5(e [5]*f.Element) config.Element {
 	return config.Element{
 		*new(big.Int).SetUint64(e[0].Uint64()),
@@ -75,7 +76,26 @@ func FArrayToFp5(e [5]*f.Element) config.Element {
 	}
 }
 
-// tested
+func Uint64ArrayToFp5(e1, e2, e3, e4, e5 uint64) config.Element {
+	return config.Element{
+		*new(big.Int).SetUint64(e1),
+		*new(big.Int).SetUint64(e2),
+		*new(big.Int).SetUint64(e3),
+		*new(big.Int).SetUint64(e4),
+		*new(big.Int).SetUint64(e5),
+	}
+}
+
+func Fp5Neg(e config.Element) config.Element {
+	eCopy := Fp5ToFArray(e)
+	_0 := FNeg(eCopy[0])
+	_1 := FNeg(eCopy[1])
+	_2 := FNeg(eCopy[2])
+	_3 := FNeg(eCopy[3])
+	_4 := FNeg(eCopy[4])
+	return FArrayToFp5([5]*f.Element{&_0, &_1, &_2, &_3, &_4})
+}
+
 func Fp5Add(a, b config.Element) config.Element {
 	aCopy := Fp5ToFArray(a)
 	bCopy := Fp5ToFArray(b)
@@ -90,7 +110,6 @@ func Fp5Add(a, b config.Element) config.Element {
 	return res
 }
 
-// tested
 func Fp5Sub(a, b config.Element) config.Element {
 	aCopy := Fp5ToFArray(a)
 	bCopy := Fp5ToFArray(b)
@@ -105,7 +124,6 @@ func Fp5Sub(a, b config.Element) config.Element {
 	return res
 }
 
-// tested
 func Fp5Mul(a, b config.Element) config.Element {
 	// let Self([a0, a1, a2, a3, a4]) = self;
 	aCopy := Fp5ToFArray(a)
@@ -170,7 +188,6 @@ func Fp5Mul(a, b config.Element) config.Element {
 }
 
 // 33% Optimized square
-// tested
 func Fp5Square(a config.Element) config.Element {
 	// let Self([a0, a1, a2, a3, a4]) = *self;
 	aCopy := Fp5ToFArray(a)
@@ -246,7 +263,6 @@ func Fp5NegOne() config.Element {
 	}
 }
 
-// tested
 func Fp5InverseOrZero(a config.Element) config.Element {
 	if Fp5IsZero(a) {
 		return FP5_ZERO
@@ -286,7 +302,6 @@ func Fp5InverseOrZero(a config.Element) config.Element {
 }
 
 // FrobeniusField automorphisms: x -> x^p, where p is the order of BaseField.
-// tested
 func Fp5Frobenius(x config.Element) config.Element {
 	return Fp5RepeatedFrobenius(x, 1)
 }
@@ -295,7 +310,6 @@ func Fp5Frobenius(x config.Element) config.Element {
 //
 // Follows precomputation suggestion in Section 11.3.3 of the
 // Handbook of Elliptic and Hyperelliptic Curve Cryptography.
-// tested
 func Fp5RepeatedFrobenius(x config.Element, count int) config.Element {
 	if count == 0 {
 		return x

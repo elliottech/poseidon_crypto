@@ -21,6 +21,11 @@ var ZERO_SIG = SchnorrSig{
 
 var ONE_SK = sf.ONE
 
+// Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
+func SchnorrPkFromSk(sk sf.ECgFp5Scalar) config.Element {
+	return curve.GENERATOR_ECgFp5Point.DeepCopy().Mul(&sk).Encode()
+}
+
 func HashToQuinticExtension(m []f.Element) config.Element {
 	p2 := poseidon2.Poseidon2{}
 	res := p2.HashNToMNoPad(m, 5)
@@ -59,5 +64,25 @@ func SchnorrSignHashedMessageWithRandomScalar(hashedMsg config.Element, sk, k sf
 }
 
 // func IsSchnorrSignatureValid(pubKey, hashedMsg config.Element, sig SchnorrSig) bool {
-// 	decodedPubkey := curve.
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Println()
+
+// 	decodedPubkey, ok := curve.Decode(pubKey)
+// 	if !ok {
+// 		return false
+// 	}
+
+// 	affine := curve.BatchToAffine([]curve.ECgFp5Point{decodedPubkey})[0]
+// 	fmt.Println(affine)
+
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Println()
+
+// 	panic("Not implemented")
 // }

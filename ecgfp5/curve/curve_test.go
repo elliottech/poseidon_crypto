@@ -508,6 +508,15 @@ func TestScalarMul(t *testing.T) {
 }
 
 func testVectors() [8]config.Element {
+	// P0 is neutral of G.
+	// P1 is a random point in G (encoded as w1)
+	// P2 = e*P1 in G (encoded as w2)
+	// P3 = P1 + P2 (in G) (encoded as w3)
+	// P4 = 2*P1 (in G) (encoded as w4)
+	// P5 = 2*P2 (in G) (encoded as w5)
+	// P6 = 2*P1 + P2 (in G) (encoded as w6)
+	// P7 = P1 + 2*P2 (in G) (encoded as w7)
+
 	w0 := fp5.Fp5DeepCopy(fp5.FP5_ZERO)
 	w1 := config.Element{
 		*new(big.Int).SetUint64(12539254003028696409),
@@ -696,5 +705,212 @@ func TestBasicOps(t *testing.T) {
 	}
 	if !p1.AddAffine(p2Affine).Equals(p1.Add(p2)) {
 		t.Fatalf("Affine addition check failed")
+	}
+}
+
+func TestDecodeAsWeierstrass(t *testing.T) {
+	vectors := testVectors()
+
+	p0Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(6148914689804861440),
+			*new(big.Int).SetUint64(0),
+			*new(big.Int).SetUint64(0),
+			*new(big.Int).SetUint64(0),
+			*new(big.Int).SetUint64(0),
+		},
+		Y:     fp5.FP5_ZERO,
+		IsInf: true,
+	}
+	p0, success := DecodeAsWeierstrass(vectors[0])
+	if !success {
+		t.Fatalf("w0 should successfully decode")
+	}
+	if !p0.Equals(p0Expected) {
+		t.Fatalf("p0 does not match expected value")
+	}
+
+	p1Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(7887569478949190020),
+			*new(big.Int).SetUint64(11586418388990522938),
+			*new(big.Int).SetUint64(13676447623055915878),
+			*new(big.Int).SetUint64(5945168854809921881),
+			*new(big.Int).SetUint64(16291886980725359814),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7556511254681645335),
+			*new(big.Int).SetUint64(17611929280367064763),
+			*new(big.Int).SetUint64(9410908488141053806),
+			*new(big.Int).SetUint64(11351540010214108766),
+			*new(big.Int).SetUint64(4846226015431423207),
+		},
+		IsInf: false,
+	}
+	p1, success := DecodeAsWeierstrass(vectors[1])
+	if !success {
+		t.Fatalf("w1 should successfully decode")
+	}
+	if !p1.Equals(p1Expected) {
+		t.Fatalf("p1 does not match expected value")
+	}
+
+	p2Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(11231216549003316587),
+			*new(big.Int).SetUint64(17312878720767554617),
+			*new(big.Int).SetUint64(5614299211412933260),
+			*new(big.Int).SetUint64(2256199868722187419),
+			*new(big.Int).SetUint64(14229722163821261464),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(11740132275098847128),
+			*new(big.Int).SetUint64(18250632754932612452),
+			*new(big.Int).SetUint64(6988589976052950880),
+			*new(big.Int).SetUint64(13612651576898186637),
+			*new(big.Int).SetUint64(16040252831112129154),
+		},
+		IsInf: false,
+	}
+	p2, success := DecodeAsWeierstrass(vectors[2])
+	if !success {
+		t.Fatalf("w2 should successfully decode")
+	}
+	if !p2.Equals(p2Expected) {
+		t.Fatalf("p2 does not match expected value")
+	}
+
+	p3Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(567456832026211571),
+			*new(big.Int).SetUint64(6401615614732569674),
+			*new(big.Int).SetUint64(7303004494044972219),
+			*new(big.Int).SetUint64(4332356015409706768),
+			*new(big.Int).SetUint64(4663512734739523713),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(13838792670272995877),
+			*new(big.Int).SetUint64(11742686110311813089),
+			*new(big.Int).SetUint64(17972799251722850796),
+			*new(big.Int).SetUint64(8534723577625674697),
+			*new(big.Int).SetUint64(3138422718990519265),
+		},
+		IsInf: false,
+	}
+	p3, success := DecodeAsWeierstrass(vectors[3])
+	if !success {
+		t.Fatalf("w3 should successfully decode")
+	}
+	if !p3.Equals(p3Expected) {
+		t.Fatalf("p3 does not match expected value")
+	}
+
+	p4Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(2626390539619063455),
+			*new(big.Int).SetUint64(3069873143820007175),
+			*new(big.Int).SetUint64(16481805966921623903),
+			*new(big.Int).SetUint64(2169403494164322467),
+			*new(big.Int).SetUint64(15849876939764656634),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(8052493994140007067),
+			*new(big.Int).SetUint64(12476750341447220703),
+			*new(big.Int).SetUint64(7297584762312352412),
+			*new(big.Int).SetUint64(4456043296886321460),
+			*new(big.Int).SetUint64(17416054515469523789),
+		},
+		IsInf: false,
+	}
+	p4, success := DecodeAsWeierstrass(vectors[4])
+	if !success {
+		t.Fatalf("w4 should successfully decode")
+	}
+	if !p4.Equals(p4Expected) {
+		t.Fatalf("p4 does not match expected value")
+	}
+
+	p5Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(3378618241466923429),
+			*new(big.Int).SetUint64(1600085176765664645),
+			*new(big.Int).SetUint64(8450735902517439914),
+			*new(big.Int).SetUint64(879305481131694650),
+			*new(big.Int).SetUint64(9249368002914244868),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7063301786803892166),
+			*new(big.Int).SetUint64(16450112846546843898),
+			*new(big.Int).SetUint64(13291990378137922105),
+			*new(big.Int).SetUint64(17122501309646837992),
+			*new(big.Int).SetUint64(13551174888872382132),
+		},
+		IsInf: false,
+	}
+	p5, success := DecodeAsWeierstrass(vectors[5])
+	if !success {
+		t.Fatalf("w5 should successfully decode")
+	}
+	if !p5.Equals(p5Expected) {
+		t.Fatalf("p5 does not match expected value")
+	}
+
+	p6Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(12792842147978866906),
+			*new(big.Int).SetUint64(10605017725125541653),
+			*new(big.Int).SetUint64(7515179057747849898),
+			*new(big.Int).SetUint64(4244613931017322576),
+			*new(big.Int).SetUint64(5015379385130367832),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(11618884250209642346),
+			*new(big.Int).SetUint64(14788516166813429253),
+			*new(big.Int).SetUint64(7317520700234795285),
+			*new(big.Int).SetUint64(12825292405177435802),
+			*new(big.Int).SetUint64(17658454967394645353),
+		},
+		IsInf: false,
+	}
+	p6, success := DecodeAsWeierstrass(vectors[6])
+	if !success {
+		t.Fatalf("w6 should successfully decode")
+	}
+	if !p6.Equals(p6Expected) {
+		t.Fatalf("p6 does not match expected value")
+	}
+
+	p7Expected := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(10440794216646581227),
+			*new(big.Int).SetUint64(13992847258701590930),
+			*new(big.Int).SetUint64(11213401763785319360),
+			*new(big.Int).SetUint64(12830171931568113117),
+			*new(big.Int).SetUint64(6220154342199499160),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7971683838841472962),
+			*new(big.Int).SetUint64(1639066249976938469),
+			*new(big.Int).SetUint64(15015315060237521031),
+			*new(big.Int).SetUint64(10847769264696425470),
+			*new(big.Int).SetUint64(9177491810370773777),
+		},
+		IsInf: false,
+	}
+	p7, success := DecodeAsWeierstrass(vectors[7])
+	if !success {
+		t.Fatalf("w7 should successfully decode")
+	}
+	if !p7.Equals(p7Expected) {
+		t.Fatalf("p7 does not match expected value")
+	}
+
+	wGen := fp5.Fp5FromUint64(4)
+	g, success := DecodeAsWeierstrass(wGen)
+	if !success {
+		t.Fatalf("w_gen should successfully decode")
+	}
+	if !g.Equals(GENERATOR_WEIERSTRASS) {
+		t.Fatalf("g does not match GENERATOR")
 	}
 }

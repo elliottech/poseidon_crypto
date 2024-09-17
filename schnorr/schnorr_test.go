@@ -1,6 +1,7 @@
 package schnorr
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -37,7 +38,34 @@ func TestHashToQuinticExtension(t *testing.T) {
 	}
 }
 
-func TestSchnorrSignHashedMessage(t *testing.T) {
+func TestPkFromSk(t *testing.T) {
+	pk := SchnorrPkFromSk(
+		sf.ECgFp5Scalar{
+			Value: [5]big.Int{
+				*new(big.Int).SetUint64(12235002942052073545),
+				*new(big.Int).SetUint64(1175977464658719998),
+				*new(big.Int).SetUint64(8536934969147463310),
+				*new(big.Int).SetUint64(6524687619313720391),
+				*new(big.Int).SetUint64(2922072024880609112),
+			},
+		},
+	)
+	expected := [5]uint64{
+		5274228734022496557,
+		17193213284521670772,
+		7716147991703193574,
+		17226220906254422808,
+		18304473687857278576,
+	}
+
+	for i := 0; i < 5; i++ {
+		if pk[i].Uint64() != expected[i] {
+			t.Fatalf("pk[%d]: Expected %d, but got %d", i, expected[i], pk[i].Uint64())
+		}
+	}
+}
+
+func TestSchnorrSignAndVerify(t *testing.T) {
 	// sk, hashedMessage, k generated beforehand
 
 	sk := sf.ECgFp5Scalar{
@@ -82,7 +110,6 @@ func TestSchnorrSignHashedMessage(t *testing.T) {
 			t.Fatalf("sig.S[%d]: Expected %d, but got %d", i, expectedS[i], sig.S.Value[i].Uint64())
 		}
 	}
-
 	expectedE := [5]uint64{
 		4544744459434870309,
 		4180764085957612004,
@@ -95,4 +122,12 @@ func TestSchnorrSignHashedMessage(t *testing.T) {
 			t.Fatalf("sig.E[%d]: Expected %d, but got %d", i, expectedE[i], sig.E.Value[i].Uint64())
 		}
 	}
+
+	pubKey := SchnorrPkFromSk(sk)
+	fmt.Println("pubKey", pubKey)
+	fmt.Println()
+
+	// if !IsSchnorrSignatureValid(SchnorrPkFromSk(sk), hashedMessage, sig) {
+	// 	t.Fatalf("Signature is invalid")
+	// }
 }

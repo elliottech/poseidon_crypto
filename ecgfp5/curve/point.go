@@ -80,10 +80,6 @@ func (p ECgFp5Point) Equals(rhs ECgFp5Point) bool {
 	)
 }
 
-func (p ECgFp5Point) Encode() config.Element {
-	return fp5.Fp5Mul(p.t, fp5.Fp5InverseOrZero(p.u))
-}
-
 // Test whether a field element can be decoded into a point.
 // returns `true` if decoding would work, `false` otherwise.
 func Validate(w config.Element) bool {
@@ -93,6 +89,10 @@ func Validate(w config.Element) bool {
 	delta := fp5.Fp5Sub(fp5.Fp5Square(e), B_MUL4_ECgFp5Point)
 	deltaLegendre := fp5.Fp5Legendre(delta)
 	return fp5.Fp5IsZero(w) || deltaLegendre.IsOne()
+}
+
+func (p ECgFp5Point) Encode() config.Element {
+	return fp5.Fp5Mul(p.t, fp5.Fp5InverseOrZero(p.u))
 }
 
 // Attempt to decode a point from an gFp5 element

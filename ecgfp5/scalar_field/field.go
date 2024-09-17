@@ -3,20 +3,25 @@ package ecgfp5
 import (
 	"math/big"
 	"math/bits"
+	"math/rand"
+	"time"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
 )
-
-/*
-	TODO:
-		- Add lagrange
-		- Remove //tested comments
-*/
 
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar struct {
 	Value [5]big.Int
+}
+
+func Sample() ECgFp5Scalar {
+	return FromNonCanonicalBigInt(
+		new(big.Int).Rand(
+			rand.New(rand.NewSource(time.Now().UnixNano())),
+			ORDER,
+		),
+	)
 }
 
 func (s ECgFp5Scalar) GetUint64Limbs() [5]uint64 {

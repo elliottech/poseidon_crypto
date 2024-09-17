@@ -1,6 +1,8 @@
 package ecgfp5
 
 import (
+	"fmt"
+
 	config "github.com/consensys/gnark-crypto/field/generator/config"
 	fp5 "github.com/elliottech/poseidon_crypto/ecgfp5/base_field"
 	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
@@ -12,6 +14,21 @@ type ECgFp5Point struct {
 	// point (x,y), we have (x,u) = (x,x/y) = (X/Z,U/T) (for the neutral
 	// N, the u coordinate is 0).
 	x, z, u, t config.Element
+}
+
+func (p ECgFp5Point) Print() {
+	for i := 0; i < 5; i++ {
+		fmt.Println("x[i]", i, p.x[i].Uint64())
+	}
+	for i := 0; i < 5; i++ {
+		fmt.Println("z[i]", i, p.z[i].Uint64())
+	}
+	for i := 0; i < 5; i++ {
+		fmt.Println("u[i]", i, p.u[i].Uint64())
+	}
+	for i := 0; i < 5; i++ {
+		fmt.Println("t[i]", i, p.t[i].Uint64())
+	}
 }
 
 // Constants for ECgFp5Point

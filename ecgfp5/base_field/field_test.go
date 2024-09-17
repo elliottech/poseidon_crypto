@@ -112,3 +112,51 @@ func TestFp5TryInverse(t *testing.T) {
 		}
 	}
 }
+
+func TestQuinticExtSgn0(t *testing.T) {
+	if !Fp5Sgn0(config.Element{
+		*new(big.Int).SetUint64(7146494650688613286),
+		*new(big.Int).SetUint64(2524706331227574337),
+		*new(big.Int).SetUint64(2805008444831673606),
+		*new(big.Int).SetUint64(10342159727506097401),
+		*new(big.Int).SetUint64(5582307593199735986),
+	}) {
+		t.Fatalf("Expected sign to be true, but got false")
+	}
+}
+
+func TestSqrtFunctions(t *testing.T) {
+	x := config.Element{
+		*new(big.Int).SetUint64(17397692312497920520),
+		*new(big.Int).SetUint64(4597259071399531684),
+		*new(big.Int).SetUint64(15835726694542307225),
+		*new(big.Int).SetUint64(16979717054676631815),
+		*new(big.Int).SetUint64(12876043227925845432),
+	}
+
+	expected := config.Element{
+		*new(big.Int).SetUint64(16260118390353633405),
+		*new(big.Int).SetUint64(2204473665618140400),
+		*new(big.Int).SetUint64(10421517006653550782),
+		*new(big.Int).SetUint64(4618467884536173852),
+		*new(big.Int).SetUint64(15556190572415033139),
+	}
+
+	result, exists := Fp5CanonicalSqrt(x)
+	if !exists {
+		t.Fatalf("Expected canonical sqrt to exist, but it does not")
+	}
+
+	if !Fp5Equals(result, expected) {
+		t.Fatalf("Expected canonical sqrt to be %v, but got %v", expected, result)
+	}
+
+	result2, exists2 := Fp5Sqrt(x)
+	if !exists2 {
+		t.Fatalf("Expected sqrt to exist, but it does not")
+	}
+
+	if !Fp5Equals(result2, expected) {
+		t.Fatalf("Expected sqrt to be %v, but got %v", expected, result2)
+	}
+}

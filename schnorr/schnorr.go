@@ -34,11 +34,11 @@ func SchnorrSignFArray(m []f.Element, sk sf.ECgFp5Scalar) SchnorrSig {
 	)
 }
 
-func SchnorrSignHashedMessage(mHashed config.Element, sk sf.ECgFp5Scalar) SchnorrSig {
-	return SchnorrSignHashedMessageWithRandomScalar(mHashed, sk, sf.Sample()) // Sample random scalar `k`
+func SchnorrSignHashedMessage(hashedMsg config.Element, sk sf.ECgFp5Scalar) SchnorrSig {
+	return SchnorrSignHashedMessageWithRandomScalar(hashedMsg, sk, sf.Sample()) // Sample random scalar `k`
 }
 
-func SchnorrSignHashedMessageWithRandomScalar(mHashed config.Element, sk, k sf.ECgFp5Scalar) SchnorrSig {
+func SchnorrSignHashedMessageWithRandomScalar(hashedMsg config.Element, sk, k sf.ECgFp5Scalar) SchnorrSig {
 	// Compute `r = k * G`
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
 	// Compute `e = H(r || H(m))`, which is a scalar point
@@ -46,7 +46,7 @@ func SchnorrSignHashedMessageWithRandomScalar(mHashed config.Element, sk, k sf.E
 	for i, elem := range fp5.Fp5ToFArray(r.Encode()) {
 		preImage[i] = *elem
 	}
-	for i, elem := range fp5.Fp5ToFArray(mHashed) {
+	for i, elem := range fp5.Fp5ToFArray(hashedMsg) {
 		preImage[i+5] = *elem
 	}
 
@@ -57,3 +57,7 @@ func SchnorrSignHashedMessageWithRandomScalar(mHashed config.Element, sk, k sf.E
 		E: e,
 	}
 }
+
+// func IsSchnorrSignatureValid(pubKey, hashedMsg config.Element, sig SchnorrSig) bool {
+// 	decodedPubkey := curve.
+// }

@@ -57,6 +57,18 @@ func Fp5DeepCopy(e config.Element) config.Element {
 	}
 }
 
+func Fp5FromF(elem f.Element) config.Element {
+	one := new(big.Int)
+	elem.BigInt(one)
+	return config.Element{
+		*one,
+		*new(big.Int),
+		*new(big.Int),
+		*new(big.Int),
+		*new(big.Int),
+	}
+}
+
 func Fp5ToFArray(e config.Element) [5]*f.Element {
 	e1 := f.NewElement(e[0].Uint64())
 	e2 := f.NewElement(e[1].Uint64())
@@ -187,6 +199,22 @@ func Fp5Mul(a, b config.Element) config.Element {
 	return FArrayToFp5([5]*f.Element{&c0, &c1, &c2, &c3, &c4})
 }
 
+func Fp5Div(a, b config.Element) config.Element {
+	bInv := Fp5InverseOrZero(b)
+	if Fp5IsZero(bInv) {
+		panic("division by zero")
+	}
+	return Fp5Mul(a, bInv)
+}
+
+func Fp5ExpPowerOf2(x config.Element, power int) config.Element {
+	res := Fp5DeepCopy(x)
+	for i := 0; i < power; i++ {
+		res = Fp5Square(res)
+	}
+	return res
+}
+
 // 33% Optimized square
 func Fp5Square(a config.Element) config.Element {
 	// let Self([a0, a1, a2, a3, a4]) = *self;
@@ -234,6 +262,79 @@ func Fp5Square(a config.Element) config.Element {
 	c4 := FAdd(&a0Doublea4, &a1Doublea3, &a2Square)
 
 	return FArrayToFp5([5]*f.Element{&c0, &c1, &c2, &c3, &c4})
+}
+
+// returns `sqrt(x)` if `x` is a square in the field, and `Nil` otherwise
+// basically copied from here: https://github.com/pornin/ecquintic_ext/blob/ce059c6d1e1662db437aecbf3db6bb67fe63c716/python/ecGFp5.py#L879
+func Fp5Sqrt(x config.Element) (config.Element, bool) {
+	v := Fp5ExpPowerOf2(x, 31)
+	d := Fp5Mul(Fp5Mul(x, Fp5ExpPowerOf2(v, 32)), Fp5InverseOrZero(v))
+	e := Fp5Frobenius(Fp5Mul(d, Fp5RepeatedFrobenius(d, 2)))
+	_f := Fp5Square(e)
+
+	xArr := Fp5ToFArray(x)
+	x0 := xArr[0]
+	x1 := xArr[1]
+	x2 := xArr[2]
+	x3 := xArr[3]
+	x4 := xArr[4]
+
+	fArr := Fp5ToFArray(_f)
+	f0 := fArr[0]
+	f1 := fArr[1]
+	f2 := fArr[2]
+	f3 := fArr[3]
+	f4 := fArr[4]
+
+	x1f4 := FMul(x1, f4)
+	x2f3 := FMul(x2, f3)
+	x3f2 := FMul(x3, f2)
+	x4f1 := FMul(x4, f1)
+	added := FAdd(&x1f4, &x2f3, &x3f2, &x4f1)
+	three := f.NewElement(3)
+	muld := FMul(&three, &added)
+	x0f0 := FMul(x0, f0)
+	g := FAdd(&x0f0, &muld)
+
+	s := g.Sqrt(&g)
+	if s == nil {
+		return nil, false
+	}
+
+	eInv := Fp5InverseOrZero(e)
+	sFp5 := Fp5FromF(*s)
+
+	return Fp5Mul(sFp5, eInv), true
+}
+
+// Fp5Sgn0 returns true or false indicating a notion of "sign" for quintic_ext.
+// This is used to canonicalize the square root.
+// This is an implementation of the function sgn0 from the IRTF's hash-to-curve document
+// https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-07#name-the-sgn0-function
+func Fp5Sgn0(x config.Element) bool {
+	sign := false
+	zero := true
+	for _, limb := range x {
+		sign_i := (limb.Uint64() & 1) == 0
+		zero_i := limb.Sign() == 0
+		sign = sign || (zero && sign_i)
+		zero = zero && zero_i
+	}
+	return sign
+}
+
+// returns the "canonical" square root of x, if it exists
+// the "canonical" square root is the one such that `sgn0(sqrt(x)) == true`
+func Fp5CanonicalSqrt(x config.Element) (config.Element, bool) {
+	sqrtX, exists := Fp5Sqrt(x)
+	if !exists {
+		return nil, false
+	}
+
+	if Fp5Sgn0(sqrtX) {
+		return Fp5Neg(sqrtX), true
+	}
+	return sqrtX, true
 }
 
 func Fp5ScalarMul(a config.Element, scalar *f.Element) config.Element {

@@ -65,7 +65,6 @@ func SchnorrSignHashedMessage2(hashedMsg config.Element, sk, k sf.ECgFp5Scalar) 
 	}
 
 	e := sf.FromGfp5(HashToQuinticExtension(preImage))
-
 	return SchnorrSig{
 		S: k.Sub(e.Mul(sk)),
 		E: e,

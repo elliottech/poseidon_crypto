@@ -32,10 +32,6 @@ func Fp5IsZero(e Element) bool {
 	return e[0] == 0 && e[1] == 0 && e[2] == 0 && e[3] == 0 && e[4] == 0
 }
 
-func Fp5DeepCopy(e Element) Element {
-	return Element{e[0], e[1], e[2], e[3], e[4]}
-}
-
 func Fp5FromF(elem g.Element) Element {
 	return Element{elem.Uint64(), 0, 0, 0, 0}
 }
@@ -160,7 +156,7 @@ func Fp5Div(a, b Element) Element {
 }
 
 func Fp5ExpPowerOf2(x Element, power int) Element {
-	res := Fp5DeepCopy(x)
+	res := Element{x[0], x[1], x[2], x[3], x[4]}
 	for i := 0; i < power; i++ {
 		res = Fp5Square(res)
 	}

@@ -11,23 +11,23 @@ type AffinePoint struct {
 }
 
 var AFFINE_NEUTRAL = AffinePoint{
-	x: gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
-	u: gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
+	x: gFp5.FP5_ZERO,
+	u: gFp5.FP5_ZERO,
 }
 
 func (p AffinePoint) DeepCopy() AffinePoint {
 	return AffinePoint{
-		x: gFp5.Fp5DeepCopy(p.x),
-		u: gFp5.Fp5DeepCopy(p.u),
+		x: p.x,
+		u: p.u,
 	}
 }
 
 func (p AffinePoint) ToPoint() ECgFp5Point {
 	return ECgFp5Point{
 		x: p.x,
-		z: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
+		z: gFp5.FP5_ONE,
 		u: p.u,
-		t: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
+		t: gFp5.FP5_ONE,
 	}
 }
 
@@ -47,15 +47,15 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 	// km1 = ka - 1
 	km1 := ka - 1
 
-	x := gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
-	u := gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+	x := gFp5.FP5_ZERO
+	u := gFp5.FP5_ZERO
 	for i := 0; i < len(win); i++ {
 		m := km1 - uint32(i)
 		c_1 := (m | (^m + 1)) >> 31
 		c := uint64(c_1) - 1
 		if c != 0 {
-			x = gFp5.Fp5DeepCopy(win[i].x)
-			u = gFp5.Fp5DeepCopy(win[i].u)
+			x = win[i].x
+			u = win[i].u
 		}
 
 	}
@@ -71,7 +71,7 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 }
 
 func Lookup(win []AffinePoint, k int32) AffinePoint {
-	r := AFFINE_NEUTRAL.DeepCopy()
+	r := AFFINE_NEUTRAL
 	r.SetLookup(win, k)
 	return r
 }
@@ -79,11 +79,11 @@ func Lookup(win []AffinePoint, k int32) AffinePoint {
 // Same as lookup(), except this implementation is variable-time.
 func LookupVarTime(win []AffinePoint, k int32) AffinePoint {
 	if k == 0 {
-		return AFFINE_NEUTRAL.DeepCopy()
+		return AFFINE_NEUTRAL
 	} else if k > 0 {
-		return win[k-1].DeepCopy()
+		return win[k-1]
 	} else {
-		res := win[-k-1].DeepCopy()
+		res := win[-k-1]
 		res.SetNeg()
 		return res
 	}

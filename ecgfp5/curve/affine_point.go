@@ -1,40 +1,39 @@
 package ecgfp5
 
 import (
-	config "github.com/consensys/gnark-crypto/field/generator/config"
 	utils "github.com/elliottech/poseidon_crypto"
-	fp5 "github.com/elliottech/poseidon_crypto/ecgfp5/base_field"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
 // A curve point in affine (x,u) coordinates. This is used internally
 // to make "windows" that speed up point multiplications.
 type AffinePoint struct {
-	x, u config.Element
+	x, u gFp5.Element
 }
 
 var AFFINE_NEUTRAL = AffinePoint{
-	x: fp5.Fp5DeepCopy(fp5.FP5_ZERO),
-	u: fp5.Fp5DeepCopy(fp5.FP5_ZERO),
+	x: gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
+	u: gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
 }
 
 func (p AffinePoint) DeepCopy() AffinePoint {
 	return AffinePoint{
-		x: fp5.Fp5DeepCopy(p.x),
-		u: fp5.Fp5DeepCopy(p.u),
+		x: gFp5.Fp5DeepCopy(p.x),
+		u: gFp5.Fp5DeepCopy(p.u),
 	}
 }
 
 func (p AffinePoint) ToPoint() ECgFp5Point {
 	return ECgFp5Point{
 		x: p.x,
-		z: fp5.Fp5DeepCopy(fp5.FP5_ONE),
+		z: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
 		u: p.u,
-		t: fp5.Fp5DeepCopy(fp5.FP5_ONE),
+		t: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
 	}
 }
 
 func (p *AffinePoint) SetNeg() {
-	p.u = fp5.Fp5Neg(p.u)
+	p.u = gFp5.Fp5Neg(p.u)
 }
 
 // Lookup a point in a window. The win[] slice must contain values
@@ -49,15 +48,15 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 	// km1 = ka - 1
 	km1 := ka - 1
 
-	x := fp5.Fp5DeepCopy(fp5.FP5_ZERO)
-	u := fp5.Fp5DeepCopy(fp5.FP5_ZERO)
+	x := gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+	u := gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
 	for i := 0; i < len(win); i++ {
 		m := km1 - uint32(i)
 		c_1 := (m | utils.WrappingNegU32(m)) >> 31
 		c := uint64(c_1) - 1
 		if c != 0 {
-			x = fp5.Fp5DeepCopy(win[i].x)
-			u = fp5.Fp5DeepCopy(win[i].u)
+			x = gFp5.Fp5DeepCopy(win[i].x)
+			u = gFp5.Fp5DeepCopy(win[i].u)
 		}
 
 	}
@@ -68,7 +67,7 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 	p.u = u
 
 	if c != 0 {
-		p.u = fp5.Fp5Neg(p.u)
+		p.u = gFp5.Fp5Neg(p.u)
 	}
 }
 

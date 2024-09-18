@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	config "github.com/consensys/gnark-crypto/field/generator/config"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
@@ -306,13 +306,13 @@ func (s ECgFp5Scalar) ExpBigInt(power *big.Int) ECgFp5Scalar {
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-func FromGfp5(fp5 config.Element) ECgFp5Scalar {
+func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
 	return FromNonCanonicalBigInt(BigIntFromArray([5]uint64{
-		fp5[0].Uint64(),
-		fp5[1].Uint64(),
-		fp5[2].Uint64(),
-		fp5[3].Uint64(),
-		fp5[4].Uint64(),
+		fp5[0],
+		fp5[1],
+		fp5[2],
+		fp5[3],
+		fp5[4],
 	}))
 }
 

@@ -25,8 +25,8 @@ func TestHashToQuinticExtension(t *testing.T) {
 		14449776097783372302,
 	}
 	for i := 0; i < 5; i++ {
-		if result[i].Uint64() != expected[i] {
-			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i].Uint64())
+		if result[i] != expected[i] {
+			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 		}
 	}
 }

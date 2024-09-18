@@ -1,9 +1,6 @@
 package ecgfp5
 
-import (
-	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
-	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
-)
+import gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 
 // A curve point in short Weirstrass form (x, y). This is used by the in-circuit representation
 type WeierstrassPoint struct {
@@ -160,7 +157,7 @@ func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint
 	return multiples
 }
 
-func MulAdd2(a, b WeierstrassPoint, scalarA, scalarB sf.ECgFp5Scalar) WeierstrassPoint {
+func MulAdd2(a, b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPoint {
 	aWindow := a.PrecomputeWindow(4)
 	aFourBitLimbs := scalarA.SplitTo4BitLimbs()
 

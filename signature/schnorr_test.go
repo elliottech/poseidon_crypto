@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
+	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
@@ -34,7 +34,7 @@ func TestHashToQuinticExtension(t *testing.T) {
 }
 
 func TestSchnorrSignAndVerify(t *testing.T) {
-	sk := sf.ECgFp5Scalar{
+	sk := curve.ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(12235002942052073545),
 			*new(big.Int).SetUint64(1175977464658719998),
@@ -52,7 +52,7 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		17155407358725346236,
 	}
 
-	k := sf.ECgFp5Scalar{
+	k := curve.ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(5245666847777449560),
 			*new(big.Int).SetUint64(15178169970799106939),
@@ -93,7 +93,7 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		t.Fatalf("Signature is invalid")
 	}
 
-	sk = sf.ECgFp5Scalar{
+	sk = curve.ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(14609471659974493146),
 			*new(big.Int).SetUint64(15558617123161593410),
@@ -111,7 +111,7 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		4305083698940175790,
 	}
 
-	k = sf.ECgFp5Scalar{
+	k = curve.ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(1980123857560067020),
 			*new(big.Int).SetUint64(10696795398834097509),
@@ -152,7 +152,7 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		t.Fatalf("Signature is invalid")
 	}
 
-	sk = sf.Sample() // Sample a secret key
+	sk = curve.Sample() // Sample a secret key
 	msg := g.RandArray(244)
 	hashedMsg := HashToQuinticExtension(msg)
 

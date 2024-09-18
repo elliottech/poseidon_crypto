@@ -156,7 +156,7 @@ func TestSubInner(t *testing.T) {
 	}
 }
 
-func TestAdd(t *testing.T) {
+func TestAddScalar(t *testing.T) {
 	scalar1 := ECgFp5Scalar{
 		[5]big.Int{
 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),

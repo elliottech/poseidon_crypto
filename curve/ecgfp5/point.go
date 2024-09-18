@@ -1,7 +1,6 @@
 package ecgfp5
 
 import (
-	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
@@ -420,7 +419,7 @@ func (p ECgFp5Point) MakeWindowAffine() []AffinePoint {
 }
 
 // Multiply this point by a scalar.
-func (p *ECgFp5Point) SetMul(s *sf.ECgFp5Scalar) {
+func (p *ECgFp5Point) SetMul(s *ECgFp5Scalar) {
 	// Make a window with affine points.
 	win := p.MakeWindowAffine()
 	digits := make([]int32, (319+WINDOW)/WINDOW)
@@ -434,7 +433,7 @@ func (p *ECgFp5Point) SetMul(s *sf.ECgFp5Scalar) {
 	}
 }
 
-func (p ECgFp5Point) Mul(s *sf.ECgFp5Scalar) ECgFp5Point {
+func (p ECgFp5Point) Mul(s *ECgFp5Scalar) ECgFp5Point {
 	newPoint := p
 	newPoint.SetMul(s)
 	return newPoint

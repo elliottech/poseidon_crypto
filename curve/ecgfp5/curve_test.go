@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"testing"
 
-	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
@@ -427,7 +426,7 @@ func TestScalarMul(t *testing.T) {
 		),
 	}
 
-	if !p1.Mul(&sf.ECgFp5Scalar{
+	if !p1.Mul(&ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(996458928865875995),
 			*new(big.Int).SetUint64(7368213710557165165),
@@ -534,7 +533,7 @@ func testVectors() [8]gFp5.Element {
 }
 
 func TestBasicOps(t *testing.T) {
-	// Values that should not decode successfully.
+	// Values that should not decode succeslly.
 	bww := [6]gFp5.Element{
 		{
 			13557832913345268708,
@@ -686,7 +685,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p0, success := DecodeFp5AsWeierstrass(vectors[0])
 	if !success {
-		t.Fatalf("w0 should successfully decode")
+		t.Fatalf("w0 should succeslly decode")
 	}
 	if !p0.Equals(p0Expected) {
 		t.Fatalf("p0 does not match expected value")
@@ -711,7 +710,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p1, success := DecodeFp5AsWeierstrass(vectors[1])
 	if !success {
-		t.Fatalf("w1 should successfully decode")
+		t.Fatalf("w1 should succeslly decode")
 	}
 	if !p1.Equals(p1Expected) {
 		t.Fatalf("p1 does not match expected value")
@@ -736,7 +735,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p2, success := DecodeFp5AsWeierstrass(vectors[2])
 	if !success {
-		t.Fatalf("w2 should successfully decode")
+		t.Fatalf("w2 should succeslly decode")
 	}
 	if !p2.Equals(p2Expected) {
 		t.Fatalf("p2 does not match expected value")
@@ -761,7 +760,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p3, success := DecodeFp5AsWeierstrass(vectors[3])
 	if !success {
-		t.Fatalf("w3 should successfully decode")
+		t.Fatalf("w3 should succeslly decode")
 	}
 	if !p3.Equals(p3Expected) {
 		t.Fatalf("p3 does not match expected value")
@@ -786,7 +785,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p4, success := DecodeFp5AsWeierstrass(vectors[4])
 	if !success {
-		t.Fatalf("w4 should successfully decode")
+		t.Fatalf("w4 should succeslly decode")
 	}
 	if !p4.Equals(p4Expected) {
 		t.Fatalf("p4 does not match expected value")
@@ -811,7 +810,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p5, success := DecodeFp5AsWeierstrass(vectors[5])
 	if !success {
-		t.Fatalf("w5 should successfully decode")
+		t.Fatalf("w5 should succeslly decode")
 	}
 	if !p5.Equals(p5Expected) {
 		t.Fatalf("p5 does not match expected value")
@@ -836,7 +835,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p6, success := DecodeFp5AsWeierstrass(vectors[6])
 	if !success {
-		t.Fatalf("w6 should successfully decode")
+		t.Fatalf("w6 should succeslly decode")
 	}
 	if !p6.Equals(p6Expected) {
 		t.Fatalf("p6 does not match expected value")
@@ -861,7 +860,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 	p7, success := DecodeFp5AsWeierstrass(vectors[7])
 	if !success {
-		t.Fatalf("w7 should successfully decode")
+		t.Fatalf("w7 should succeslly decode")
 	}
 	if !p7.Equals(p7Expected) {
 		t.Fatalf("p7 does not match expected value")
@@ -870,7 +869,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	wGen := gFp5.FromUint64(4)
 	g, success := DecodeFp5AsWeierstrass(wGen)
 	if !success {
-		t.Fatalf("w_gen should successfully decode")
+		t.Fatalf("w_gen should succeslly decode")
 	}
 	if !g.Equals(GENERATOR_WEIERSTRASS) {
 		t.Fatalf("g does not match GENERATOR")
@@ -1387,7 +1386,7 @@ func TestWeierstrassMulAdd2(t *testing.T) {
 		IsInf: false,
 	}
 
-	s := sf.ECgFp5Scalar{
+	s := ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(6950590877883398434),
 			*new(big.Int).SetUint64(17178336263794770543),
@@ -1396,7 +1395,7 @@ func TestWeierstrassMulAdd2(t *testing.T) {
 			*new(big.Int).SetUint64(5882925226143600273),
 		},
 	}
-	e := sf.ECgFp5Scalar{
+	e := ECgFp5Scalar{
 		Value: [5]big.Int{
 			*new(big.Int).SetUint64(4544744459434870309),
 			*new(big.Int).SetUint64(4180764085957612004),

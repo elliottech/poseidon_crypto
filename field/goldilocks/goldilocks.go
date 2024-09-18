@@ -1,6 +1,6 @@
 package goldilocks
 
-// Utilities missing in gnark-crypto
+// Partially wraps and extends the functionality of the goldilocks field package.
 
 import f "github.com/consensys/gnark-crypto/field/goldilocks"
 

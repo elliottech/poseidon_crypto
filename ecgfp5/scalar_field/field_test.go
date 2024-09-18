@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"testing"
 
-	config "github.com/consensys/gnark-crypto/field/generator/config"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
 func TestSplitTo4LimbBits(t *testing.T) {
@@ -462,12 +462,12 @@ func TestTryInverse(t *testing.T) {
 }
 
 func TestFromQuinticExtension(t *testing.T) {
-	scalar := FromGfp5(config.Element{
-		*new(big.Int).SetUint64(g.Modulus() - 1),
-		*new(big.Int).SetUint64(g.Modulus() - 1),
-		*new(big.Int).SetUint64(g.Modulus() - 1),
-		*new(big.Int).SetUint64(g.Modulus() - 1),
-		*new(big.Int).SetUint64(g.Modulus() - 1),
+	scalar := FromGfp5(gFp5.Element{
+		g.Modulus() - 1,
+		g.Modulus() - 1,
+		g.Modulus() - 1,
+		g.Modulus() - 1,
+		g.Modulus() - 1,
 	})
 
 	expectedValues := [5]string{

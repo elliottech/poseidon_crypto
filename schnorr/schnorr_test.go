@@ -4,9 +4,9 @@ import (
 	"math/big"
 	"testing"
 
-	config "github.com/consensys/gnark-crypto/field/generator/config"
 	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
 func TestHashToQuinticExtension(t *testing.T) {
@@ -27,8 +27,8 @@ func TestHashToQuinticExtension(t *testing.T) {
 		14449776097783372302,
 	}
 	for i := 0; i < 5; i++ {
-		if result[i].Uint64() != expected[i] {
-			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i].Uint64())
+		if result[i] != expected[i] {
+			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 		}
 	}
 }
@@ -44,12 +44,12 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		},
 	}
 
-	hashedMessage := config.Element{
-		*new(big.Int).SetUint64(8398652514106806347),
-		*new(big.Int).SetUint64(11069112711939986896),
-		*new(big.Int).SetUint64(9732488227085561369),
-		*new(big.Int).SetUint64(18076754337204438535),
-		*new(big.Int).SetUint64(17155407358725346236),
+	hashedMessage := gFp5.Element{
+		8398652514106806347,
+		11069112711939986896,
+		9732488227085561369,
+		18076754337204438535,
+		17155407358725346236,
 	}
 
 	k := sf.ECgFp5Scalar{
@@ -103,12 +103,12 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		},
 	}
 
-	hashedMessage = config.Element{
-		*new(big.Int).SetUint64(14569490467507212064),
-		*new(big.Int).SetUint64(2707063505563578676),
-		*new(big.Int).SetUint64(7506743487465742335),
-		*new(big.Int).SetUint64(12569771346154554175),
-		*new(big.Int).SetUint64(4305083698940175790),
+	hashedMessage = gFp5.Element{
+		14569490467507212064,
+		2707063505563578676,
+		7506743487465742335,
+		12569771346154554175,
+		4305083698940175790,
 	}
 
 	k = sf.ECgFp5Scalar{

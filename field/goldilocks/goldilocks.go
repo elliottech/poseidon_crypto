@@ -50,7 +50,7 @@ func RandArray(count int) []Element {
 	return ret
 }
 
-func FAdd(elems ...Element) Element {
+func Add(elems ...Element) Element {
 	res := f.NewElement(0)
 	for _, elem := range elems {
 		res.Add(&res, &elem)
@@ -58,13 +58,13 @@ func FAdd(elems ...Element) Element {
 	return res
 }
 
-func FSub(a, b *Element) Element {
+func Sub(a, b *Element) Element {
 	res := f.NewElement(0)
 	res.Sub(a, b)
 	return res
 }
 
-func FMul(elems ...*Element) Element {
+func Mul(elems ...*Element) Element {
 	res := f.NewElement(1)
 	for _, elem := range elems {
 		res.Mul(&res, elem)
@@ -72,13 +72,13 @@ func FMul(elems ...*Element) Element {
 	return res
 }
 
-func FSqrt(elem *Element) *Element {
-	elemCopy := FDeepCopy(elem)
+func Sqrt(elem *Element) *Element {
+	elemCopy := DeepCopy(elem)
 	return elemCopy.Sqrt(&elemCopy)
 }
 
 // Powers starting from 1
-func FPowers(e *Element, count int) []Element {
+func Powers(e *Element, count int) []Element {
 	ret := make([]Element, count)
 	ret[0] = f.One()
 	for i := 1; i < int(count); i++ {
@@ -87,15 +87,6 @@ func FPowers(e *Element, count int) []Element {
 	return ret
 }
 
-func FDeepCopy(source *Element) Element {
-	ret := Element{
-		source[0],
-	}
-	return ret
-}
-
-func FNegOne() *Element {
-	res := f.One()
-	res.Neg(&res)
-	return &res
+func DeepCopy(source *Element) Element {
+	return Element{source[0]}
 }

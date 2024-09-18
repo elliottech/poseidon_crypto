@@ -32,7 +32,7 @@ func (p AffinePoint) ToPoint() ECgFp5Point {
 }
 
 func (p *AffinePoint) SetNeg() {
-	p.u = gFp5.Fp5Neg(p.u)
+	p.u = gFp5.Neg(p.u)
 }
 
 // Lookup a point in a window. The win[] slice must contain values
@@ -66,7 +66,7 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 	p.u = u
 
 	if c != 0 {
-		p.u = gFp5.Fp5Neg(p.u)
+		p.u = gFp5.Neg(p.u)
 	}
 }
 

@@ -87,7 +87,7 @@ func TestRepeatedFrobeniusgFp5(t *testing.T) {
 	}
 }
 
-func TestgFp5TryInverse(t *testing.T) {
+func TestTryInverse(t *testing.T) {
 	val := gFp5.Element{
 		0x1234567890ABCDEF,
 		0x0FEDCBA987654321,

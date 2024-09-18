@@ -22,7 +22,7 @@ var ONE_SK = sf.ONE
 
 // Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
 func SchnorrPkFromSk(sk sf.ECgFp5Scalar) gFp5.Element {
-	return curve.GENERATOR_ECgFp5Point.DeepCopy().Mul(&sk).Encode()
+	return curve.GENERATOR_ECgFp5Point.Mul(&sk).Encode()
 }
 
 func HashToQuinticExtension(m []g.Element) gFp5.Element {

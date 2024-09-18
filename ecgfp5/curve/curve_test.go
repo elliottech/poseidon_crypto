@@ -652,7 +652,7 @@ func TestBasicOps(t *testing.T) {
 
 	for i := uint32(0); i < 10; i++ {
 		q1 := p1.MDouble(i)
-		q2 := p1.DeepCopy()
+		q2 := p1
 		for j := uint32(0); j < i; j++ {
 			q2 = q2.Double()
 		}

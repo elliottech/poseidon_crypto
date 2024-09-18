@@ -25,10 +25,10 @@ var (
 	B_MUL16_ECgFp5Point = gFp5.Uint64ArrayToFp5(0, 16*B1, 0, 0, 0)
 
 	NEUTRAL_ECgFp5Point = ECgFp5Point{
-		x: gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
-		z: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
-		u: gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
-		t: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
+		x: gFp5.FP5_ZERO,
+		z: gFp5.FP5_ONE,
+		u: gFp5.FP5_ZERO,
+		t: gFp5.FP5_ONE,
 	}
 
 	GENERATOR_ECgFp5Point = ECgFp5Point{
@@ -39,20 +39,11 @@ var (
 			2165973894480315022,
 			2448410071095648785,
 		),
-		z: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
-		u: gFp5.Fp5DeepCopy(gFp5.FP5_ONE),
+		z: gFp5.FP5_ONE,
+		u: gFp5.FP5_ONE,
 		t: gFp5.Uint64ArrayToFp5(4, 0, 0, 0, 0),
 	}
 )
-
-func (p ECgFp5Point) DeepCopy() ECgFp5Point {
-	return ECgFp5Point{
-		x: gFp5.Fp5DeepCopy(p.x),
-		z: gFp5.Fp5DeepCopy(p.z),
-		u: gFp5.Fp5DeepCopy(p.u),
-		t: gFp5.Fp5DeepCopy(p.t),
-	}
-}
 
 func (p ECgFp5Point) Equals(rhs ECgFp5Point) bool {
 	return gFp5.Fp5Equals(
@@ -87,11 +78,11 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 	delta := gFp5.Fp5Sub(gFp5.Fp5Square(e), B_MUL4_ECgFp5Point)
 	r, c := gFp5.Fp5CanonicalSqrt(delta)
 	if !c {
-		r = gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+		r = gFp5.FP5_ZERO
 	}
 
-	x1 := gFp5.Fp5Div(gFp5.Fp5Add(e, r), gFp5.Fp5DeepCopy(gFp5.FP5_TWO))
-	x2 := gFp5.Fp5Div(gFp5.Fp5Sub(e, r), gFp5.Fp5DeepCopy(gFp5.FP5_TWO))
+	x1 := gFp5.Fp5Div(gFp5.Fp5Add(e, r), gFp5.FP5_TWO)
+	x2 := gFp5.Fp5Div(gFp5.Fp5Sub(e, r), gFp5.FP5_TWO)
 	x := x2
 
 	x1Legendre := gFp5.Fp5Legendre(x1)
@@ -104,16 +95,16 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 	// w == 0, then delta = a^2 - 4*b, which is not a square, and
 	// thus we also get c == 0.
 	if !c {
-		x = gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+		x = gFp5.FP5_ZERO
 	}
-	z := gFp5.Fp5DeepCopy(gFp5.FP5_ONE)
-	u := gFp5.Fp5DeepCopy(gFp5.FP5_ONE)
+	z := gFp5.FP5_ONE
+	u := gFp5.FP5_ONE
 	if !c {
-		u = gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+		u = gFp5.FP5_ZERO
 	}
-	t := gFp5.Fp5DeepCopy(w)
+	t := w
 	if !c {
-		t = gFp5.Fp5DeepCopy(gFp5.FP5_ONE)
+		t = gFp5.FP5_ONE
 	}
 
 	// If w == 0 then this is in fact a success.
@@ -132,15 +123,15 @@ func (p ECgFp5Point) IsNeutral() bool {
 func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
 	// cost: 10M
 
-	x1 := gFp5.Fp5DeepCopy(p.x)
-	z1 := gFp5.Fp5DeepCopy(p.z)
-	u1 := gFp5.Fp5DeepCopy(p.u)
-	_t1 := gFp5.Fp5DeepCopy(p.t)
+	x1 := p.x
+	z1 := p.z
+	u1 := p.u
+	_t1 := p.t
 
-	x2 := gFp5.Fp5DeepCopy(rhs.x)
-	z2 := gFp5.Fp5DeepCopy(rhs.z)
-	u2 := gFp5.Fp5DeepCopy(rhs.u)
-	_t2 := gFp5.Fp5DeepCopy(rhs.t)
+	x2 := rhs.x
+	z2 := rhs.z
+	u2 := rhs.u
+	_t2 := rhs.t
 
 	// let t1 = x1 * x2;
 	t1 := gFp5.Fp5Mul(x1, x2)
@@ -184,23 +175,17 @@ func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
 }
 
 func (p ECgFp5Point) Double() ECgFp5Point {
-	newPoint := p.DeepCopy()
+	newPoint := p
 	newPoint.SetDouble()
-	return newPoint
-}
-
-func (p *ECgFp5Point) MDouble(n uint32) ECgFp5Point {
-	newPoint := p.DeepCopy()
-	newPoint.SetMDouble(n)
 	return newPoint
 }
 
 func (p *ECgFp5Point) SetDouble() {
 	// cost: 4M+5S
-	x := gFp5.Fp5DeepCopy(p.x)
-	z := gFp5.Fp5DeepCopy(p.z)
-	u := gFp5.Fp5DeepCopy(p.u)
-	t := gFp5.Fp5DeepCopy(p.t)
+	x := p.x
+	z := p.z
+	u := p.u
+	t := p.t
 
 	t1 := gFp5.Fp5Mul(z, t)
 	t2 := gFp5.Fp5Mul(t1, t)
@@ -236,6 +221,12 @@ func (p *ECgFp5Point) SetDouble() {
 	p.t = tNew
 }
 
+func (p *ECgFp5Point) MDouble(n uint32) ECgFp5Point {
+	newPoint := ECgFp5Point{x: p.x, z: p.z, u: p.u, t: p.t}
+	newPoint.SetMDouble(n)
+	return newPoint
+}
+
 func (p *ECgFp5Point) SetMDouble(n uint32) {
 	if n == 0 {
 		return
@@ -246,10 +237,10 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 	}
 
 	// cost: n*(2M+5S) + 2M+1S
-	x0 := gFp5.Fp5DeepCopy(p.x)
-	z0 := gFp5.Fp5DeepCopy(p.z)
-	u0 := gFp5.Fp5DeepCopy(p.u)
-	t0 := gFp5.Fp5DeepCopy(p.t)
+	x0 := p.x
+	z0 := p.z
+	u0 := p.u
+	t0 := p.t
 
 	t1 := gFp5.Fp5Mul(z0, t0)
 	t2 := gFp5.Fp5Mul(t1, t0)
@@ -335,13 +326,13 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 // Add a point in affine coordinates to this one.
 func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
 	// cost: 8M
-	x1, z1, u1, _t1 := gFp5.Fp5DeepCopy(p.x), gFp5.Fp5DeepCopy(p.z), gFp5.Fp5DeepCopy(p.u), gFp5.Fp5DeepCopy(p.t)
-	x2, u2 := gFp5.Fp5DeepCopy(rhs.x), gFp5.Fp5DeepCopy(rhs.u)
+	x1, z1, u1, _t1 := p.x, p.z, p.u, p.t
+	x2, u2 := rhs.x, rhs.u
 
 	t1 := gFp5.Fp5Mul(x1, x2)
-	t2 := gFp5.Fp5DeepCopy(z1)
+	t2 := z1
 	t3 := gFp5.Fp5Mul(u1, u2)
-	t4 := gFp5.Fp5DeepCopy(_t1)
+	t4 := _t1
 	t5 := gFp5.Fp5Add(x1, gFp5.Fp5Mul(x2, z1))
 	t6 := gFp5.Fp5Add(u1, gFp5.Fp5Mul(u2, _t1))
 	t7 := gFp5.Fp5Add(t1, gFp5.Fp5Mul(t2, B_ECgFp5Point))
@@ -375,7 +366,7 @@ func BatchToAffine(src []ECgFp5Point) []AffinePoint {
 		return []AffinePoint{}
 	}
 	if n == 1 {
-		p := src[0].DeepCopy()
+		p := src[0]
 		m1 := gFp5.Fp5InverseOrZero(gFp5.Fp5Mul(p.z, p.t))
 		return []AffinePoint{
 			{
@@ -391,9 +382,9 @@ func BatchToAffine(src []ECgFp5Point) []AffinePoint {
 	// destination slice to keep track of the partial products.
 	m := gFp5.Fp5Mul(src[0].z, src[0].t)
 	for i := 1; i < n; i++ {
-		x := gFp5.Fp5DeepCopy(m)
+		x := m
 		m = gFp5.Fp5Mul(m, src[i].z)
-		u := gFp5.Fp5DeepCopy(m)
+		u := m
 		m = gFp5.Fp5Mul(m, src[i].t)
 
 		res[i] = AffinePoint{x: x, u: u}
@@ -417,7 +408,7 @@ func BatchToAffine(src []ECgFp5Point) []AffinePoint {
 
 func (p ECgFp5Point) MakeWindowAffine() []AffinePoint {
 	tmp := make([]ECgFp5Point, WIN_SIZE)
-	tmp[0] = p.DeepCopy()
+	tmp[0] = p
 	for i := 1; i < WIN_SIZE; i++ {
 		if (i & 1) == 0 {
 			tmp[i] = tmp[i-1].Add(p)
@@ -444,7 +435,7 @@ func (p *ECgFp5Point) SetMul(s *sf.ECgFp5Scalar) {
 }
 
 func (p ECgFp5Point) Mul(s *sf.ECgFp5Scalar) ECgFp5Point {
-	newPoint := p.DeepCopy()
+	newPoint := p
 	newPoint.SetMul(s)
 	return newPoint
 }

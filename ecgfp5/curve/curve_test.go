@@ -56,43 +56,6 @@ func TestEncode(t *testing.T) {
 	}
 }
 
-func TestNeg(t *testing.T) {
-	point := ECgFp5Point{
-		x: gFp5.Uint64ArrayToFp5(
-			8219099146870311261,
-			1751466925979295147,
-			7427996218561204331,
-			5499363376829590386,
-			17146362437196146248,
-		),
-		z: gFp5.Uint64ArrayToFp5(
-			9697849239028047855,
-			5846309906783017685,
-			10545493423738651463,
-			2054382452661947581,
-			7470471124463677860,
-		),
-		u: gFp5.Uint64ArrayToFp5(
-			2901139745109740356,
-			15850005224840060392,
-			3464972059371886732,
-			15264046134718393739,
-			9208307769190416697,
-		),
-		t: gFp5.Uint64ArrayToFp5(
-			4691886900801030369,
-			14793814721360336872,
-			14452533794393275351,
-			3652664841353278369,
-			4894903405053011144,
-		),
-	}
-
-	if !point.Add(point.Neg()).IsNeutral() {
-		t.Fatalf("Neg: Expected point to be neutral, but got %v", point)
-	}
-}
-
 func TestAdd(t *testing.T) {
 	a := ECgFp5Point{
 		x: gFp5.Uint64ArrayToFp5(
@@ -617,7 +580,7 @@ func TestBasicOps(t *testing.T) {
 		},
 	}
 	for _, w := range bww {
-		if Validate(w) {
+		if CanBeDecodedIntoPoint(w) {
 			t.Fatalf("Validation should fail for element: %v", w)
 		}
 		if _, success := Decode(w); success {
@@ -627,7 +590,7 @@ func TestBasicOps(t *testing.T) {
 
 	vectors := testVectors()
 	for _, w := range vectors {
-		if !Validate(w) {
+		if !CanBeDecodedIntoPoint(w) {
 			t.Fatalf("Validation failed for element: %v", w)
 		}
 	}

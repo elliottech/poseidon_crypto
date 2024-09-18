@@ -61,9 +61,7 @@ func (p ECgFp5Point) Equals(rhs ECgFp5Point) bool {
 	)
 }
 
-// Test whether a field element can be decoded into a point.
-// returns `true` if decoding would work, `false` otherwise.
-func Validate(w gFp5.Element) bool {
+func CanBeDecodedIntoPoint(w gFp5.Element) bool {
 	// Value w can be decoded if and only if it is zero, or
 	// (w^2 - a)^2 - 4*b is a quadratic residue.
 	e := gFp5.Fp5Sub(gFp5.Fp5Square(w), A_ECgFp5Point)
@@ -130,12 +128,6 @@ func (p ECgFp5Point) IsNeutral() bool {
 	return gFp5.Fp5IsZero(p.u)
 }
 
-func (p ECgFp5Point) Neg() ECgFp5Point {
-	newPoint := p.DeepCopy()
-	newPoint.u = gFp5.Fp5Neg(p.u)
-	return newPoint
-}
-
 // General point addition. formulas are complete (no special case).
 func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
 	// cost: 10M
@@ -189,10 +181,6 @@ func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
 	tNew := gFp5.Fp5Add(t8, t9)
 
 	return ECgFp5Point{x: xNew, z: zNew, u: uNew, t: tNew}
-}
-
-func (p ECgFp5Point) Sub(rhs ECgFp5Point) ECgFp5Point {
-	return p.Add(rhs.Neg())
 }
 
 func (p ECgFp5Point) Double() ECgFp5Point {
@@ -344,8 +332,6 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 	)
 }
 
-/*  Interactions with Affine Points */
-
 // Add a point in affine coordinates to this one.
 func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
 	// cost: 8M
@@ -369,12 +355,6 @@ func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
 		z: gFp5.Fp5Sub(t8, t9),
 		t: gFp5.Fp5Add(t8, t9),
 	}
-}
-
-func (p ECgFp5Point) SubAffine(rhs AffinePoint) ECgFp5Point {
-	rhsCopy := rhs.DeepCopy()
-	rhsCopy.SetNeg()
-	return p.AddAffine(rhsCopy)
 }
 
 const (

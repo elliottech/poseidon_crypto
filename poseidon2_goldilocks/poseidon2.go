@@ -5,7 +5,6 @@ import (
 	"hash"
 	"math/big"
 
-	utils "github.com/elliottech/poseidon_crypto"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
@@ -134,7 +133,7 @@ const BlockSize = g.Bytes // BlockSize size that poseidon consumes
 func Poseidon2Bytes(input ...[]byte) []byte {
 	inputElements := make([]g.Element, len(input))
 	for i, ele := range input {
-		num := utils.BigEndianBytesToUint64(ele)
+		num := BigEndianBytesToUint64(ele)
 		if num >= g.Modulus() {
 			panic("not support bytes bigger than modulus")
 		}
@@ -166,7 +165,7 @@ func (d *digest) Reset() {
 
 // Only receive byte slice less than g.Modulus()
 func (d *digest) Write(p []byte) (n int, err error) {
-	x := utils.BigEndianBytesToUint64(p)
+	x := BigEndianBytesToUint64(p)
 
 	if x >= g.Modulus() {
 		return 0, errors.New("not support bytes bigger than modulus")
@@ -194,4 +193,16 @@ func (d *digest) Sum(b []byte) []byte {
 	hash := d.h.Bytes()
 	b = append(b, hash[:]...)
 	return b
+}
+
+func BigEndianBytesToUint64(b []byte) uint64 {
+	if len(b) > 8 {
+		panic("not support bytes bigger than modulus")
+	}
+	var num uint64
+	for i := 0; i < len(b); i++ {
+		num <<= 8
+		num |= uint64(b[i])
+	}
+	return num
 }

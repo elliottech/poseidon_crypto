@@ -2,8 +2,6 @@ package ecgfp5
 
 import (
 	"math/big"
-
-	utils "github.com/elliottech/poseidon_crypto"
 )
 
 // A custom 161-bit integer type; used for splitting a scalar into a
@@ -18,7 +16,7 @@ type Signed161 struct {
 // Export this value as a 192-bit integer (three 64-bit limbs, in little-endian order).
 func (s Signed161) ToU192() [3]uint64 {
 	x := s.limbs[2] & 0x00000001FFFFFFFF
-	x |= utils.WrappingNegU64(x>>32) << 33
+	x |= (^(x >> 32) + 1) << 33
 	return [3]uint64{s.limbs[0], s.limbs[1], x}
 }
 
@@ -91,9 +89,9 @@ func (s *Signed161) AddShiftedSmall(v []uint64, shift int32) {
 	var vbits uint64
 	for i := j; i < 3; i++ {
 		vw := v[i-j]
-		vws := utils.WrappingLhsU64(vw, uint32(shift)) | vbits
-		vbits = utils.WrappingRhsU64(vw, 64-uint32(shift))
-		z := utils.Uint128Add(s.limbs[i], vws, cc)
+		vws := (vw << (uint32(shift) % 64)) | vbits
+		vbits = vw >> ((64 - uint32(shift)) % 64)
+		z := Uint128Add(s.limbs[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
@@ -114,7 +112,7 @@ func (s *Signed161) Add(v []uint64) {
 	var cc uint64
 	j := 3 - len(v)
 	for i := j; i < 3; i++ {
-		z := utils.Uint128Add(s.limbs[i], v[i-j], cc)
+		z := Uint128Add(s.limbs[i], v[i-j], cc)
 		limbs := z.Bits()
 		low := uint64(0)
 		if len(limbs) > 0 {
@@ -147,9 +145,9 @@ func (s *Signed161) SubShiftedSmall(v []uint64, shift int32) {
 	var vbits uint64
 	for i := j; i < 3; i++ {
 		vw := v[i-j]
-		vws := utils.WrappingLhsU64(vw, uint32(shift)) | vbits
-		vbits = utils.WrappingRhsU64(vw, 64-uint32(shift))
-		z := utils.Uint128Sub(s.limbs[i], vws, cc)
+		vws := (vw << (uint32(shift) % 64)) | vbits
+		vbits = vw >> ((64 - uint32(shift)) % 64)
+		z := Uint128Sub(s.limbs[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
@@ -170,7 +168,7 @@ func (s *Signed161) Sub(v []uint64) {
 	var cc uint64
 	j := 3 - len(v)
 	for i := j; i < 3; i++ {
-		z := utils.Uint128Sub(s.limbs[i], v[i-j], cc)
+		z := Uint128Sub(s.limbs[i], v[i-j], cc)
 		limbs := z.Bits()
 
 		low := uint64(0)

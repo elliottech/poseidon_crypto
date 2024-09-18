@@ -1,7 +1,6 @@
 package ecgfp5
 
 import (
-	utils "github.com/elliottech/poseidon_crypto"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
@@ -52,7 +51,7 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 	u := gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
 	for i := 0; i < len(win); i++ {
 		m := km1 - uint32(i)
-		c_1 := (m | utils.WrappingNegU32(m)) >> 31
+		c_1 := (m | (^m + 1)) >> 31
 		c := uint64(c_1) - 1
 		if c != 0 {
 			x = gFp5.Fp5DeepCopy(win[i].x)

@@ -2,8 +2,6 @@ package ecgfp5
 
 import (
 	"math/big"
-
-	utils "github.com/elliottech/poseidon_crypto"
 )
 
 // A custom 640-bit integer type (signed).
@@ -104,7 +102,7 @@ func (s *Signed640) LtUnsigned(rhs *Signed640) bool {
 // _excluding_ the sign bit (thus, -2^k has bit length k, whereas +2^k
 // has bit length k+1).
 func (s *Signed640) Bitlength() int32 {
-	sm := utils.WrappingNegU64(s.limbs[9] >> 63)
+	sm := (^(s.limbs[9] >> 63) + 1)
 	for i := 9; i >= 0; i-- {
 		w := s.limbs[i] ^ sm
 		if w != 0 {
@@ -160,9 +158,9 @@ func (s *Signed640) AddShiftedSmall(v []uint64, shift int32) {
 	var vbits uint64
 	for i := j; i < 10; i++ {
 		vw := v[i-j]
-		vws := utils.WrappingLhsU64(vw, uint32(shift)) | vbits
-		vbits = utils.WrappingRhsU64(vw, 64-uint32(shift))
-		z := utils.Uint128Add(s.limbs[i], vws, cc)
+		vws := (vw << (uint32(shift) % 64)) | vbits
+		vbits = vw >> ((64 - uint32(shift)) % 64)
+		z := Uint128Add(s.limbs[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
@@ -183,7 +181,7 @@ func (s *Signed640) Add(v []uint64) {
 	var cc uint64
 	j := 10 - len(v)
 	for i := j; i < 10; i++ {
-		z := utils.Uint128Add(s.limbs[i], v[i-j], cc)
+		z := Uint128Add(s.limbs[i], v[i-j], cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
@@ -217,9 +215,9 @@ func (s *Signed640) SubShiftedSmall(v []uint64, shift int32) {
 	var vbits uint64
 	for i := j; i < 10; i++ {
 		vw := v[i-j]
-		vws := utils.WrappingLhsU64(vw, uint32(shift)) | vbits
-		vbits = utils.WrappingRhsU64(vw, 64-uint32(shift))
-		z := utils.Uint128Sub(s.limbs[i], vws, cc)
+		vws := (vw << (uint32(shift) % 64)) | vbits
+		vbits = vw >> ((64 - uint32(shift)) % 64)
+		z := Uint128Sub(s.limbs[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
@@ -240,7 +238,7 @@ func (s *Signed640) Sub(v []uint64) {
 	var cc uint64
 	j := 10 - len(v)
 	for i := j; i < 10; i++ {
-		z := utils.Uint128Sub(s.limbs[i], v[i-j], cc)
+		z := Uint128Sub(s.limbs[i], v[i-j], cc)
 		limbs := z.Bits()
 
 		low := uint64(0)

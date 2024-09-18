@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
-	f "github.com/consensys/gnark-crypto/field/goldilocks"
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
@@ -194,9 +194,7 @@ func TestLegendre(t *testing.T) {
 		}
 		legendreSym := Fp5Legendre(x)
 
-		zero := f.NewElement(0)
-		one := f.NewElement(1)
-		negOne := zero.Sub(&zero, &one)
+		negOne := g.NegOne()
 
 		if !negOne.Equal(&legendreSym) {
 			t.Fatalf("Expected Legendre symbol of non-square to be -1, but got %v", legendreSym)

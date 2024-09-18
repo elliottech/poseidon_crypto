@@ -1,6 +1,8 @@
-package ecgfp5
+package utils
 
-import "math/big"
+import (
+	"math/big"
+)
 
 func WrappingNegU32(v uint32) uint32 {
 	return ^v + 1
@@ -38,4 +40,16 @@ func Uint128Sub(minuend uint64, subtrahends ...uint64) *big.Int {
 		subtrahendsBig,
 	)
 	return new(big.Int).Mod(res, two128)
+}
+
+func BigEndianBytesToUint64(b []byte) uint64 {
+	if len(b) > 8 {
+		panic("not support bytes bigger than modulus")
+	}
+	var num uint64
+	for i := 0; i < len(b); i++ {
+		num <<= 8
+		num |= uint64(b[i])
+	}
+	return num
 }

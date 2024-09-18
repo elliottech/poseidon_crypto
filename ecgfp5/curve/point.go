@@ -1,12 +1,10 @@
 package ecgfp5
 
 import (
-	"fmt"
-
 	config "github.com/consensys/gnark-crypto/field/generator/config"
-	f "github.com/consensys/gnark-crypto/field/goldilocks"
 	fp5 "github.com/elliottech/poseidon_crypto/ecgfp5/base_field"
 	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
 // A curve point.
@@ -17,27 +15,11 @@ type ECgFp5Point struct {
 	x, z, u, t config.Element
 }
 
-func (p ECgFp5Point) Print() {
-	for i := 0; i < 5; i++ {
-		fmt.Println("x[i]", i, p.x[i].Uint64())
-	}
-	for i := 0; i < 5; i++ {
-		fmt.Println("z[i]", i, p.z[i].Uint64())
-	}
-	for i := 0; i < 5; i++ {
-		fmt.Println("u[i]", i, p.u[i].Uint64())
-	}
-	for i := 0; i < 5; i++ {
-		fmt.Println("t[i]", i, p.t[i].Uint64())
-	}
-}
-
 // Constants for ECgFp5Point
 var (
 	A_ECgFp5Point = fp5.Uint64ArrayToFp5(2, 0, 0, 0, 0)
 
-	B1 = uint64(263)
-
+	B1                  = uint64(263)
 	B_ECgFp5Point       = fp5.Uint64ArrayToFp5(0, B1, 0, 0, 0)
 	B_MUL2_ECgFp5Point  = fp5.Uint64ArrayToFp5(0, 2*B1, 0, 0, 0)
 	B_MUL4_ECgFp5Point  = fp5.Uint64ArrayToFp5(0, 4*B1, 0, 0, 0)
@@ -116,7 +98,7 @@ func Decode(w config.Element) (ECgFp5Point, bool) {
 	x := x2
 
 	x1Legendre := fp5.Fp5Legendre(x1)
-	one := f.One()
+	one := g.One()
 	if !one.Equal(&x1Legendre) {
 		x = x1
 	}

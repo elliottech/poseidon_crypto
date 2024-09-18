@@ -3,7 +3,7 @@ package schnorr
 import (
 	"testing"
 
-	sf "github.com/elliottech/poseidon_crypto/ecgfp5/scalar_field"
+	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
@@ -32,7 +32,7 @@ func TestHashToQuinticExtension(t *testing.T) {
 }
 
 func TestSchnorrSignAndVerify(t *testing.T) {
-	sk := sf.Sample()       // Sample a secret key
+	sk := curve.Sample()    // Sample a secret key
 	msg := g.RandArray(244) // Random message of 244 field elements (big)
 	hashedMsg := HashToQuinticExtension(msg)
 

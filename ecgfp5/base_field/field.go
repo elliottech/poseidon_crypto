@@ -280,6 +280,19 @@ func Fp5Square(a config.Element) config.Element {
 	return FArrayToFp5([5]*f.Element{&c0, &c1, &c2, &c3, &c4})
 }
 
+func Fp5Triple(a config.Element) config.Element {
+	three := f.NewElement(3)
+	aCopy := Fp5ToFArray(a)
+
+	e0 := FMul(aCopy[0], &three)
+	e1 := FMul(aCopy[1], &three)
+	e2 := FMul(aCopy[2], &three)
+	e3 := FMul(aCopy[3], &three)
+	e4 := FMul(aCopy[4], &three)
+
+	return FArrayToFp5([5]*f.Element{&e0, &e1, &e2, &e3, &e4})
+}
+
 // returns `sqrt(x)` if `x` is a square in the field, and `Nil` otherwise
 // basically copied from here: https://github.com/pornin/ecquintic_ext/blob/ce059c6d1e1662db437aecbf3db6bb67fe63c716/python/ecGFp5.py#L879
 func Fp5Sqrt(x config.Element) (config.Element, bool) {

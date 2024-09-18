@@ -722,7 +722,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		Y:     fp5.FP5_ZERO,
 		IsInf: true,
 	}
-	p0, success := DecodeAsWeierstrass(vectors[0])
+	p0, success := DecodeFp5AsWeierstrass(vectors[0])
 	if !success {
 		t.Fatalf("w0 should successfully decode")
 	}
@@ -747,7 +747,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p1, success := DecodeAsWeierstrass(vectors[1])
+	p1, success := DecodeFp5AsWeierstrass(vectors[1])
 	if !success {
 		t.Fatalf("w1 should successfully decode")
 	}
@@ -772,7 +772,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p2, success := DecodeAsWeierstrass(vectors[2])
+	p2, success := DecodeFp5AsWeierstrass(vectors[2])
 	if !success {
 		t.Fatalf("w2 should successfully decode")
 	}
@@ -797,7 +797,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p3, success := DecodeAsWeierstrass(vectors[3])
+	p3, success := DecodeFp5AsWeierstrass(vectors[3])
 	if !success {
 		t.Fatalf("w3 should successfully decode")
 	}
@@ -822,7 +822,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p4, success := DecodeAsWeierstrass(vectors[4])
+	p4, success := DecodeFp5AsWeierstrass(vectors[4])
 	if !success {
 		t.Fatalf("w4 should successfully decode")
 	}
@@ -847,7 +847,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p5, success := DecodeAsWeierstrass(vectors[5])
+	p5, success := DecodeFp5AsWeierstrass(vectors[5])
 	if !success {
 		t.Fatalf("w5 should successfully decode")
 	}
@@ -872,7 +872,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p6, success := DecodeAsWeierstrass(vectors[6])
+	p6, success := DecodeFp5AsWeierstrass(vectors[6])
 	if !success {
 		t.Fatalf("w6 should successfully decode")
 	}
@@ -897,7 +897,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p7, success := DecodeAsWeierstrass(vectors[7])
+	p7, success := DecodeFp5AsWeierstrass(vectors[7])
 	if !success {
 		t.Fatalf("w7 should successfully decode")
 	}
@@ -906,11 +906,573 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 
 	wGen := fp5.Fp5FromUint64(4)
-	g, success := DecodeAsWeierstrass(wGen)
+	g, success := DecodeFp5AsWeierstrass(wGen)
 	if !success {
 		t.Fatalf("w_gen should successfully decode")
 	}
 	if !g.Equals(GENERATOR_WEIERSTRASS) {
 		t.Fatalf("g does not match GENERATOR")
+	}
+}
+
+func TestWeierstrassPrecomputeWindow(t *testing.T) {
+	qwe := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(7887569478949190020),
+			*new(big.Int).SetUint64(11586418388990522938),
+			*new(big.Int).SetUint64(13676447623055915878),
+			*new(big.Int).SetUint64(5945168854809921881),
+			*new(big.Int).SetUint64(16291886980725359814),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7556511254681645335),
+			*new(big.Int).SetUint64(17611929280367064763),
+			*new(big.Int).SetUint64(9410908488141053806),
+			*new(big.Int).SetUint64(11351540010214108766),
+			*new(big.Int).SetUint64(4846226015431423207),
+		},
+		IsInf: false,
+	}
+
+	window := qwe.PrecomputeWindow(4)
+
+	expectedWindow := []WeierstrassPoint{
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(0),
+				*new(big.Int).SetUint64(0),
+				*new(big.Int).SetUint64(0),
+				*new(big.Int).SetUint64(0),
+				*new(big.Int).SetUint64(0),
+			},
+			Y:     fp5.FP5_ZERO,
+			IsInf: true,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(7887569478949190020),
+				*new(big.Int).SetUint64(11586418388990522938),
+				*new(big.Int).SetUint64(13676447623055915878),
+				*new(big.Int).SetUint64(5945168854809921881),
+				*new(big.Int).SetUint64(16291886980725359814),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(7556511254681645335),
+				*new(big.Int).SetUint64(17611929280367064763),
+				*new(big.Int).SetUint64(9410908488141053806),
+				*new(big.Int).SetUint64(11351540010214108766),
+				*new(big.Int).SetUint64(4846226015431423207),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(2626390539619063455),
+				*new(big.Int).SetUint64(3069873143820007175),
+				*new(big.Int).SetUint64(16481805966921623903),
+				*new(big.Int).SetUint64(2169403494164322467),
+				*new(big.Int).SetUint64(15849876939764656634),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(8052493994140007067),
+				*new(big.Int).SetUint64(12476750341447220703),
+				*new(big.Int).SetUint64(7297584762312352412),
+				*new(big.Int).SetUint64(4456043296886321460),
+				*new(big.Int).SetUint64(17416054515469523789),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(18176398362578182379),
+				*new(big.Int).SetUint64(4436023520237554199),
+				*new(big.Int).SetUint64(3215180516398562719),
+				*new(big.Int).SetUint64(6557371017655524187),
+				*new(big.Int).SetUint64(5543821526507387228),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(13231520129332295641),
+				*new(big.Int).SetUint64(12272620923537119667),
+				*new(big.Int).SetUint64(2190001779233679631),
+				*new(big.Int).SetUint64(17429746542415208975),
+				*new(big.Int).SetUint64(3337887399771893342),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(5948298497167270001),
+				*new(big.Int).SetUint64(15488083211069840053),
+				*new(big.Int).SetUint64(7462878240499130449),
+				*new(big.Int).SetUint64(5465845052061152523),
+				*new(big.Int).SetUint64(14272165321414720409),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(7229037630209827809),
+				*new(big.Int).SetUint64(10702348517645256990),
+				*new(big.Int).SetUint64(8760795746058875829),
+				*new(big.Int).SetUint64(9846744510637391346),
+				*new(big.Int).SetUint64(3236820900223784510),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(568906556912793428),
+				*new(big.Int).SetUint64(12270416106652192091),
+				*new(big.Int).SetUint64(17277438866839882878),
+				*new(big.Int).SetUint64(18290317522638929974),
+				*new(big.Int).SetUint64(7546670826452401067),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(1322178101989677577),
+				*new(big.Int).SetUint64(18254974566546618836),
+				*new(big.Int).SetUint64(1119202239871436890),
+				*new(big.Int).SetUint64(13885721715120393435),
+				*new(big.Int).SetUint64(7665289671288386226),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(6854724460063782323),
+				*new(big.Int).SetUint64(7010495484231564745),
+				*new(big.Int).SetUint64(15016688843001273184),
+				*new(big.Int).SetUint64(9083584169580443423),
+				*new(big.Int).SetUint64(6530832684770892589),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(13188019294905205452),
+				*new(big.Int).SetUint64(9894649816252217734),
+				*new(big.Int).SetUint64(4035350096343221693),
+				*new(big.Int).SetUint64(9024914229517462288),
+				*new(big.Int).SetUint64(14523942737067589623),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(173069451201741305),
+				*new(big.Int).SetUint64(16407881748070922395),
+				*new(big.Int).SetUint64(1843877769060049981),
+				*new(big.Int).SetUint64(8394477401224475023),
+				*new(big.Int).SetUint64(15455323212667110231),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(7073462480600858335),
+				*new(big.Int).SetUint64(1218835901499910502),
+				*new(big.Int).SetUint64(4884985224204572316),
+				*new(big.Int).SetUint64(8579676009424088446),
+				*new(big.Int).SetUint64(8272242895251038218),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(1164943004740104550),
+				*new(big.Int).SetUint64(6494467951550829605),
+				*new(big.Int).SetUint64(11394395084895053958),
+				*new(big.Int).SetUint64(11002214393170970880),
+				*new(big.Int).SetUint64(6198152590137047423),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(6293376713015748154),
+				*new(big.Int).SetUint64(3978302408397307263),
+				*new(big.Int).SetUint64(10305750348797825360),
+				*new(big.Int).SetUint64(2653356225991763726),
+				*new(big.Int).SetUint64(18032604437344362964),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(8412524841879898340),
+				*new(big.Int).SetUint64(5906329857715512849),
+				*new(big.Int).SetUint64(7781506052219784033),
+				*new(big.Int).SetUint64(747934326178282629),
+				*new(big.Int).SetUint64(9789520974115787951),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(16402983360046062715),
+				*new(big.Int).SetUint64(2610048768344810351),
+				*new(big.Int).SetUint64(1409991662255990973),
+				*new(big.Int).SetUint64(8262322794139104006),
+				*new(big.Int).SetUint64(17162526866400736394),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(10048515622314644986),
+				*new(big.Int).SetUint64(12205112414027757400),
+				*new(big.Int).SetUint64(6798899797395644410),
+				*new(big.Int).SetUint64(5508399081833065246),
+				*new(big.Int).SetUint64(2545381917899893146),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(13967674179646477901),
+				*new(big.Int).SetUint64(7464072417461755698),
+				*new(big.Int).SetUint64(10620790885582225633),
+				*new(big.Int).SetUint64(2124420630858145666),
+				*new(big.Int).SetUint64(1715438731398823203),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(8945074870943081799),
+				*new(big.Int).SetUint64(6323068672198034776),
+				*new(big.Int).SetUint64(628757110948609554),
+				*new(big.Int).SetUint64(463667364946291331),
+				*new(big.Int).SetUint64(18333500614767793034),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(1585562137944898917),
+				*new(big.Int).SetUint64(6965134006182209177),
+				*new(big.Int).SetUint64(7287494396640097306),
+				*new(big.Int).SetUint64(6989295600772373751),
+				*new(big.Int).SetUint64(4694512086109041789),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(1353084308423766252),
+				*new(big.Int).SetUint64(9017409530297494922),
+				*new(big.Int).SetUint64(17666541873916336431),
+				*new(big.Int).SetUint64(11263790843735091100),
+				*new(big.Int).SetUint64(8436577988671463853),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(2338633593176970866),
+				*new(big.Int).SetUint64(2404810229101070877),
+				*new(big.Int).SetUint64(16146490466464907277),
+				*new(big.Int).SetUint64(5696273511305368024),
+				*new(big.Int).SetUint64(15148244810777170464),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(1474147635627813906),
+				*new(big.Int).SetUint64(11643377203770626355),
+				*new(big.Int).SetUint64(9314121941510315318),
+				*new(big.Int).SetUint64(9763644728022466505),
+				*new(big.Int).SetUint64(17192017882693797779),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(4381200527555648826),
+				*new(big.Int).SetUint64(13015101990350251010),
+				*new(big.Int).SetUint64(16047910726372959546),
+				*new(big.Int).SetUint64(11605287252021821360),
+				*new(big.Int).SetUint64(10725156729712381290),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(14169389411955179775),
+				*new(big.Int).SetUint64(18405651482817201996),
+				*new(big.Int).SetUint64(13913583073406638188),
+				*new(big.Int).SetUint64(7468262161993545065),
+				*new(big.Int).SetUint64(14000137716301361841),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(14787739045021338943),
+				*new(big.Int).SetUint64(4141115345494939173),
+				*new(big.Int).SetUint64(10070258119240548823),
+				*new(big.Int).SetUint64(11477026875407130857),
+				*new(big.Int).SetUint64(6299768551826493717),
+			},
+			IsInf: false,
+		},
+		{
+			X: config.Element{
+				*new(big.Int).SetUint64(2020949939443349975),
+				*new(big.Int).SetUint64(4576727228132381036),
+				*new(big.Int).SetUint64(11685880123997658374),
+				*new(big.Int).SetUint64(10781236098739931544),
+				*new(big.Int).SetUint64(354959600421572530),
+			},
+			Y: config.Element{
+				*new(big.Int).SetUint64(2226472037177585493),
+				*new(big.Int).SetUint64(8680432113228524002),
+				*new(big.Int).SetUint64(5532575929311408085),
+				*new(big.Int).SetUint64(17286717775780223599),
+				*new(big.Int).SetUint64(7476327786946640228),
+			},
+			IsInf: false,
+		},
+	}
+
+	for i, p := range window {
+		if !p.Equals(expectedWindow[i]) {
+			t.Fatalf("Window point %d does not match expected value. Got: %v, Expected: %v", i, p, expectedWindow[i])
+		}
+	}
+}
+
+func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
+	qwe := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(7887569478949190020),
+			*new(big.Int).SetUint64(11586418388990522938),
+			*new(big.Int).SetUint64(13676447623055915878),
+			*new(big.Int).SetUint64(5945168854809921881),
+			*new(big.Int).SetUint64(16291886980725359814),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7556511254681645335),
+			*new(big.Int).SetUint64(17611929280367064763),
+			*new(big.Int).SetUint64(9410908488141053806),
+			*new(big.Int).SetUint64(11351540010214108766),
+			*new(big.Int).SetUint64(4846226015431423207),
+		},
+		IsInf: false,
+	}
+	doubled := qwe.Double()
+
+	expectedX := config.Element{
+		*new(big.Int).SetUint64(2626390539619063455),
+		*new(big.Int).SetUint64(3069873143820007175),
+		*new(big.Int).SetUint64(16481805966921623903),
+		*new(big.Int).SetUint64(2169403494164322467),
+		*new(big.Int).SetUint64(15849876939764656634),
+	}
+	expectedY := config.Element{
+		*new(big.Int).SetUint64(8052493994140007067),
+		*new(big.Int).SetUint64(12476750341447220703),
+		*new(big.Int).SetUint64(7297584762312352412),
+		*new(big.Int).SetUint64(4456043296886321460),
+		*new(big.Int).SetUint64(17416054515469523789),
+	}
+
+	for i := 0; i < len(expectedX); i++ {
+		if expectedX[i].Cmp(&doubled.X[i]) != 0 {
+			t.Logf("X coordinate does not match at index %d. Expected: %v, Got: %v", i, expectedX[i], doubled.X[i])
+			t.Fail()
+		}
+	}
+
+	for i := 0; i < len(expectedY); i++ {
+		if expectedY[i].Cmp(&doubled.Y[i]) != 0 {
+			t.Logf("Y coordinate does not match at index %d. Expected: %v, Got: %v", i, expectedY[i], doubled.Y[i])
+			t.Fail()
+		}
+	}
+
+	if doubled.IsInf {
+		t.Logf("IsInf should be false")
+		t.Fail()
+	}
+
+	abc := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(10440794216646581227),
+			*new(big.Int).SetUint64(13992847258701590930),
+			*new(big.Int).SetUint64(11213401763785319360),
+			*new(big.Int).SetUint64(12830171931568113117),
+			*new(big.Int).SetUint64(6220154342199499160),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7971683838841472962),
+			*new(big.Int).SetUint64(1639066249976938469),
+			*new(big.Int).SetUint64(15015315060237521031),
+			*new(big.Int).SetUint64(10847769264696425470),
+			*new(big.Int).SetUint64(9177491810370773777),
+		},
+		IsInf: false,
+	}
+
+	added := qwe.Add(abc)
+
+	expectedAddedX := config.Element{
+		*new(big.Int).SetUint64(15147435967142035350),
+		*new(big.Int).SetUint64(4142330994743253079),
+		*new(big.Int).SetUint64(5589541853421788480),
+		*new(big.Int).SetUint64(8174056014411977160),
+		*new(big.Int).SetUint64(6779289104727130815),
+	}
+	expectedAddedY := config.Element{
+		*new(big.Int).SetUint64(6941633164497114792),
+		*new(big.Int).SetUint64(102684445415310288),
+		*new(big.Int).SetUint64(3954903931673222082),
+		*new(big.Int).SetUint64(5355092272832152159),
+		*new(big.Int).SetUint64(15982629021221531228),
+	}
+
+	for i := 0; i < len(expectedAddedX); i++ {
+		if expectedAddedX[i].Cmp(&added.X[i]) != 0 {
+			t.Logf("X coordinate does not match at index %d. Expected: %v, Got: %v", i, expectedAddedX[i], added.X[i])
+			t.Fail()
+		}
+	}
+
+	for i := 0; i < len(expectedAddedY); i++ {
+		if expectedAddedY[i].Cmp(&added.Y[i]) != 0 {
+			t.Logf("Y coordinate does not match at index %d. Expected: %v, Got: %v", i, expectedAddedY[i], added.Y[i])
+			t.Fail()
+		}
+	}
+
+	if added.IsInf {
+		t.Logf("IsInf should be false")
+		t.Fail()
+	}
+
+	a := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(568906556912793428),
+			*new(big.Int).SetUint64(12270416106652192091),
+			*new(big.Int).SetUint64(17277438866839882878),
+			*new(big.Int).SetUint64(18290317522638929974),
+			*new(big.Int).SetUint64(7546670826452401067),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(1322178101989677577),
+			*new(big.Int).SetUint64(18254974566546618836),
+			*new(big.Int).SetUint64(1119202239871436890),
+			*new(big.Int).SetUint64(13885721715120393435),
+			*new(big.Int).SetUint64(7665289671288386226),
+		},
+		IsInf: false,
+	}
+
+	b := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(6853785572863472834),
+			*new(big.Int).SetUint64(11312233137032236241),
+			*new(big.Int).SetUint64(10155632987885765027),
+			*new(big.Int).SetUint64(761788325161687206),
+			*new(big.Int).SetUint64(10399811161072514291),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7631903676079326707),
+			*new(big.Int).SetUint64(10538051161007880093),
+			*new(big.Int).SetUint64(515356923921201259),
+			*new(big.Int).SetUint64(2139317767893795964),
+			*new(big.Int).SetUint64(17894501390404592328),
+		},
+		IsInf: false,
+	}
+
+	added = a.Add(b)
+	expectedAdded := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(14961006762295990506),
+			*new(big.Int).SetUint64(17765806093265157085),
+			*new(big.Int).SetUint64(6029983000119323104),
+			*new(big.Int).SetUint64(14198599897861826986),
+			*new(big.Int).SetUint64(2432992229534936263),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(9056990811557987042),
+			*new(big.Int).SetUint64(5949732889787570233),
+			*new(big.Int).SetUint64(5696931170027194764),
+			*new(big.Int).SetUint64(9998144444122976852),
+			*new(big.Int).SetUint64(13118328774200361975),
+		},
+		IsInf: false,
+	}
+
+	if added.IsInf != expectedAdded.IsInf {
+		t.Fatalf("Expected IsInf to be %v, but got %v", expectedAdded.IsInf, added.IsInf)
+	}
+
+	for i := 0; i < 5; i++ {
+		if added.X[i].Cmp(&expectedAdded.X[i]) != 0 {
+			t.Fatalf("Expected X[%d] to be %v, but got %v", i, expectedAdded.X[i], added.X[i])
+		}
+		if added.Y[i].Cmp(&expectedAdded.Y[i]) != 0 {
+			t.Fatalf("Expected Y[%d] to be %v, but got %v", i, expectedAdded.Y[i], added.Y[i])
+		}
+	}
+}
+
+func TestWeierstrassMulAdd2(t *testing.T) {
+	qwe := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(7887569478949190020),
+			*new(big.Int).SetUint64(11586418388990522938),
+			*new(big.Int).SetUint64(13676447623055915878),
+			*new(big.Int).SetUint64(5945168854809921881),
+			*new(big.Int).SetUint64(16291886980725359814),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7556511254681645335),
+			*new(big.Int).SetUint64(17611929280367064763),
+			*new(big.Int).SetUint64(9410908488141053806),
+			*new(big.Int).SetUint64(11351540010214108766),
+			*new(big.Int).SetUint64(4846226015431423207),
+		},
+		IsInf: false,
+	}
+	abc := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(10440794216646581227),
+			*new(big.Int).SetUint64(13992847258701590930),
+			*new(big.Int).SetUint64(11213401763785319360),
+			*new(big.Int).SetUint64(12830171931568113117),
+			*new(big.Int).SetUint64(6220154342199499160),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(7971683838841472962),
+			*new(big.Int).SetUint64(1639066249976938469),
+			*new(big.Int).SetUint64(15015315060237521031),
+			*new(big.Int).SetUint64(10847769264696425470),
+			*new(big.Int).SetUint64(9177491810370773777),
+		},
+		IsInf: false,
+	}
+
+	s := sf.ECgFp5Scalar{
+		Value: [5]big.Int{
+			*new(big.Int).SetUint64(6950590877883398434),
+			*new(big.Int).SetUint64(17178336263794770543),
+			*new(big.Int).SetUint64(11012823478139181320),
+			*new(big.Int).SetUint64(16445091359523510936),
+			*new(big.Int).SetUint64(5882925226143600273),
+		},
+	}
+	e := sf.ECgFp5Scalar{
+		Value: [5]big.Int{
+			*new(big.Int).SetUint64(4544744459434870309),
+			*new(big.Int).SetUint64(4180764085957612004),
+			*new(big.Int).SetUint64(3024669018778978615),
+			*new(big.Int).SetUint64(15433417688859446606),
+			*new(big.Int).SetUint64(6775027260348937828),
+		},
+	}
+
+	muladd := MulAdd2(qwe, abc, s, e)
+	expectedMulAdd := WeierstrassPoint{
+		X: config.Element{
+			*new(big.Int).SetUint64(16860216879980764002),
+			*new(big.Int).SetUint64(13774182223913431169),
+			*new(big.Int).SetUint64(3778637410337906635),
+			*new(big.Int).SetUint64(7996647345600328210),
+			*new(big.Int).SetUint64(17994036749345991288),
+		},
+		Y: config.Element{
+			*new(big.Int).SetUint64(2325740112090595939),
+			*new(big.Int).SetUint64(18412478076524955076),
+			*new(big.Int).SetUint64(8648800055674409134),
+			*new(big.Int).SetUint64(7238972640284452927),
+			*new(big.Int).SetUint64(17572285593460315724),
+		},
+		IsInf: false,
+	}
+
+	if muladd.IsInf != expectedMulAdd.IsInf {
+		t.Fatalf("Expected IsInf to be %v, but got %v", expectedMulAdd.IsInf, muladd.IsInf)
+	}
+
+	for i := 0; i < 5; i++ {
+		if muladd.X[i].Cmp(&expectedMulAdd.X[i]) != 0 {
+			t.Fatalf("Expected X[%d] to be %v, but got %v", i, expectedMulAdd.X[i], muladd.X[i])
+		}
+		if muladd.Y[i].Cmp(&expectedMulAdd.Y[i]) != 0 {
+			t.Fatalf("Expected Y[%d] to be %v, but got %v", i, expectedMulAdd.Y[i], muladd.Y[i])
+		}
 	}
 }

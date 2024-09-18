@@ -8,6 +8,39 @@ import (
 	goldilocks "github.com/consensys/gnark-crypto/field/goldilocks"
 )
 
+func TestSplitTo4LimbBits(t *testing.T) {
+	scalar := ECgFp5Scalar{
+		Value: [5]big.Int{
+			*new(big.Int).SetUint64(6950590877883398434),
+			*new(big.Int).SetUint64(17178336263794770543),
+			*new(big.Int).SetUint64(11012823478139181320),
+			*new(big.Int).SetUint64(16445091359523510936),
+			*new(big.Int).SetUint64(5882925226143600273),
+		},
+	}
+
+	limbs := scalar.SplitTo4BitLimbs()
+
+	expectedValues := map[int]uint8{
+		0: 2, 1: 2, 2: 9, 3: 7, 4: 15, 5: 4, 6: 15, 7: 13,
+		8: 3, 9: 9, 10: 5, 11: 7, 12: 5, 13: 7, 14: 0, 15: 6,
+		16: 15, 17: 6, 18: 2, 19: 12, 20: 2, 21: 11, 22: 3, 23: 3,
+		24: 1, 25: 13, 26: 5, 27: 11, 28: 5, 29: 6, 30: 14, 31: 14,
+		32: 8, 33: 0, 34: 9, 35: 5, 36: 1, 37: 9, 38: 12, 39: 13,
+		40: 10, 41: 9, 42: 8, 43: 6, 44: 5, 45: 13, 46: 8, 47: 9,
+		48: 8, 49: 9, 50: 10, 51: 9, 52: 14, 53: 3, 54: 15, 55: 2,
+		56: 6, 57: 7, 58: 3, 59: 11, 60: 8, 61: 3, 62: 4, 63: 14,
+		64: 1, 65: 9, 66: 14, 67: 4, 68: 9, 69: 7, 70: 8, 71: 15,
+		72: 2, 73: 5, 74: 9, 75: 5, 76: 4, 77: 10, 78: 1, 79: 5,
+	}
+
+	for i, expected := range expectedValues {
+		if limbs[i] != expected {
+			t.Fatalf("Expected limbs[%d] to be %d, but got %d", i, expected, limbs[i])
+		}
+	}
+}
+
 func TestEquals(t *testing.T) {
 	scalar1 := ECgFp5Scalar{
 		Value: [5]big.Int{

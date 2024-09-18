@@ -4,6 +4,20 @@ package ecgfp5
 
 import f "github.com/consensys/gnark-crypto/field/goldilocks"
 
+func FRand() f.Element {
+	elem := f.NewElement(0)
+	elem.SetRandom()
+	return elem
+}
+
+func FRandArray(count int) []f.Element {
+	ret := make([]f.Element, count)
+	for i := 0; i < count; i++ {
+		ret[i] = FRand()
+	}
+	return ret
+}
+
 func FNeg(e *f.Element) f.Element {
 	res := f.NewElement(0)
 	res.Neg(e)

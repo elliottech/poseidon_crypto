@@ -15,6 +15,17 @@ type ECgFp5Scalar struct {
 	Value [5]big.Int
 }
 
+func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
+	limbs := s.GetUint64Limbs()
+	var result [80]uint8
+	for i := 0; i < 5; i++ {
+		for j := 0; j < 16; j++ {
+			result[i*16+j] = uint8((limbs[i] >> uint(j*4)) & 0xF)
+		}
+	}
+	return result
+}
+
 func Sample() ECgFp5Scalar {
 	return FromNonCanonicalBigInt(
 		new(big.Int).Rand(

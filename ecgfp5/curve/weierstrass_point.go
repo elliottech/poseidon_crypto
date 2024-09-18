@@ -40,19 +40,11 @@ var (
 	}
 
 	NEUTRAL_WEIERSTRASS = WeierstrassPoint{
-		X:     gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
-		Y:     gFp5.Fp5DeepCopy(gFp5.FP5_ZERO),
+		X:     gFp5.FP5_ZERO,
+		Y:     gFp5.FP5_ZERO,
 		IsInf: true,
 	}
 )
-
-func (p WeierstrassPoint) DeepCopy() WeierstrassPoint {
-	return WeierstrassPoint{
-		X:     gFp5.Fp5DeepCopy(p.X),
-		Y:     gFp5.Fp5DeepCopy(p.Y),
-		IsInf: p.IsInf,
-	}
-}
 
 func (p WeierstrassPoint) Equals(q WeierstrassPoint) bool {
 	if p.IsInf && q.IsInf {
@@ -70,7 +62,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	delta := gFp5.Fp5Sub(gFp5.Fp5Square(e), B_MUL4_ECgFp5Point)
 	r, success := gFp5.Fp5CanonicalSqrt(delta)
 	if !success {
-		r = gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+		r = gFp5.FP5_ZERO
 	}
 
 	x1 := gFp5.Fp5Div(gFp5.Fp5Add(e, r), gFp5.FP5_TWO)
@@ -86,7 +78,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	if success {
 		x = gFp5.Fp5Add(x, gFp5.Fp5Div(A_ECgFp5Point, gFp5.Fp5FromUint64(3)))
 	} else {
-		x = gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+		x = gFp5.FP5_ZERO
 	}
 
 	isInf := !success
@@ -100,14 +92,14 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 
 func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 	if p.IsInf {
-		return q.DeepCopy()
+		return q
 	}
 	if q.IsInf {
-		return p.DeepCopy()
+		return p
 	}
 
-	x1, y1 := gFp5.Fp5DeepCopy(p.X), gFp5.Fp5DeepCopy(p.Y)
-	x2, y2 := gFp5.Fp5DeepCopy(q.X), gFp5.Fp5DeepCopy(q.Y)
+	x1, y1 := p.X, p.Y
+	x2, y2 := q.X, q.Y
 
 	// note: paper has a typo. sx == 1 when x1 != x2, not when x1 == x2
 	xSame := gFp5.Fp5Equals(x1, x2)
@@ -115,7 +107,7 @@ func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 
 	var lambda0, lambda1 gFp5.Element
 	if xSame {
-		lambda0 = gFp5.Fp5Add(gFp5.Fp5Triple(gFp5.Fp5Square(x1)), gFp5.Fp5DeepCopy(A_WEIERSTRASS))
+		lambda0 = gFp5.Fp5Add(gFp5.Fp5Triple(gFp5.Fp5Square(x1)), A_WEIERSTRASS)
 		lambda1 = gFp5.Fp5Double(y1)
 	} else {
 		lambda0 = gFp5.Fp5Sub(y2, y1)
@@ -130,17 +122,17 @@ func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 }
 
 func (p WeierstrassPoint) Double() WeierstrassPoint {
-	x := gFp5.Fp5DeepCopy(p.X)
-	y := gFp5.Fp5DeepCopy(p.Y)
+	x := p.X
+	y := p.Y
 	is_inf := p.IsInf
 
 	if is_inf {
-		return p.DeepCopy()
+		return p
 	}
 
 	lambda0 := gFp5.Fp5Square(x)
 	lambda0 = gFp5.Fp5Triple(lambda0)
-	lambda0 = gFp5.Fp5Add(lambda0, gFp5.Fp5DeepCopy(A_WEIERSTRASS))
+	lambda0 = gFp5.Fp5Add(lambda0, A_WEIERSTRASS)
 
 	lambda1 := gFp5.Fp5Double(y)
 
@@ -161,7 +153,7 @@ func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint
 	if windowBits < 2 {
 		panic("windowBits in PrecomputeWindow for WeierstrassPoint must be at least 2")
 	}
-	multiples := []WeierstrassPoint{NEUTRAL_WEIERSTRASS.DeepCopy(), p.DeepCopy(), p.Double()}
+	multiples := []WeierstrassPoint{NEUTRAL_WEIERSTRASS, p, p.Double()}
 	for i := 3; i < 1<<windowBits; i++ {
 		multiples = append(multiples, p.Add(multiples[len(multiples)-1]))
 	}

@@ -32,19 +32,9 @@ func HashToQuinticExtension(m []f.Element) config.Element {
 	return fp5.FArrayToFp5([5]*f.Element{&res[0], &res[1], &res[2], &res[3], &res[4]})
 }
 
-func SchnorrSignFArray(m []f.Element, sk sf.ECgFp5Scalar) SchnorrSig {
-	return SchnorrSignHashedMessage(
-		HashToQuinticExtension(m), // Compute H(m)
-		sk,
-	)
-}
-
 func SchnorrSignHashedMessage(hashedMsg config.Element, sk sf.ECgFp5Scalar) SchnorrSig {
-	return SchnorrSignHashedMessageWithRandomScalar(hashedMsg, sk, sf.Sample()) // Sample random scalar `k`
-}
-
-func SchnorrSignHashedMessageWithRandomScalar(hashedMsg config.Element, sk, k sf.ECgFp5Scalar) SchnorrSig {
-	// Compute `r = k * G`
+	// Sample random scalar `k` and compute `r = k * G`
+	k := sf.Sample()
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]f.Element, 5+5)
@@ -63,26 +53,22 @@ func SchnorrSignHashedMessageWithRandomScalar(hashedMsg config.Element, sk, k sf
 	}
 }
 
-// func IsSchnorrSignatureValid(pubKey, hashedMsg config.Element, sig SchnorrSig) bool {
-// 	fmt.Println()
-// 	fmt.Println()
-// 	fmt.Println()
-// 	fmt.Println()
-// 	fmt.Println()
+func IsSchnorrSignatureValid(pubKey, hashedMsg config.Element, sig SchnorrSig) bool {
+	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
+	if !ok {
+		return false
+	}
 
-// 	decodedPubkey, ok := curve.Decode(pubKey)
-// 	if !ok {
-// 		return false
-// 	}
+	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E) // r_v = s*G + e*pk
 
-// 	affine := curve.BatchToAffine([]curve.ECgFp5Point{decodedPubkey})[0]
-// 	fmt.Println(affine)
+	preImage := make([]f.Element, 5+5)
+	for i, elem := range fp5.Fp5ToFArray(rV.Encode()) {
+		preImage[i] = *elem
+	}
+	for i, elem := range fp5.Fp5ToFArray(hashedMsg) {
+		preImage[i+5] = *elem
+	}
+	eV := sf.FromGfp5(HashToQuinticExtension(preImage))
 
-// 	fmt.Println()
-// 	fmt.Println()
-// 	fmt.Println()
-// 	fmt.Println()
-// 	fmt.Println()
-
-// 	panic("Not implemented")
-// }
+	return eV.Equals(sig.E) // e_v == e
+}

@@ -3,7 +3,7 @@ package ecgfp5
 import (
 	"math/big"
 
-	utils "github.com/elliottech/poseidon_crypto/ecgfp5"
+	utils "github.com/elliottech/poseidon_crypto"
 )
 
 // A custom 640-bit integer type (signed).

@@ -7,7 +7,7 @@ import (
 	"math/big"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
-	f "github.com/consensys/gnark-crypto/field/goldilocks"
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
 var (
@@ -35,24 +35,13 @@ var (
 		*new(big.Int),
 	}
 
-	FP5_W        = f.NewElement(3)
-	FP5_DTH_ROOT = f.NewElement(1041288259238279555)
+	FP5_W        = g.FromUint64(3)
+	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 )
 
 func Fp5Sample() config.Element {
-	e1 := f.NewElement(0)
-	e2 := f.NewElement(0)
-	e3 := f.NewElement(0)
-	e4 := f.NewElement(0)
-	e5 := f.NewElement(0)
-
-	e1.SetRandom()
-	e2.SetRandom()
-	e3.SetRandom()
-	e4.SetRandom()
-	e5.SetRandom()
-
-	return FArrayToFp5([5]*f.Element{&e1, &e2, &e3, &e4, &e5})
+	arr := g.RandArray(5)
+	return FArrayToFp5([5]*g.Element{&arr[0], &arr[1], &arr[2], &arr[3], &arr[4]})
 }
 
 func Fp5Equals(a, b config.Element) bool {
@@ -73,7 +62,7 @@ func Fp5DeepCopy(e config.Element) config.Element {
 	}
 }
 
-func Fp5FromF(elem f.Element) config.Element {
+func Fp5FromF(elem g.Element) config.Element {
 	one := new(big.Int)
 	elem.BigInt(one)
 	return config.Element{
@@ -85,16 +74,16 @@ func Fp5FromF(elem f.Element) config.Element {
 	}
 }
 
-func Fp5ToFArray(e config.Element) [5]*f.Element {
-	e1 := f.NewElement(e[0].Uint64())
-	e2 := f.NewElement(e[1].Uint64())
-	e3 := f.NewElement(e[2].Uint64())
-	e4 := f.NewElement(e[3].Uint64())
-	e5 := f.NewElement(e[4].Uint64())
-	return [5]*f.Element{&e1, &e2, &e3, &e4, &e5}
+func Fp5ToFArray(e config.Element) [5]*g.Element {
+	e1 := g.FromUint64(e[0].Uint64())
+	e2 := g.FromUint64(e[1].Uint64())
+	e3 := g.FromUint64(e[2].Uint64())
+	e4 := g.FromUint64(e[3].Uint64())
+	e5 := g.FromUint64(e[4].Uint64())
+	return [5]*g.Element{&e1, &e2, &e3, &e4, &e5}
 }
 
-func FArrayToFp5(e [5]*f.Element) config.Element {
+func FArrayToFp5(e [5]*g.Element) config.Element {
 	return config.Element{
 		*new(big.Int).SetUint64(e[0].Uint64()),
 		*new(big.Int).SetUint64(e[1].Uint64()),
@@ -116,25 +105,25 @@ func Uint64ArrayToFp5(e1, e2, e3, e4, e5 uint64) config.Element {
 
 func Fp5Neg(e config.Element) config.Element {
 	eCopy := Fp5ToFArray(e)
-	_0 := FNeg(eCopy[0])
-	_1 := FNeg(eCopy[1])
-	_2 := FNeg(eCopy[2])
-	_3 := FNeg(eCopy[3])
-	_4 := FNeg(eCopy[4])
-	return FArrayToFp5([5]*f.Element{&_0, &_1, &_2, &_3, &_4})
+	_0 := g.Neg(*eCopy[0])
+	_1 := g.Neg(*eCopy[1])
+	_2 := g.Neg(*eCopy[2])
+	_3 := g.Neg(*eCopy[3])
+	_4 := g.Neg(*eCopy[4])
+	return FArrayToFp5([5]*g.Element{&_0, &_1, &_2, &_3, &_4})
 }
 
 func Fp5Add(a, b config.Element) config.Element {
 	aCopy := Fp5ToFArray(a)
 	bCopy := Fp5ToFArray(b)
 
-	_0 := FAdd(aCopy[0], bCopy[0])
-	_1 := FAdd(aCopy[1], bCopy[1])
-	_2 := FAdd(aCopy[2], bCopy[2])
-	_3 := FAdd(aCopy[3], bCopy[3])
-	_4 := FAdd(aCopy[4], bCopy[4])
+	_0 := g.FAdd(*aCopy[0], *bCopy[0])
+	_1 := g.FAdd(*aCopy[1], *bCopy[1])
+	_2 := g.FAdd(*aCopy[2], *bCopy[2])
+	_3 := g.FAdd(*aCopy[3], *bCopy[3])
+	_4 := g.FAdd(*aCopy[4], *bCopy[4])
 
-	res := FArrayToFp5([5]*f.Element{&_0, &_1, &_2, &_3, &_4})
+	res := FArrayToFp5([5]*g.Element{&_0, &_1, &_2, &_3, &_4})
 	return res
 }
 
@@ -142,77 +131,69 @@ func Fp5Sub(a, b config.Element) config.Element {
 	aCopy := Fp5ToFArray(a)
 	bCopy := Fp5ToFArray(b)
 
-	_0 := FSub(aCopy[0], bCopy[0])
-	_1 := FSub(aCopy[1], bCopy[1])
-	_2 := FSub(aCopy[2], bCopy[2])
-	_3 := FSub(aCopy[3], bCopy[3])
-	_4 := FSub(aCopy[4], bCopy[4])
+	_0 := g.FSub(aCopy[0], bCopy[0])
+	_1 := g.FSub(aCopy[1], bCopy[1])
+	_2 := g.FSub(aCopy[2], bCopy[2])
+	_3 := g.FSub(aCopy[3], bCopy[3])
+	_4 := g.FSub(aCopy[4], bCopy[4])
 
-	res := FArrayToFp5([5]*f.Element{&_0, &_1, &_2, &_3, &_4})
+	res := FArrayToFp5([5]*g.Element{&_0, &_1, &_2, &_3, &_4})
 	return res
 }
 
 func Fp5Mul(a, b config.Element) config.Element {
-	// let Self([a0, a1, a2, a3, a4]) = self;
 	aCopy := Fp5ToFArray(a)
 	a0 := aCopy[0]
 	a1 := aCopy[1]
 	a2 := aCopy[2]
 	a3 := aCopy[3]
 	a4 := aCopy[4]
-	// let Self([b0, b1, b2, b3, b4]) = rhs;
 	bCopy := Fp5ToFArray(b)
 	b0 := bCopy[0]
 	b1 := bCopy[1]
 	b2 := bCopy[2]
 	b3 := bCopy[3]
 	b4 := bCopy[4]
-	// let w = <Self as OEF<5>>::W;
-	w := FDeepCopy(&FP5_W)
-	// let c0 = a0 * b0 + w * (a1 * b4 + a2 * b3 + a3 * b2 + a4 * b1);
-	a0b0 := FMul(a0, b0)
-	a1b4 := FMul(a1, b4)
-	a2b3 := FMul(a2, b3)
-	a3b2 := FMul(a3, b2)
-	a4b1 := FMul(a4, b1)
-	added := FAdd(&a1b4, &a2b3, &a3b2, &a4b1)
-	muld := FMul(&w, &added)
-	c0 := FAdd(&a0b0, &muld)
-	// let c1 = a0 * b1 + a1 * b0 + w * (a2 * b4 + a3 * b3 + a4 * b2);
-	a0b1 := FMul(a0, b1)
-	a1b0 := FMul(a1, b0)
-	a2b4 := FMul(a2, b4)
-	a3b3 := FMul(a3, b3)
-	a4b2 := FMul(a4, b2)
-	added = FAdd(&a2b4, &a3b3, &a4b2)
-	muld = FMul(&w, &added)
-	c1 := FAdd(&a0b1, &a1b0, &muld)
-	// let c2 = a0 * b2 + a1 * b1 + a2 * b0 + w * (a3 * b4 + a4 * b3);
-	a0b2 := FMul(a0, b2)
-	a1b1 := FMul(a1, b1)
-	a2b0 := FMul(a2, b0)
-	a3b4 := FMul(a3, b4)
-	a4b3 := FMul(a4, b3)
-	added = FAdd(&a3b4, &a4b3)
-	muld = FMul(&w, &added)
-	c2 := FAdd(&a0b2, &a1b1, &a2b0, &muld)
-	// let c3 = a0 * b3 + a1 * b2 + a2 * b1 + a3 * b0 + w * a4 * b4;
-	a0b3 := FMul(a0, b3)
-	a1b2 := FMul(a1, b2)
-	a2b1 := FMul(a2, b1)
-	a3b0 := FMul(a3, b0)
-	a4b4 := FMul(a4, b4)
-	muld = FMul(&w, &a4b4)
-	c3 := FAdd(&a0b3, &a1b2, &a2b1, &a3b0, &muld)
-	// let c4 = a0 * b4 + a1 * b3 + a2 * b2 + a3 * b1 + a4 * b0;
-	a0b4 := FMul(a0, b4)
-	a1b3 := FMul(a1, b3)
-	a2b2 := FMul(a2, b2)
-	a3b1 := FMul(a3, b1)
-	a4b0 := FMul(a4, b0)
-	c4 := FAdd(&a0b4, &a1b3, &a2b2, &a3b1, &a4b0)
+	w := g.FDeepCopy(&FP5_W)
+	a0b0 := g.FMul(a0, b0)
+	a1b4 := g.FMul(a1, b4)
+	a2b3 := g.FMul(a2, b3)
+	a3b2 := g.FMul(a3, b2)
+	a4b1 := g.FMul(a4, b1)
+	added := g.FAdd(a1b4, a2b3, a3b2, a4b1)
+	muld := g.FMul(&w, &added)
+	c0 := g.FAdd(a0b0, muld)
+	a0b1 := g.FMul(a0, b1)
+	a1b0 := g.FMul(a1, b0)
+	a2b4 := g.FMul(a2, b4)
+	a3b3 := g.FMul(a3, b3)
+	a4b2 := g.FMul(a4, b2)
+	added = g.FAdd(a2b4, a3b3, a4b2)
+	muld = g.FMul(&w, &added)
+	c1 := g.FAdd(a0b1, a1b0, muld)
+	a0b2 := g.FMul(a0, b2)
+	a1b1 := g.FMul(a1, b1)
+	a2b0 := g.FMul(a2, b0)
+	a3b4 := g.FMul(a3, b4)
+	a4b3 := g.FMul(a4, b3)
+	added = g.FAdd(a3b4, a4b3)
+	muld = g.FMul(&w, &added)
+	c2 := g.FAdd(a0b2, a1b1, a2b0, muld)
+	a0b3 := g.FMul(a0, b3)
+	a1b2 := g.FMul(a1, b2)
+	a2b1 := g.FMul(a2, b1)
+	a3b0 := g.FMul(a3, b0)
+	a4b4 := g.FMul(a4, b4)
+	muld = g.FMul(&w, &a4b4)
+	c3 := g.FAdd(a0b3, a1b2, a2b1, a3b0, muld)
+	a0b4 := g.FMul(a0, b4)
+	a1b3 := g.FMul(a1, b3)
+	a2b2 := g.FMul(a2, b2)
+	a3b1 := g.FMul(a3, b1)
+	a4b0 := g.FMul(a4, b0)
+	c4 := g.FAdd(a0b4, a1b3, a2b2, a3b1, a4b0)
 
-	return FArrayToFp5([5]*f.Element{&c0, &c1, &c2, &c3, &c4})
+	return FArrayToFp5([5]*g.Element{&c0, &c1, &c2, &c3, &c4})
 }
 
 func Fp5Div(a, b config.Element) config.Element {
@@ -233,64 +214,54 @@ func Fp5ExpPowerOf2(x config.Element, power int) config.Element {
 
 // 33% Optimized square
 func Fp5Square(a config.Element) config.Element {
-	// let Self([a0, a1, a2, a3, a4]) = *self;
 	aCopy := Fp5ToFArray(a)
 	a0 := aCopy[0]
 	a1 := aCopy[1]
 	a2 := aCopy[2]
 	a3 := aCopy[3]
 	a4 := aCopy[4]
-	// let w = <Self as OEF<5>>::W;
-	w := FDeepCopy(&FP5_W)
-	// let double_w = <Self as OEF<5>>::W.double();
-	double_w := FAdd(&w, &w)
+	w := g.FDeepCopy(&FP5_W)
+	double_w := g.FAdd(w, w)
 
-	// let c0 = a0.square() + double_w * (a1 * a4 + a2 * a3);
-	a0s := FMul(a0, a0)
-	a1a4 := FMul(a1, a4)
-	a2a3 := FMul(a2, a3)
-	added := FAdd(&a1a4, &a2a3)
-	muld := FMul(&double_w, &added)
-	c0 := FAdd(&a0s, &muld)
-	// let double_a0 = a0.double();
-	a0Double := FAdd(a0, a0)
-	// let c1 = double_a0 * a1 + double_w * a2 * a4 + w * a3 * a3;
-	a0Doublea1 := FMul(&a0Double, a1)
-	a2a4DoubleW := FMul(a2, a4, &double_w)
-	a3a3w := FMul(a3, a3, &w)
-	c1 := FAdd(&a0Doublea1, &a2a4DoubleW, &a3a3w)
-	// let c2 = double_a0 * a2 + a1 * a1 + double_w * a4 * a3;
-	a0Doublea2 := FMul(&a0Double, a2)
-	a1Square := FMul(a1, a1)
-	a4a3DoubleW := FMul(a4, a3, &double_w)
-	c2 := FAdd(&a0Doublea2, &a1Square, &a4a3DoubleW)
-	// let double_a1 = a1.double();
-	a1Double := FAdd(a1, a1)
-	// let c3 = double_a0 * a3 + double_a1 * a2 + w * a4 * a4;
-	a0Doublea3 := FMul(&a0Double, a3)
-	a1Doublea2 := FMul(&a1Double, a2)
-	a4SquareW := FMul(a4, a4, &w)
-	c3 := FAdd(&a0Doublea3, &a1Doublea2, &a4SquareW)
-	// let c4 = double_a0 * a4 + double_a1 * a3 + a2 * a2;
-	a0Doublea4 := FMul(&a0Double, a4)
-	a1Doublea3 := FMul(&a1Double, a3)
-	a2Square := FMul(a2, a2)
-	c4 := FAdd(&a0Doublea4, &a1Doublea3, &a2Square)
+	a0s := g.FMul(a0, a0)
+	a1a4 := g.FMul(a1, a4)
+	a2a3 := g.FMul(a2, a3)
+	added := g.FAdd(a1a4, a2a3)
+	muld := g.FMul(&double_w, &added)
+	c0 := g.FAdd(a0s, muld)
+	a0Double := g.FAdd(*a0, *a0)
+	a0Doublea1 := g.FMul(&a0Double, a1)
+	a2a4DoubleW := g.FMul(a2, a4, &double_w)
+	a3a3w := g.FMul(a3, a3, &w)
+	c1 := g.FAdd(a0Doublea1, a2a4DoubleW, a3a3w)
+	a0Doublea2 := g.FMul(&a0Double, a2)
+	a1Square := g.FMul(a1, a1)
+	a4a3DoubleW := g.FMul(a4, a3, &double_w)
+	c2 := g.FAdd(a0Doublea2, a1Square, a4a3DoubleW)
+	a1Double := g.FAdd(*a1, *a1)
+	a0Doublea3 := g.FMul(&a0Double, a3)
+	a1Doublea2 := g.FMul(&a1Double, a2)
+	a4SquareW := g.FMul(a4, a4, &w)
+	c3 := g.FAdd(a0Doublea3, a1Doublea2, a4SquareW)
+	a0Doublea4 := g.FMul(&a0Double, a4)
+	a1Doublea3 := g.FMul(&a1Double, a3)
+	a2Square := g.FMul(a2, a2)
+	c4 := g.FAdd(a0Doublea4, a1Doublea3, a2Square)
 
-	return FArrayToFp5([5]*f.Element{&c0, &c1, &c2, &c3, &c4})
+	return FArrayToFp5([5]*g.Element{&c0, &c1, &c2, &c3, &c4})
 }
 
 func Fp5Triple(a config.Element) config.Element {
-	three := f.NewElement(3)
+	three := g.FromUint64(3)
 	aCopy := Fp5ToFArray(a)
 
-	e0 := FMul(aCopy[0], &three)
-	e1 := FMul(aCopy[1], &three)
-	e2 := FMul(aCopy[2], &three)
-	e3 := FMul(aCopy[3], &three)
-	e4 := FMul(aCopy[4], &three)
+	e0 := g.FMul(aCopy[0], &three)
+	e1 := g.FMul(aCopy[1], &three)
+	e2 := g.FMul(aCopy[2], &three)
+	e3 := g.FMul(aCopy[3], &three)
+	e4 := g.FMul(aCopy[4], &three)
 
-	return FArrayToFp5([5]*f.Element{&e0, &e1, &e2, &e3, &e4})
+	return FArrayToFp5([5]*g.Element{&e0, &e1, &e2, &e3, &e4})
 }
 
 // returns `sqrt(x)` if `x` is a square in the field, and `Nil` otherwise
@@ -315,17 +286,16 @@ func Fp5Sqrt(x config.Element) (config.Element, bool) {
 	f3 := fArr[3]
 	f4 := fArr[4]
 
-	x1f4 := FMul(x1, f4)
-	x2f3 := FMul(x2, f3)
-	x3f2 := FMul(x3, f2)
-	x4f1 := FMul(x4, f1)
-	added := FAdd(&x1f4, &x2f3, &x3f2, &x4f1)
-	three := f.NewElement(3)
-	muld := FMul(&three, &added)
-	x0f0 := FMul(x0, f0)
-	g := FAdd(&x0f0, &muld)
-
-	s := FSqrt(&g)
+	x1f4 := g.FMul(x1, f4)
+	x2f3 := g.FMul(x2, f3)
+	x3f2 := g.FMul(x3, f2)
+	x4f1 := g.FMul(x4, f1)
+	added := g.FAdd(x1f4, x2f3, x3f2, x4f1)
+	three := g.FromUint64(3)
+	muld := g.FMul(&three, &added)
+	x0f0 := g.FMul(x0, f0)
+	_g := g.FAdd(x0f0, muld)
+	s := g.FSqrt(&_g)
 	if s == nil {
 		return nil, false
 	}
@@ -366,7 +336,7 @@ func Fp5CanonicalSqrt(x config.Element) (config.Element, bool) {
 	return sqrtX, true
 }
 
-func Fp5ScalarMul(a config.Element, scalar *f.Element) config.Element {
+func Fp5ScalarMul(a config.Element, scalar *g.Element) config.Element {
 	arr := Fp5ToFArray(a)
 	for i := 0; i < len(arr); i++ {
 		arr[i].Mul(arr[i], scalar)
@@ -383,9 +353,9 @@ func Fp5FromUint64(a uint64) config.Element {
 }
 
 func Fp5NegOne() config.Element {
-	fNegOne := FNegOne()
+	negOne := g.FNegOne()
 	return config.Element{
-		*new(big.Int).SetUint64(fNegOne[0]),
+		*new(big.Int).SetUint64(negOne[0]),
 		*new(big.Int),
 		*new(big.Int),
 		*new(big.Int),
@@ -419,14 +389,14 @@ func Fp5InverseOrZero(a config.Element) config.Element {
 	b3 := fCopy[3]
 	b4 := fCopy[4]
 	// g = a0 * b0 + <Self as OEF<5>>::W * (a1 * b4 + a2 * b3 + a3 * b2 + a4 * b1);
-	a0b0 := FMul(a0, b0)
-	a1b4 := FMul(a1, b4)
-	a2b3 := FMul(a2, b3)
-	a3b2 := FMul(a3, b2)
-	a4b1 := FMul(a4, b1)
-	added := FAdd(&a1b4, &a2b3, &a3b2, &a4b1)
-	muld := FMul(&FP5_W, &added)
-	g := FAdd(&a0b0, &muld)
+	a0b0 := g.FMul(a0, b0)
+	a1b4 := g.FMul(a1, b4)
+	a2b3 := g.FMul(a2, b3)
+	a3b2 := g.FMul(a3, b2)
+	a4b1 := g.FMul(a4, b1)
+	added := g.FAdd(a1b4, a2b3, a3b2, a4b1)
+	muld := g.FMul(&FP5_W, &added)
+	g := g.FAdd(a0b0, muld)
 
 	return Fp5ScalarMul(f, g.Inverse(&g))
 }
@@ -451,14 +421,14 @@ func Fp5RepeatedFrobenius(x config.Element, count int) config.Element {
 	arr := Fp5ToFArray(x)
 
 	// z0 = DTH_ROOT^count = W^(k * count) where k = floor((p^D-1)/D)
-	z0 := FDeepCopy(&FP5_DTH_ROOT)
+	z0 := g.FDeepCopy(&FP5_DTH_ROOT)
 	for i := 1; i < count; i++ {
-		z0 = FMul(&FP5_DTH_ROOT, &z0)
+		z0 = g.FMul(&FP5_DTH_ROOT, &z0)
 	}
 
 	res := Fp5ToFArray(FP5_ZERO)
-	for i, z := range FPowers(&z0, FP5_D) {
-		muld := FMul(arr[i], &z)
+	for i, z := range g.FPowers(&z0, FP5_D) {
+		muld := g.FMul(arr[i], &z)
 		res[i] = &muld
 	}
 
@@ -466,7 +436,7 @@ func Fp5RepeatedFrobenius(x config.Element, count int) config.Element {
 	return res2
 }
 
-func Fp5Legendre(x config.Element) f.Element {
+func Fp5Legendre(x config.Element) g.Element {
 	frob1 := Fp5Frobenius(x)
 	frob2 := Fp5Frobenius(frob1)
 
@@ -477,13 +447,13 @@ func Fp5Legendre(x config.Element) f.Element {
 	xr := Fp5ToFArray(xrExt)[0]
 
 	xr31 := xr.Exp(*xr, new(big.Int).SetUint64(1<<31))
-	xr31Copy := FDeepCopy(xr31)
+	xr31Copy := g.FDeepCopy(xr31)
 	xr63 := xr31Copy.Exp(*xr31, new(big.Int).SetUint64(1<<32))
 
 	// only way `xr_31` can be zero is if `xr` is zero, in which case `self` is zero,
 	// in which case we want to return zero.
-	xr31InvOrZero := f.NewElement(0)
+	xr31InvOrZero := g.FromUint64(0)
 	xr31InvOrZero = *xr31InvOrZero.Inverse(xr31)
 
-	return FMul(xr63, &xr31InvOrZero)
+	return g.FMul(xr63, &xr31InvOrZero)
 }

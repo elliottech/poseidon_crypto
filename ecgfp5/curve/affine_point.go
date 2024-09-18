@@ -2,7 +2,7 @@ package ecgfp5
 
 import (
 	config "github.com/consensys/gnark-crypto/field/generator/config"
-	utils "github.com/elliottech/poseidon_crypto/ecgfp5"
+	utils "github.com/elliottech/poseidon_crypto"
 	fp5 "github.com/elliottech/poseidon_crypto/ecgfp5/base_field"
 )
 

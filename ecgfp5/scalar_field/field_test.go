@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	config "github.com/consensys/gnark-crypto/field/generator/config"
-	goldilocks "github.com/consensys/gnark-crypto/field/goldilocks"
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
 func TestSplitTo4LimbBits(t *testing.T) {
@@ -463,11 +463,11 @@ func TestTryInverse(t *testing.T) {
 
 func TestFromQuinticExtension(t *testing.T) {
 	scalar := FromGfp5(config.Element{
-		*new(big.Int).Sub(goldilocks.Modulus(), new(big.Int).SetUint64(1)),
-		*new(big.Int).Sub(goldilocks.Modulus(), new(big.Int).SetUint64(1)),
-		*new(big.Int).Sub(goldilocks.Modulus(), new(big.Int).SetUint64(1)),
-		*new(big.Int).Sub(goldilocks.Modulus(), new(big.Int).SetUint64(1)),
-		*new(big.Int).Sub(goldilocks.Modulus(), new(big.Int).SetUint64(1)),
+		*new(big.Int).SetUint64(g.Modulus() - 1),
+		*new(big.Int).SetUint64(g.Modulus() - 1),
+		*new(big.Int).SetUint64(g.Modulus() - 1),
+		*new(big.Int).SetUint64(g.Modulus() - 1),
+		*new(big.Int).SetUint64(g.Modulus() - 1),
 	})
 
 	expectedValues := [5]string{
@@ -490,11 +490,11 @@ func TestRecodeSigned(t *testing.T) {
 	var ss [50]int32
 	scalar := ECgFp5Scalar{
 		Value: [5]big.Int{
-			*new(big.Int).Sub(goldilocks.Modulus(), big.NewInt(1)),
-			*new(big.Int).Sub(goldilocks.Modulus(), big.NewInt(2)),
-			*new(big.Int).Sub(goldilocks.Modulus(), big.NewInt(3)),
+			*new(big.Int).SetUint64(g.Modulus() - 1),
+			*new(big.Int).SetUint64(g.Modulus() - 2),
+			*new(big.Int).SetUint64(g.Modulus() - 3),
 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),
-			*new(big.Int).Sub(goldilocks.Modulus(), big.NewInt(5)),
+			*new(big.Int).SetUint64(g.Modulus() - 5),
 		},
 	}
 

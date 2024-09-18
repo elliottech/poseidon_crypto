@@ -28,7 +28,7 @@ func SchnorrPkFromSk(sk sf.ECgFp5Scalar) gFp5.Element {
 func HashToQuinticExtension(m []g.Element) gFp5.Element {
 	p2 := poseidon2.Poseidon2{}
 	res := p2.HashNToMNoPad(m, 5)
-	return gFp5.FArrayToFp5([5]g.Element{res[0], res[1], res[2], res[3], res[4]})
+	return gFp5.FromBasefieldArray([5]g.Element{res[0], res[1], res[2], res[3], res[4]})
 }
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk sf.ECgFp5Scalar) SchnorrSig {
@@ -38,10 +38,10 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk sf.ECgFp5Scalar) Schnor
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.Fp5ToFArray(r.Encode()) {
+	for i, elem := range gFp5.ToBasefieldArray(r.Encode()) {
 		preImage[i] = elem
 	}
-	for i, elem := range gFp5.Fp5ToFArray(hashedMsg) {
+	for i, elem := range gFp5.ToBasefieldArray(hashedMsg) {
 		preImage[i+5] = elem
 	}
 
@@ -56,10 +56,10 @@ func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k sf.ECgFp5Scalar) Sc
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.Fp5ToFArray(r.Encode()) {
+	for i, elem := range gFp5.ToBasefieldArray(r.Encode()) {
 		preImage[i] = elem
 	}
-	for i, elem := range gFp5.Fp5ToFArray(hashedMsg) {
+	for i, elem := range gFp5.ToBasefieldArray(hashedMsg) {
 		preImage[i+5] = elem
 	}
 
@@ -79,10 +79,10 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig SchnorrSig) boo
 	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E) // r_v = s*G + e*pk
 
 	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.Fp5ToFArray(rV.Encode()) {
+	for i, elem := range gFp5.ToBasefieldArray(rV.Encode()) {
 		preImage[i] = elem
 	}
-	for i, elem := range gFp5.Fp5ToFArray(hashedMsg) {
+	for i, elem := range gFp5.ToBasefieldArray(hashedMsg) {
 		preImage[i+5] = elem
 	}
 	eV := sf.FromGfp5(HashToQuinticExtension(preImage))

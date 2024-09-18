@@ -23,7 +23,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		0xFFFFFFFFFFFFFFFF,
 	}
 
-	add := gFp5.Fp5Add(val1, val2)
+	add := gFp5.Add(val1, val2)
 	expectedAdd := [5]uint64{1311768471589866989, 1147797413325783839, 1234605620731475846, 9833440832084189711, 12302652064957136911}
 	for i := 0; i < 5; i++ {
 		if add[i] != expectedAdd[i] {
@@ -31,7 +31,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		}
 	}
 
-	sub := gFp5.Fp5Sub(val1, val2)
+	sub := gFp5.Sub(val1, val2)
 	expectedSub := [5]uint64{1311768462999932401, 1147797404735849251, 1234605612141541258, 9833440823494255123, 12302652056367202323}
 	for i := 0; i < 5; i++ {
 		if sub[i] != expectedSub[i] {
@@ -39,7 +39,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		}
 	}
 
-	mul := gFp5.Fp5Mul(val1, val2)
+	mul := gFp5.Mul(val1, val2)
 	expectedMul := [5]uint64{12801331769143413385, 14031114708135177824, 4192851210753422088, 14031114723597060086, 4193451712464626164}
 	for i := 0; i < 5; i++ {
 		if mul[i] != expectedMul[i] {
@@ -47,7 +47,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		}
 	}
 
-	square := gFp5.Fp5Square(val1)
+	square := gFp5.Square(val1)
 	expectedSquare := [5]uint64{
 		2711468769317614959,
 		15562737284369360677,
@@ -71,7 +71,7 @@ func TestRepeatedFrobeniusgFp5(t *testing.T) {
 		0xAABBCCDDEEFF0011,
 	}
 
-	res := gFp5.Fp5RepeatedFrobenius(val, 1)
+	res := gFp5.RepeatedFrobenius(val, 1)
 
 	expected := [5]uint64{
 		1311768467294899695,
@@ -95,7 +95,7 @@ func TestgFp5TryInverse(t *testing.T) {
 		0x8877665544332211,
 		0xAABBCCDDEEFF0011,
 	}
-	result := gFp5.Fp5InverseOrZero(val)
+	result := gFp5.InverseOrZero(val)
 
 	// Expected values
 	expected := [5]uint64{
@@ -106,7 +106,7 @@ func TestgFp5TryInverse(t *testing.T) {
 		8256636258983026155,
 	}
 
-	for i, elem := range gFp5.Fp5ToFArray(result) {
+	for i, elem := range gFp5.ToBasefieldArray(result) {
 		if elem.Uint64() != expected[i] {
 			t.Fatalf("Assertion failed at index %d: expected %d, got %d", i, expected[i], elem)
 		}
@@ -114,7 +114,7 @@ func TestgFp5TryInverse(t *testing.T) {
 }
 
 func TestQuinticExtSgn0(t *testing.T) {
-	if !gFp5.Fp5Sgn0(gFp5.Element{
+	if !gFp5.Sgn0(gFp5.Element{
 		7146494650688613286,
 		2524706331227574337,
 		2805008444831673606,
@@ -142,27 +142,27 @@ func TestSqrtFunctions(t *testing.T) {
 		15556190572415033139,
 	}
 
-	result, exists := gFp5.Fp5CanonicalSqrt(x)
+	result, exists := gFp5.CanonicalSqrt(x)
 	if !exists {
 		t.Fatalf("Expected canonical sqrt to exist, but it does not")
 	}
 
-	if !gFp5.Fp5Equals(result, expected) {
+	if !gFp5.Equals(result, expected) {
 		t.Fatalf("Expected canonical sqrt to be %v, but got %v", expected, result)
 	}
 
-	result2, exists2 := gFp5.Fp5Sqrt(x)
+	result2, exists2 := gFp5.Sqrt(x)
 	if !exists2 {
 		t.Fatalf("Expected sqrt to exist, but it does not")
 	}
 
-	if !gFp5.Fp5Equals(result2, expected) {
+	if !gFp5.Equals(result2, expected) {
 		t.Fatalf("Expected sqrt to be %v, but got %v", expected, result2)
 	}
 }
 
 func TestSqrtNonExistent(t *testing.T) {
-	_, exists := gFp5.Fp5Sqrt(gFp5.Element{
+	_, exists := gFp5.Sqrt(gFp5.Element{
 		3558249639744866495,
 		2615658757916804776,
 		14375546700029059319,
@@ -176,7 +176,7 @@ func TestSqrtNonExistent(t *testing.T) {
 
 func TestLegendre(t *testing.T) {
 	// Test zero
-	zeroLegendre := gFp5.Fp5Legendre(gFp5.FP5_ZERO)
+	zeroLegendre := gFp5.Legendre(gFp5.FP5_ZERO)
 	if !zeroLegendre.IsZero() {
 		t.Fatalf("Expected Legendre symbol of zero to be zero")
 	}
@@ -185,13 +185,13 @@ func TestLegendre(t *testing.T) {
 	for i := 0; i < 32; i++ {
 		var x gFp5.Element
 		for {
-			attempt := gFp5.Fp5Sample()
-			if _, exists := gFp5.Fp5Sqrt(attempt); !exists {
+			attempt := gFp5.Sample()
+			if _, exists := gFp5.Sqrt(attempt); !exists {
 				x = attempt
 				break
 			}
 		}
-		legendreSym := gFp5.Fp5Legendre(x)
+		legendreSym := gFp5.Legendre(x)
 
 		negOne := g.NegOne()
 
@@ -202,9 +202,9 @@ func TestLegendre(t *testing.T) {
 
 	// Test squares
 	for i := 0; i < 32; i++ {
-		x := gFp5.Fp5Sample()
-		square := gFp5.Fp5Square(x)
-		legendreSym := gFp5.Fp5Legendre(square)
+		x := gFp5.Sample()
+		square := gFp5.Square(x)
+		legendreSym := gFp5.Legendre(square)
 
 		if !legendreSym.IsOne() {
 			t.Fatalf("Expected Legendre symbol of square to be 1, but got %v", legendreSym)
@@ -213,8 +213,8 @@ func TestLegendre(t *testing.T) {
 
 	// Test zero again
 	x := gFp5.FP5_ZERO
-	square := gFp5.Fp5Mul(x, x)
-	legendreSym := gFp5.Fp5Legendre(square)
+	square := gFp5.Mul(x, x)
+	legendreSym := gFp5.Legendre(square)
 	if !legendreSym.IsZero() {
 		t.Fatalf("Expected Legendre symbol of zero to be zero")
 	}

@@ -479,7 +479,7 @@ func testVectors() [8]gFp5.Element {
 	// P6 = 2*P1 + P2 (in G) (encoded as w6)
 	// P7 = P1 + 2*P2 (in G) (encoded as w7)
 
-	w0 := gFp5.Fp5DeepCopy(gFp5.FP5_ZERO)
+	w0 := gFp5.FP5_ZERO
 	w1 := gFp5.Element{
 		12539254003028696409,
 		15524144070600887654,

@@ -74,11 +74,7 @@ func FMul(elems ...*Element) Element {
 
 func FSqrt(elem *Element) *Element {
 	elemCopy := FDeepCopy(elem)
-	retVal := elemCopy.Sqrt(&elemCopy)
-	if retVal == nil {
-		return nil
-	}
-	return &elemCopy
+	return elemCopy.Sqrt(&elemCopy)
 }
 
 // Powers starting from 1

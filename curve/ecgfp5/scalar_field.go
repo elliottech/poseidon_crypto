@@ -1,6 +1,7 @@
 package ecgfp5
 
 import (
+	"encoding/binary"
 	"math/big"
 	"math/bits"
 	"math/rand"
@@ -13,6 +14,22 @@ import (
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar struct {
 	Value [5]big.Int
+}
+
+func (s ECgFp5Scalar) ToLittleEndianBytes() [40]byte {
+	var result [40]byte
+	for i := 0; i < 5; i++ {
+		binary.LittleEndian.PutUint64(result[i*8:], s.Value[i].Uint64())
+	}
+	return result
+}
+
+func FromLittleEndianBytes(data [40]byte) ECgFp5Scalar {
+	var value [5]big.Int
+	for i := 0; i < 5; i++ {
+		value[i].SetUint64(binary.LittleEndian.Uint64(data[i*8:]))
+	}
+	return ECgFp5Scalar{value}
 }
 
 func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {

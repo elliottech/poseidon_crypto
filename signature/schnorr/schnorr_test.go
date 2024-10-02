@@ -5,6 +5,7 @@ import (
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
 func TestHashToQuinticExtension(t *testing.T) {
@@ -40,6 +41,23 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 
 	pk := SchnorrPkFromSk(sk)
 	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
+		t.Fatalf("Signature is invalid")
+	}
+}
+
+func TestBytes(t *testing.T) {
+	sk := curve.Sample()    // Sample a secret key
+	msg := g.RandArray(244) // Random message of 244 field elements (big)
+	hashedMsg := HashToQuinticExtension(msg)
+
+	sig := SchnorrSignHashedMessage(hashedMsg, sk)
+	sig2 := FromBytes(sig.ToBytes())
+	if !sig2.S.Equals(sig.S) || !sig2.E.Equals(sig.E) {
+		t.Fatalf("bytes do not match")
+	}
+
+	pk := gFp5.FromCanonicalLittleEndianBytes(gFp5.ToLittleEndianBytes(SchnorrPkFromSk(sk)))
+	if !IsSchnorrSignatureValid(pk, hashedMsg, sig2) {
 		t.Fatalf("Signature is invalid")
 	}
 }

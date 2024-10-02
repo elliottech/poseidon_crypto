@@ -48,7 +48,6 @@ func TestBytes(t *testing.T) {
 	gFp5Elem1 := gFp5.Sample()
 	gFp5Elem1BE := gFp5.ToBigEndianBytes(gFp5Elem1)
 	gFp5Elem1LE := gFp5.ToLittleEndianBytes(gFp5Elem1)
-
 	for i := 0; i < 5; i++ {
 		for j := 0; j < g.Bytes; j++ {
 			if gFp5Elem1BE[i*8+j] != gFp5Elem1LE[(i*8)+7-j] {

@@ -152,7 +152,7 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		t.Fatalf("Signature is invalid")
 	}
 
-	sk = curve.Sample() // Sample a secret key
+	sk = curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)
 	hashedMsg := HashToQuinticExtension(msg)
 
@@ -165,8 +165,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	sk := curve.Sample()    // Sample a secret key
-	msg := g.RandArray(244) // Random message of 244 field elements (big)
+	sk := curve.SampleScalar(nil) // Sample a secret key
+	msg := g.RandArray(244)       // Random message of 244 field elements (big)
 	hashedMsg := HashToQuinticExtension(msg)
 
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)

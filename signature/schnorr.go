@@ -12,27 +12,6 @@ type SchnorrSig struct {
 	E curve.ECgFp5Scalar
 }
 
-// (s little endian) || (e little endian)
-func (s SchnorrSig) ToBytes() [80]byte {
-	sBytes := s.S.ToLittleEndianBytes()
-	eBytes := s.E.ToLittleEndianBytes()
-	var res [80]byte
-	copy(res[:40], sBytes[:])
-	copy(res[40:], eBytes[:])
-	return res
-}
-
-func FromBytes(b [80]byte) SchnorrSig {
-	var sBytes [40]byte
-	var eBytes [40]byte
-	copy(sBytes[:], b[:40])
-	copy(eBytes[:], b[40:])
-	return SchnorrSig{
-		S: curve.ScalarElementFromLittleEndianBytes(sBytes),
-		E: curve.ScalarElementFromLittleEndianBytes(eBytes),
-	}
-}
-
 var ZERO_SIG = SchnorrSig{
 	S: curve.ZERO,
 	E: curve.ZERO,
@@ -56,24 +35,6 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sch
 	k := curve.SampleScalar(nil)
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
 
-	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.ToBasefieldArray(r.Encode()) {
-		preImage[i] = elem
-	}
-	for i, elem := range gFp5.ToBasefieldArray(hashedMsg) {
-		preImage[i+5] = elem
-	}
-
-	e := curve.FromGfp5(HashToQuinticExtension(preImage))
-	return SchnorrSig{
-		S: k.Sub(e.Mul(sk)),
-		E: e,
-	}
-}
-
-func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) SchnorrSig {
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.Element, 5+5)
 	for i, elem := range gFp5.ToBasefieldArray(r.Encode()) {

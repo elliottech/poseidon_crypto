@@ -1,6 +1,7 @@
 package ecgfp5
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
 	"math/bits"
@@ -24,7 +25,7 @@ func (s ECgFp5Scalar) ToLittleEndianBytes() [40]byte {
 	return result
 }
 
-func FromLittleEndianBytes(data [40]byte) ECgFp5Scalar {
+func ScalarElementFromLittleEndianBytes(data [40]byte) ECgFp5Scalar {
 	var value [5]big.Int
 	for i := 0; i < 5; i++ {
 		value[i].SetUint64(binary.LittleEndian.Uint64(data[i*8:]))
@@ -43,13 +44,21 @@ func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
 	return result
 }
 
-func Sample() ECgFp5Scalar {
-	return FromNonCanonicalBigInt(
-		new(big.Int).Rand(
-			rand.New(rand.NewSource(time.Now().UnixNano())),
-			ORDER,
-		),
-	)
+func SampleScalar(seed *string) ECgFp5Scalar {
+	var rng *rand.Rand
+	if seed == nil {
+		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+	} else {
+		seedBytes := []byte(*seed)
+		hash := sha256.Sum256(seedBytes)
+		var intSeed int64
+		for _, b := range hash[:8] {
+			intSeed = (intSeed << 8) | int64(b)
+		}
+		rng = rand.New(rand.NewSource(intSeed))
+	}
+
+	return FromNonCanonicalBigInt(new(big.Int).Rand(rng, ORDER))
 }
 
 func (s ECgFp5Scalar) GetUint64Limbs() [5]uint64 {

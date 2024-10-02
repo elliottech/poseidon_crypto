@@ -1,4 +1,4 @@
-package schnorr
+package signature
 
 import (
 	"math/big"

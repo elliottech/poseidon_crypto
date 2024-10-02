@@ -1,11 +1,87 @@
 package field
 
 import (
+	"encoding/binary"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+
+	"math/rand"
 )
+
+func TestBytes(t *testing.T) {
+	e1 := g.Sample()
+
+	beBytes := g.ToBigEndianBytes(e1)
+	leBytes := g.ToLittleEndianBytes(e1)
+	for i := 0; i < g.Bytes; i++ {
+		if beBytes[i] != leBytes[g.Bytes-i-1] {
+			t.Fatalf("Big endian and little endian bytes are not reversed")
+		}
+	}
+
+	e1ReconstructedBE := g.FromCanonicalBigEndianBytes(beBytes)
+	e1ReconstructedLE := g.FromCanonicalLittleEndianBytes(leBytes)
+	if !g.Equals(&e1, &e1ReconstructedBE) || !g.Equals(&e1, &e1ReconstructedLE) {
+		t.Fatalf("bytes do not match")
+	}
+
+	randUint64 := rand.Uint64()
+	elem := g.FromUint64(randUint64)
+
+	beBytesUint64 := make([]byte, 8)
+	leBytesUint64 := make([]byte, 8)
+	binary.BigEndian.PutUint64(beBytesUint64, randUint64)
+	binary.LittleEndian.PutUint64(leBytesUint64, randUint64)
+	beBytesElem := g.ToBigEndianBytes(elem)
+	leBytesElem := g.ToLittleEndianBytes(elem)
+	for i := 0; i < 8; i++ {
+		if beBytesUint64[i] != beBytesElem[g.Bytes-8+i] {
+			t.Fatalf("Big-endian bytes do not match at index %d: expected %x, got %x", i, beBytesUint64[i], beBytesElem[g.Bytes-8+i])
+		}
+		if leBytesUint64[i] != leBytesElem[i] {
+			t.Fatalf("Little-endian bytes do not match at index %d: expected %x, got %x", i, leBytesUint64[i], leBytesElem[i])
+		}
+	}
+
+	gFp5Elem1 := gFp5.Sample()
+	gFp5Elem1BE := gFp5.ToBigEndianBytes(gFp5Elem1)
+	gFp5Elem1LE := gFp5.ToLittleEndianBytes(gFp5Elem1)
+
+	for i := 0; i < 5; i++ {
+		for j := 0; j < g.Bytes; j++ {
+			if gFp5Elem1BE[i*8+j] != gFp5Elem1LE[(i*8)+7-j] {
+				t.Fatalf("Big endian and little endian bytes are not reversed")
+			}
+		}
+	}
+
+	gFp5Elem1ReconstructedBE := gFp5.FromCanonicalBigEndianBytes(gFp5Elem1BE)
+	gFp5Elem1ReconstructedLE := gFp5.FromCanonicalLittleEndianBytes(gFp5Elem1LE)
+	if !gFp5.Equals(gFp5Elem1, gFp5Elem1ReconstructedBE) || !gFp5.Equals(gFp5Elem1, gFp5Elem1ReconstructedLE) {
+		t.Fatalf("bytes do not match")
+	}
+
+	gFp5Elem1Elems := gFp5.ToBasefieldArray(gFp5Elem1)
+	gFp5Elem1ElemBEBytes := make([][8]byte, 5)
+	gFp5Elem1ElemLEBytes := make([][8]byte, 5)
+	for i, elem := range gFp5Elem1Elems {
+		gFp5Elem1ElemBEBytes[i] = g.ToBigEndianBytes(elem)
+		gFp5Elem1ElemLEBytes[i] = g.ToLittleEndianBytes(elem)
+	}
+
+	for i := 0; i < 5; i++ {
+		for j := 0; j < 8; j++ {
+			if gFp5Elem1BE[i*8+j] != gFp5Elem1ElemBEBytes[i][j] {
+				t.Fatalf("Big-endian bytes do not match at index %d: expected %x, got %x", i*8+j, gFp5Elem1BE[i*8+j], gFp5Elem1ElemBEBytes[i][j])
+			}
+			if gFp5Elem1LE[i*8+j] != gFp5Elem1ElemLEBytes[i][j] {
+				t.Fatalf("Little-endian bytes do not match at index %d: expected %x, got %x", i*8+j, gFp5Elem1LE[i*8+j], gFp5Elem1ElemLEBytes[i][j])
+			}
+		}
+	}
+}
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	val1 := gFp5.Element{

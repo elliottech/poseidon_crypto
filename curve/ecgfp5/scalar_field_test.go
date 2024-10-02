@@ -20,7 +20,7 @@ func TestSerdes(t *testing.T) {
 	}
 
 	leBytes := scalar.ToLittleEndianBytes()
-	result := FromLittleEndianBytes(leBytes)
+	result := ScalarElementFromLittleEndianBytes(leBytes)
 
 	if !scalar.Equals(result) {
 		t.Fatalf("Expected %v, but got %v", scalar, result)

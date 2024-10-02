@@ -1,4 +1,4 @@
-package schnorr
+package signature
 
 import (
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"

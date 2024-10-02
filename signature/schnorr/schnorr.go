@@ -12,6 +12,27 @@ type SchnorrSig struct {
 	E curve.ECgFp5Scalar
 }
 
+// (s little endian) || (e little endian)
+func (s SchnorrSig) ToBytes() [80]byte {
+	sBytes := s.S.ToLittleEndianBytes()
+	eBytes := s.E.ToLittleEndianBytes()
+	var res [80]byte
+	copy(res[:40], sBytes[:])
+	copy(res[40:], eBytes[:])
+	return res
+}
+
+func FromBytes(b [80]byte) SchnorrSig {
+	var sBytes [40]byte
+	var eBytes [40]byte
+	copy(sBytes[:], b[:40])
+	copy(eBytes[:], b[40:])
+	return SchnorrSig{
+		S: curve.FromLittleEndianBytes(sBytes),
+		E: curve.FromLittleEndianBytes(eBytes),
+	}
+}
+
 var ZERO_SIG = SchnorrSig{
 	S: curve.ZERO,
 	E: curve.ZERO,

@@ -8,6 +8,25 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
+func TestSerdes(t *testing.T) {
+	scalar := ECgFp5Scalar{
+		Value: [5]big.Int{
+			*new(big.Int).SetUint64(6950590877883398434),
+			*new(big.Int).SetUint64(17178336263794770543),
+			*new(big.Int).SetUint64(11012823478139181320),
+			*new(big.Int).SetUint64(16445091359523510936),
+			*new(big.Int).SetUint64(5882925226143600273),
+		},
+	}
+
+	leBytes := scalar.ToLittleEndianBytes()
+	result := FromLittleEndianBytes(leBytes)
+
+	if !scalar.Equals(result) {
+		t.Fatalf("Expected %v, but got %v", scalar, result)
+	}
+}
+
 func TestSplitTo4LimbBits(t *testing.T) {
 	scalar := ECgFp5Scalar{
 		Value: [5]big.Int{

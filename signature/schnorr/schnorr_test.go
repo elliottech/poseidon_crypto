@@ -7,10 +7,11 @@ import (
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 )
 
 func TestHashToQuinticExtension(t *testing.T) {
-	result := HashToQuinticExtension([]g.Element{
+	result := p2.HashToQuinticExtension([]g.Element{
 		*new(g.Element).SetUint64(3451004116618606032),
 		*new(g.Element).SetUint64(11263134342958518251),
 		*new(g.Element).SetUint64(10957204882857370932),
@@ -89,7 +90,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		}
 	}
 
-	if !IsSchnorrSignatureValid(SchnorrPkFromSk(sk), hashedMessage, sig) {
+	pk := SchnorrPkFromSk(sk)
+	if !IsSchnorrSignatureValid(&pk, &hashedMessage, sig) {
 		t.Fatalf("Signature is invalid")
 	}
 
@@ -148,18 +150,19 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		}
 	}
 
-	if !IsSchnorrSignatureValid(SchnorrPkFromSk(sk), hashedMessage, sig) {
+	pk = SchnorrPkFromSk(sk)
+	if !IsSchnorrSignatureValid(&pk, &hashedMessage, sig) {
 		t.Fatalf("Signature is invalid")
 	}
 
 	sk = curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)
-	hashedMsg := HashToQuinticExtension(msg)
+	hashedMsg := p2.HashToQuinticExtension(msg)
 
 	sig = SchnorrSignHashedMessage(hashedMsg, sk)
 
-	pk := SchnorrPkFromSk(sk)
-	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
+	pk = SchnorrPkFromSk(sk)
+	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
 	}
 }
@@ -167,16 +170,16 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 func TestBytes(t *testing.T) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
-	hashedMsg := HashToQuinticExtension(msg)
+	hashedMsg := p2.HashToQuinticExtension(msg)
 
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)
-	sig2 := FromBytes(sig.ToBytes())
+	sig2, _ := SigFromBytes(sig.ToBytes())
 	if !sig2.S.Equals(sig.S) || !sig2.E.Equals(sig.E) {
 		t.Fatalf("bytes do not match")
 	}
 
-	pk := gFp5.FromCanonicalLittleEndianBytes(gFp5.ToLittleEndianBytes(SchnorrPkFromSk(sk)))
-	if !IsSchnorrSignatureValid(pk, hashedMsg, sig2) {
+	pk := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig2) {
 		t.Fatalf("Signature is invalid")
 	}
 }

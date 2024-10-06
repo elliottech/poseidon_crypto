@@ -3,6 +3,8 @@ package goldilocks
 // Partially wraps and extends the functionality of the goldilocks field package.
 
 import (
+	"fmt"
+
 	g "github.com/consensys/gnark-crypto/field/goldilocks"
 )
 
@@ -10,31 +12,105 @@ type Element = g.Element
 
 const Bytes = 8
 
-func reverseBytes(b [Bytes]byte) [Bytes]byte {
+func reverseBytes(b []byte) []byte {
+	res := make([]byte, len(b))
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
-		b[i], b[j] = b[j], b[i]
+		res[i], res[j] = b[j], b[i]
 	}
-	return b
+	return res
 }
 
-func ToBigEndianBytes(e Element) [Bytes]byte {
-	return e.Bytes()
+func ArrayFromNonCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
+	inClone := make([]byte, len(in))
+	copy(inClone, in)
+
+	// Make up to a multiple of 8 bytes
+	if len(inClone)%8 != 0 {
+		inClone = append(inClone, make([]byte, 8-len(inClone)%8)...)
+	}
+
+	ret := make([]Element, 0)
+	for i := 0; i < len(inClone); {
+		nextStart := i + 8
+		elem, err := FromNonCanonicalLittleEndianBytes(inClone[i:nextStart])
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", inClone[i:nextStart], err)
+		}
+		ret = append(ret, *elem)
+		i = nextStart
+	}
+	return ret, nil
 }
 
-func FromCanonicalBigEndianBytes(in [Bytes]byte) Element {
+func ToBigEndianBytes(e ...Element) []byte {
+	res := make([]byte, 0)
+	for _, elem := range e {
+		bytes := elem.Bytes()
+		res = append(res, bytes[:]...)
+	}
+	return res
+}
+
+func FromCanonicalBigEndianBytes(in []byte) Element {
 	elem := g.NewElement(0)
 	elem.SetBytesCanonical(in[:])
 	return elem
 }
 
-func ToLittleEndianBytes(e Element) [Bytes]byte {
-	return reverseBytes(e.Bytes())
+func ToLittleEndianBytes(e ...Element) []byte {
+	res := make([]byte, 0)
+	for _, elem := range e {
+		bytes := elem.Bytes()
+		res = append(res, reverseBytes(bytes[:])...)
+	}
+	return res
 }
 
-func FromCanonicalLittleEndianBytes(in [Bytes]byte) Element {
+func FromNonCanonicalLittleEndianBytes(in []byte) (*Element, error) {
 	elem := g.NewElement(0)
-	reversedBytes := reverseBytes(in)
-	elem.SetBytesCanonical(reversedBytes[:])
+	err := elem.SetBytesCanonical(reverseBytes(in))
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert bytes to field element: %w", err)
+	}
+	return &elem, nil
+}
+
+func FromCanonicalLittleEndianBytes(in []byte) Element {
+	elem := g.NewElement(0)
+	elem.SetBytesCanonical(reverseBytes(in))
+	return elem
+}
+
+func ArrayToLittleEndianBytes(e []Element) []byte {
+	res := make([]byte, 0)
+	for _, elem := range e {
+		res = append(res, ToLittleEndianBytes(elem)...)
+	}
+	return res
+}
+
+func ToString(e ...Element) string {
+	res := ""
+	for _, elem := range e {
+		res += elem.String() + " "
+	}
+	return res
+}
+
+func FromBool(value bool) Element {
+	if value {
+		return One()
+	}
+	return Zero()
+}
+
+func FromInt64Abs(value int64) Element {
+	return FromUint64(uint64(value & 0x7FFFFFFFFFFFFFFF))
+}
+
+func FromInt64(value int64) Element {
+	elem := g.NewElement(0)
+	elem.SetInt64(value)
 	return elem
 }
 
@@ -42,6 +118,10 @@ func FromUint64(value uint64) Element {
 	elem := g.NewElement(0)
 	elem.SetUint64(value)
 	return elem
+}
+
+func FromUint32(value uint32) Element {
+	return FromUint64(uint64(value))
 }
 
 func Equals(a, b *Element) bool {

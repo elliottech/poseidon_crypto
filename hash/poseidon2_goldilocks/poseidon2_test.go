@@ -1,11 +1,29 @@
 package poseidon2
 
 import (
+	"fmt"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
-	"github.com/stretchr/testify/assert"
 )
+
+func TestGetNilTreeLevels(t *testing.T) {
+	res := []HashOut{EmptyHashOut()}
+	for i := 1; i < 128; i++ {
+		res = append(res, HashTwoToOne(res[i-1], res[i-1]))
+	}
+
+	fmt.Println()
+	for i := 0; i < len(res); i++ {
+		fmt.Printf("Level %d: ", i)
+		leBytes := res[i].ToLittleEndianBytes()
+		for j := 0; j < len(leBytes); j++ {
+			fmt.Printf("%d ", leBytes[j])
+		}
+		fmt.Println()
+	}
+	fmt.Println()
+}
 
 func TestPermute(t *testing.T) {
 	inp := [WIDTH]g.Element{
@@ -23,8 +41,7 @@ func TestPermute(t *testing.T) {
 		g.FromUint64(2468250420241012720),
 	}
 
-	p := Poseidon2{}
-	p.Permute(&inp)
+	Permute(&inp)
 
 	expected := [WIDTH]g.Element{
 		g.FromUint64(5364184781011389007),
@@ -64,8 +81,7 @@ func TestHashNToMNoPad(t *testing.T) {
 		g.FromUint64(8347759953730634762),
 	}
 
-	p := Poseidon2{}
-	res := p.HashNToMNoPad(inp[:], 12)
+	res := HashNToMNoPad(inp[:], 12)
 
 	expected := [WIDTH]g.Element{
 		g.FromUint64(3627923032009111551),
@@ -93,24 +109,142 @@ func TestDigest(t *testing.T) {
 	hFunc := NewPoseidon2()
 
 	inputs := make([][]byte, 2)
-	inputs[0] = make([]byte, 1)
+	inputs[0] = make([]byte, 8)
 	inputs[0][0] = 1
-	inputs[1] = make([]byte, 1)
-	inputs[1][0] = 2
+	inputs[0][1] = 2
+	inputs[0][2] = 3
+	inputs[0][3] = 4
+	inputs[0][4] = 5
+	inputs[0][5] = 6
+	inputs[0][6] = 7
+	inputs[0][7] = 0
+	inputs[1] = make([]byte, 8)
+	inputs[1][0] = 7
+	inputs[1][1] = 6
+	inputs[1][2] = 5
+	inputs[1][3] = 4
+	inputs[1][4] = 3
+	inputs[1][5] = 2
+	inputs[1][6] = 1
+	inputs[1][7] = 0
+
+	g1, _ := g.FromNonCanonicalLittleEndianBytes(inputs[0]) // 289077004332300282
+	g2, _ := g.FromNonCanonicalLittleEndianBytes(inputs[1]) // 289644378102298614
 
 	hFunc.Write(inputs[0])
 	hFunc.Write(inputs[1])
 
-	hash1 := g.Element{}
-	hash1.SetBytes(hFunc.Sum(nil))
+	hash := hFunc.Sum(nil)
 
-	one := g.Element{0}
-	one.SetBytes(inputs[0])
-	two := g.Element{0}
-	two.SetBytes(inputs[1])
+	hash2Elems := HashNoPad([]g.Element{*g1, *g2})
+	hash2 := hash2Elems.ToLittleEndianBytes()
 
-	p := Poseidon2{}
-	hash2 := p.HashNToMNoPad([]g.Element{one, two}, 1)[0]
+	for i := 0; i < len(hash); i++ {
+		if hash[i] != hash2[i] {
+			t.Fail()
+		}
+	}
 
-	assert.True(t, hash1.Equal(&hash2), "%s != %s", hash1, hash2)
+	reconstructed, _ := HashOutFromLittleEndianBytes(hash)
+	for i := 0; i < 4; i++ {
+		if hash2Elems[i] != reconstructed[i] {
+			t.Fail()
+		}
+	}
+}
+
+func TestHashNToHashNoPad(t *testing.T) {
+
+	res := HashNToHashNoPad([]g.Element{
+		g.FromUint64(11295517158488612626),
+		g.FromUint64(10669470463693797151),
+		g.FromUint64(17232114065640264171),
+		g.FromUint64(4175927072186299193),
+		g.FromUint64(13985285184240204531),
+		g.FromUint64(7901017084268693144),
+		g.FromUint64(4326299618263946178),
+		g.FromUint64(14787024750292535041),
+		g.FromUint64(894520636503353046),
+		g.FromUint64(12556655399058578835),
+		g.FromUint64(3097737892474696200),
+		g.FromUint64(7515335668060050861),
+	})
+
+	expected := HashOut{
+		g.FromUint64(15396602476382546759),
+		g.FromUint64(12422280135166335470),
+		g.FromUint64(8165681190607828974),
+		g.FromUint64(3475588160239961712),
+	}
+
+	for i := 0; i < 4; i++ {
+		if res[i] != expected[i] {
+			t.Fail()
+		}
+	}
+}
+
+func TestHashTwoToOne(t *testing.T) {
+
+	input1 := HashOut{
+		g.FromUint64(3777312593917610528),
+		g.FromUint64(6858608920877200812),
+		g.FromUint64(5269611035257552853),
+		g.FromUint64(10607733449481270434),
+	}
+
+	input2 := HashOut{
+		g.FromUint64(10355703322562521155),
+		g.FromUint64(1039917189921776884),
+		g.FromUint64(10844249567941924238),
+		g.FromUint64(14291130953945924124),
+	}
+
+	expected := HashOut{
+		g.FromUint64(1453933811752520343),
+		g.FromUint64(16186418140372484281),
+		g.FromUint64(9207215809524681813),
+		g.FromUint64(10182182911172027974),
+	}
+
+	res := HashTwoToOne(input1, input2)
+	for i := 0; i < 4; i++ {
+		if res[i] != expected[i] {
+			t.Fail()
+		}
+	}
+}
+
+func TestHashNToOne(t *testing.T) {
+
+	hashIns := []HashOut{HashNToHashNoPad([]g.Element{
+		g.FromUint64(18231458557829081414),
+		g.FromUint64(16449039301999856654),
+		g.FromUint64(14758090268883299362),
+		g.FromUint64(10271725147130672875),
+		g.FromUint64(6253304685402495037),
+		g.FromUint64(16079709420464120062),
+		g.FromUint64(10838593640248082543),
+		g.FromUint64(2974225335734585509),
+		g.FromUint64(6365466669981419503),
+		g.FromUint64(12964544245312854826),
+		g.FromUint64(3161534615047618958),
+		g.FromUint64(15109271288782125222),
+	})}
+	for i := 1; i < 12; i++ {
+		hashIns = append(hashIns, HashTwoToOne(hashIns[i-1], hashIns[i-1]))
+	}
+
+	res := HashNToOne(hashIns)
+	expected := HashOut{
+		g.FromUint64(3346041518891302234),
+		g.FromUint64(10181430332820953144),
+		g.FromUint64(14852547783810217847),
+		g.FromUint64(17043509806476508794),
+	}
+	for i := 0; i < 4; i++ {
+		if res[i] != expected[i] {
+			t.Fail()
+		}
+	}
 }

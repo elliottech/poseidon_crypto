@@ -22,16 +22,16 @@ var (
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 )
 
-func ToBigEndianBytes(e Element) [Bytes]byte {
+func (e Element) ToBigEndianBytes() []byte {
 	elemBytes := [Bytes]byte{}
 	for i, limb := range e {
 		binary.BigEndian.PutUint64(elemBytes[i*g.Bytes:], limb)
 	}
-	return elemBytes
+	return elemBytes[:]
 }
 
-func FromCanonicalBigEndianBytes(in [Bytes]byte) Element {
-	elemBytesBigEndian := [5][g.Bytes]byte{
+func FromCanonicalBigEndianBytes(in []byte) Element {
+	elemBytesLittleEndian := [5][]byte{
 		{in[7], in[6], in[5], in[4], in[3], in[2], in[1], in[0]},
 		{in[15], in[14], in[13], in[12], in[11], in[10], in[9], in[8]},
 		{in[23], in[22], in[21], in[20], in[19], in[18], in[17], in[16]},
@@ -39,24 +39,24 @@ func FromCanonicalBigEndianBytes(in [Bytes]byte) Element {
 		{in[39], in[38], in[37], in[36], in[35], in[34], in[33], in[32]},
 	}
 	return FromBasefieldArray([5]g.Element{
-		g.FromCanonicalLittleEndianBytes(elemBytesBigEndian[0]),
-		g.FromCanonicalLittleEndianBytes(elemBytesBigEndian[1]),
-		g.FromCanonicalLittleEndianBytes(elemBytesBigEndian[2]),
-		g.FromCanonicalLittleEndianBytes(elemBytesBigEndian[3]),
-		g.FromCanonicalLittleEndianBytes(elemBytesBigEndian[4]),
+		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[0]),
+		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[1]),
+		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[2]),
+		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[3]),
+		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[4]),
 	})
 }
 
-func ToLittleEndianBytes(e Element) [Bytes]byte {
+func (e Element) ToLittleEndianBytes() []byte {
 	elemBytes := [Bytes]byte{}
 	for i, limb := range e {
 		binary.LittleEndian.PutUint64(elemBytes[i*g.Bytes:], limb)
 	}
-	return elemBytes
+	return elemBytes[:]
 }
 
-func FromCanonicalLittleEndianBytes(in [Bytes]byte) Element {
-	elemBytesLittleEndian := [5][g.Bytes]byte{
+func FromCanonicalLittleEndianBytes(in []byte) Element {
+	elemBytesLittleEndian := [5][]byte{
 		{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]},
 		{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]},
 		{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]},

@@ -1,22 +1,73 @@
 package poseidon2
 
 import (
-	"errors"
+	"fmt"
 	"hash"
 	"math/big"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
+
+type HashOut [4]g.Element
+
+func (h HashOut) ToLittleEndianBytes() []byte {
+	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
+}
+
+func HashToQuinticExtension(m []g.Element) gFp5.Element {
+	res := HashNToMNoPad(m, 5)
+	return gFp5.FromBasefieldArray([5]g.Element{res[0], res[1], res[2], res[3], res[4]})
+}
+
+func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
+	gArr, err := g.ArrayFromNonCanonicalLittleEndianBytes(b)
+	if err != nil {
+		return HashOut{}, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", b, err)
+	}
+
+	return HashOut{gArr[0], gArr[1], gArr[2], gArr[3]}, nil
+}
+
+func EmptyHashOut() HashOut {
+	return HashOut{g.Zero(), g.Zero(), g.Zero(), g.Zero()}
+}
 
 type Poseidon2 struct{}
 
-func (p *Poseidon2) HashNToMNoPad(input []g.Element, numOutputs int) []g.Element {
+func HashNoPad(input []g.Element) HashOut {
+	return HashNToHashNoPad(input)
+}
+
+func HashNToOne(input []HashOut) HashOut {
+	if len(input) == 1 {
+		return input[0]
+	}
+
+	res := HashTwoToOne(input[0], input[1])
+	for i := 2; i < len(input); i++ {
+		res = HashTwoToOne(res, input[i])
+	}
+
+	return res
+}
+
+func HashTwoToOne(input1, input2 HashOut) HashOut {
+	return HashNToHashNoPad([]g.Element{input1[0], input1[1], input1[2], input1[3], input2[0], input2[1], input2[2], input2[3]})
+}
+
+func HashNToHashNoPad(input []g.Element) HashOut {
+	res := HashNToMNoPad(input, 4)
+	return HashOut{res[0], res[1], res[2], res[3]}
+}
+
+func HashNToMNoPad(input []g.Element, numOutputs int) []g.Element {
 	var perm [WIDTH]g.Element
 	for i := 0; i < len(input); i += RATE {
 		for j := 0; j < RATE && i+j < len(input); j++ {
 			perm[j].Set(&input[i+j])
 		}
-		p.Permute(&perm)
+		Permute(&perm)
 	}
 
 	outputs := make([]g.Element, 0, numOutputs)
@@ -27,38 +78,38 @@ func (p *Poseidon2) HashNToMNoPad(input []g.Element, numOutputs int) []g.Element
 				return outputs
 			}
 		}
-		p.Permute(&perm)
+		Permute(&perm)
 	}
 }
 
-func (p *Poseidon2) Permute(input *[WIDTH]g.Element) {
-	p.externalLinearLayer(input)
-	p.fullRounds(input, 0)
-	p.partialRounds(input)
-	p.fullRounds(input, ROUNDS_F_HALF)
+func Permute(input *[WIDTH]g.Element) {
+	externalLinearLayer(input)
+	fullRounds(input, 0)
+	partialRounds(input)
+	fullRounds(input, ROUNDS_F_HALF)
 }
 
-func (p *Poseidon2) fullRounds(state *[WIDTH]g.Element, start int) {
+func fullRounds(state *[WIDTH]g.Element, start int) {
 	for r := start; r < start+ROUNDS_F_HALF; r++ {
-		p.addRC(state, r)
-		p.sbox(state)
-		p.externalLinearLayer(state)
+		addRC(state, r)
+		sbox(state)
+		externalLinearLayer(state)
 	}
 }
 
-func (p *Poseidon2) partialRounds(state *[WIDTH]g.Element) {
+func partialRounds(state *[WIDTH]g.Element) {
 	for r := 0; r < ROUNDS_P; r++ {
 		constant := g.FromUint64(INTERNAL_CONSTANTS[r])
 		constant.Add(&state[0], &constant)
-		state[0] = p.sboxP(&constant)
-		p.internalLinearLayer(state)
+		state[0] = sboxP(&constant)
+		internalLinearLayer(state)
 	}
 }
 
-func (p *Poseidon2) externalLinearLayer(state *[WIDTH]g.Element) {
+func externalLinearLayer(state *[WIDTH]g.Element) {
 	for i := 0; i < WIDTH; i += 4 {
 		window := [4]g.Element{state[i], state[i+1], state[i+2], state[i+3]}
-		p.applyMat4(&window)
+		applyMat4(&window)
 		copy(state[i:i+4], window[:])
 	}
 	sums := [4]g.Element{}
@@ -72,7 +123,7 @@ func (p *Poseidon2) externalLinearLayer(state *[WIDTH]g.Element) {
 	}
 }
 
-func (p *Poseidon2) internalLinearLayer(state *[WIDTH]g.Element) {
+func internalLinearLayer(state *[WIDTH]g.Element) {
 	sum := g.FromUint64(0)
 	for _, s := range state {
 		sum.Add(&sum, &s)
@@ -84,25 +135,25 @@ func (p *Poseidon2) internalLinearLayer(state *[WIDTH]g.Element) {
 	}
 }
 
-func (p *Poseidon2) addRC(state *[WIDTH]g.Element, externalRound int) {
+func addRC(state *[WIDTH]g.Element, externalRound int) {
 	for i := 0; i < WIDTH; i++ {
 		constant := g.FromUint64(EXTERNAL_CONSTANTS[externalRound][i])
 		state[i].Add(&state[i], &constant)
 	}
 }
 
-func (p *Poseidon2) sbox(state *[WIDTH]g.Element) {
+func sbox(state *[WIDTH]g.Element) {
 	for i := range state {
-		state[i] = p.sboxP(&state[i])
+		state[i] = sboxP(&state[i])
 	}
 }
 
-func (p *Poseidon2) sboxP(a *g.Element) g.Element {
+func sboxP(a *g.Element) g.Element {
 	res := g.FromUint64(0)
 	return *res.Exp(*a, big.NewInt(D))
 }
 
-func (p *Poseidon2) applyMat4(x *[4]g.Element) {
+func applyMat4(x *[4]g.Element) {
 	t01 := g.FromUint64(0)
 	t01.Add(&x[0], &x[1])
 
@@ -130,25 +181,8 @@ func (p *Poseidon2) applyMat4(x *[4]g.Element) {
 
 const BlockSize = g.Bytes // BlockSize size that poseidon consumes
 
-func Poseidon2Bytes(input ...[]byte) []byte {
-	inputElements := make([]g.Element, len(input))
-	for i, ele := range input {
-		num := BigEndianBytesToUint64(ele)
-		if num >= g.Modulus() {
-			panic("not support bytes bigger than modulus")
-		}
-
-		inputElements[i] = g.FromUint64(num)
-	}
-
-	p := Poseidon2{}
-	outputBytes := p.HashNToMNoPad(inputElements, 1)[0].Bytes()
-	return outputBytes[:]
-}
-
 type digest struct {
-	h    g.Element
-	data [][]byte // data to hash
+	data []g.Element
 }
 
 func NewPoseidon2() hash.Hash {
@@ -160,17 +194,17 @@ func NewPoseidon2() hash.Hash {
 // Reset resets the Hash to its initial state.
 func (d *digest) Reset() {
 	d.data = nil
-	d.h = g.Element{0}
 }
 
-// Only receive byte slice less than g.Modulus()
+// Get element by element.
+// TODO @irfanbozkurt: make sure we're not hashing consecutive bytes that could end up being bigger than the modulus
 func (d *digest) Write(p []byte) (n int, err error) {
-	x := BigEndianBytesToUint64(p)
-
-	if x >= g.Modulus() {
-		return 0, errors.New("not support bytes bigger than modulus")
+	gArr, err := g.ArrayFromNonCanonicalLittleEndianBytes(p)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", p, err)
 	}
-	d.data = append(d.data, p)
+
+	d.data = append(d.data, gArr...)
 	return len(p), nil
 }
 
@@ -186,23 +220,7 @@ func (d *digest) BlockSize() int {
 // Sum appends the current hash to b and returns the resulting slice.
 // It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
-	e := g.Element{0}
-	e.SetBigInt(new(big.Int).SetBytes(Poseidon2Bytes(d.data...)))
-	d.h = e
-	d.data = nil // flush the data already hashed
-	hash := d.h.Bytes()
-	b = append(b, hash[:]...)
+	b = append(b, HashNToHashNoPad(d.data).ToLittleEndianBytes()...)
+	d.data = nil
 	return b
-}
-
-func BigEndianBytesToUint64(b []byte) uint64 {
-	if len(b) > 8 {
-		panic("not support bytes bigger than modulus")
-	}
-	var num uint64
-	for i := 0; i < len(b); i++ {
-		num <<= 8
-		num |= uint64(b[i])
-	}
-	return num
 }

@@ -46,8 +46,8 @@ func TestBytes(t *testing.T) {
 	}
 
 	gFp5Elem1 := gFp5.Sample()
-	gFp5Elem1BE := gFp5.ToBigEndianBytes(gFp5Elem1)
-	gFp5Elem1LE := gFp5.ToLittleEndianBytes(gFp5Elem1)
+	gFp5Elem1BE := gFp5Elem1.ToBigEndianBytes()
+	gFp5Elem1LE := gFp5Elem1.ToLittleEndianBytes()
 	for i := 0; i < 5; i++ {
 		for j := 0; j < g.Bytes; j++ {
 			if gFp5Elem1BE[i*8+j] != gFp5Elem1LE[(i*8)+7-j] {
@@ -63,8 +63,8 @@ func TestBytes(t *testing.T) {
 	}
 
 	gFp5Elem1Elems := gFp5.ToBasefieldArray(gFp5Elem1)
-	gFp5Elem1ElemBEBytes := make([][8]byte, 5)
-	gFp5Elem1ElemLEBytes := make([][8]byte, 5)
+	gFp5Elem1ElemBEBytes := make([][]byte, 5)
+	gFp5Elem1ElemLEBytes := make([][]byte, 5)
 	for i, elem := range gFp5Elem1Elems {
 		gFp5Elem1ElemBEBytes[i] = g.ToBigEndianBytes(elem)
 		gFp5Elem1ElemLEBytes[i] = g.ToLittleEndianBytes(elem)

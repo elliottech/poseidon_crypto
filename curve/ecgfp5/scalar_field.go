@@ -17,15 +17,31 @@ type ECgFp5Scalar struct {
 	Value [5]big.Int
 }
 
-func (s ECgFp5Scalar) ToLittleEndianBytes() [40]byte {
+func (s ECgFp5Scalar) DeepCopy() ECgFp5Scalar {
+	return ECgFp5Scalar{
+		Value: [5]big.Int{
+			*new(big.Int).Set(&s.Value[0]),
+			*new(big.Int).Set(&s.Value[1]),
+			*new(big.Int).Set(&s.Value[2]),
+			*new(big.Int).Set(&s.Value[3]),
+			*new(big.Int).Set(&s.Value[4]),
+		},
+	}
+}
+
+func (s ECgFp5Scalar) ToLittleEndianBytes() []byte {
 	var result [40]byte
 	for i := 0; i < 5; i++ {
 		binary.LittleEndian.PutUint64(result[i*8:], s.Value[i].Uint64())
 	}
-	return result
+	return result[:]
 }
 
-func ScalarElementFromLittleEndianBytes(data [40]byte) ECgFp5Scalar {
+func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
+	if len(data) != 40 {
+		panic("invalid length")
+	}
+
 	var value [5]big.Int
 	for i := 0; i < 5; i++ {
 		value[i].SetUint64(binary.LittleEndian.Uint64(data[i*8:]))

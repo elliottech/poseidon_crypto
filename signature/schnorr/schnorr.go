@@ -14,6 +14,13 @@ type SchnorrSig struct {
 	E curve.ECgFp5Scalar
 }
 
+func (s SchnorrSig) DeepCopy() SchnorrSig {
+	return SchnorrSig{
+		S: s.S.DeepCopy(),
+		E: s.E.DeepCopy(),
+	}
+}
+
 // (s little endian) || (e little endian)
 func (s SchnorrSig) ToBytes() []byte {
 	sBytes := s.S.ToLittleEndianBytes()
@@ -29,14 +36,9 @@ func SigFromBytes(b []byte) (SchnorrSig, error) {
 		return ZERO_SIG, fmt.Errorf("signature length should be 80 but is %d", len(b))
 	}
 
-	var sBytes [40]byte
-	var eBytes [40]byte
-	copy(sBytes[:], b[:40])
-	copy(eBytes[:], b[40:])
-
 	return SchnorrSig{
-		S: curve.ScalarElementFromLittleEndianBytes(sBytes),
-		E: curve.ScalarElementFromLittleEndianBytes(eBytes),
+		S: curve.ScalarElementFromLittleEndianBytes(b[:40]),
+		E: curve.ScalarElementFromLittleEndianBytes(b[40:]),
 	}, nil
 }
 

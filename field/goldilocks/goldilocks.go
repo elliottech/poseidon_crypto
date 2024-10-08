@@ -42,21 +42,6 @@ func ArrayFromNonCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
 	return ret, nil
 }
 
-func ToBigEndianBytes(e ...Element) []byte {
-	res := make([]byte, 0)
-	for _, elem := range e {
-		bytes := elem.Bytes()
-		res = append(res, bytes[:]...)
-	}
-	return res
-}
-
-func FromCanonicalBigEndianBytes(in []byte) Element {
-	elem := g.NewElement(0)
-	elem.SetBytesCanonical(in[:])
-	return elem
-}
-
 func ToLittleEndianBytes(e ...Element) []byte {
 	res := make([]byte, 0)
 	for _, elem := range e {

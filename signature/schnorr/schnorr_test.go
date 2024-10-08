@@ -37,11 +37,10 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
 	hashedMsg := p2.HashToQuinticExtension(msg)
-
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)
-
 	pk := SchnorrPkFromSk(sk)
-	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig) {
+
+	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
 	}
 }
@@ -58,7 +57,8 @@ func TestBytes(t *testing.T) {
 	}
 
 	pk := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
-	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig2) {
+
+	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
 	}
 }

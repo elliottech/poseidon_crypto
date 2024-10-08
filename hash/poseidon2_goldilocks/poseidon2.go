@@ -197,7 +197,6 @@ func (d *digest) Reset() {
 }
 
 // Get element by element.
-// TODO @irfanbozkurt: make sure we're not hashing consecutive bytes that could end up being bigger than the modulus
 func (d *digest) Write(p []byte) (n int, err error) {
 	gArr, err := g.ArrayFromNonCanonicalLittleEndianBytes(p)
 	if err != nil {

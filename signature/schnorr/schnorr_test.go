@@ -179,7 +179,8 @@ func TestBytes(t *testing.T) {
 	}
 
 	pk := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
-	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig2) {
+
+	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
 	}
 }

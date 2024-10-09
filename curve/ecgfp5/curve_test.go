@@ -117,7 +117,7 @@ func TestAdd(t *testing.T) {
 		),
 	}
 
-	c := a.Add(b)
+	c := a.Add(&b)
 	expectedX := [5]uint64{
 		2091129225269376836,
 		9405624996184206232,
@@ -349,7 +349,7 @@ func TestToAffineAndLookup(t *testing.T) {
 	tab1 := make([]ECgFp5Point, 8)
 	tab1[0] = point.Double()
 	for i := 1; i < len(tab1); i++ {
-		tab1[i] = tab1[0].Add(tab1[i-1])
+		tab1[i] = tab1[0].Add(&tab1[i-1])
 	}
 
 	for n := 1; n <= len(tab1); n++ {
@@ -642,7 +642,7 @@ func TestBasicOps(t *testing.T) {
 		t.Fatalf("Encoding checks failed")
 	}
 
-	p0doubled, p0p0added, p0p1added, p1p0added := p0.Double(), p0.Add(p0), p0.Add(p1), p1.Add(p0)
+	p0doubled, p0p0added, p0p1added, p1p0added := p0.Double(), p0.Add(&p0), p0.Add(&p1), p1.Add(&p0)
 	p0doubledencoded, p0p0addedencoded, p0p1addedencoded, p1p0addedencoded := p0doubled.Encode(), p0p0added.Encode(), p0p1added.Encode(), p1p0added.Encode()
 	// if !gFp5.Equals(p0.Double().Encode(), gFp5.FP5_ZERO) || !gFp5.Equals(p0.Add(p0).Encode(), gFp5.FP5_ZERO) || !gFp5.Equals(p0.Add(p1).Encode(), vectors[1]) || !gFp5.Equals(p1.Add(p0).Encode(), vectors[1]) {
 	if !gFp5.Equals(&p0doubledencoded, &gFp5.FP5_ZERO) || !gFp5.Equals(&p0p0addedencoded, &gFp5.FP5_ZERO) || !gFp5.Equals(&p0p1addedencoded, &vectors[1]) || !gFp5.Equals(&p1p0addedencoded, &vectors[1]) {
@@ -664,8 +664,8 @@ func TestBasicOps(t *testing.T) {
 		x: *gFp5.Mul(&p2.x, gFp5.InverseOrZero(&p2.z)),
 		u: *gFp5.Mul(&p2.u, gFp5.InverseOrZero(&p2.t)),
 	}
-	qwe := p1.AddAffine(p2Affine)
-	added := p1.Add(p2)
+	qwe := p1.AddAffine(&p2Affine)
+	added := p1.Add(&p2)
 	if !qwe.Equals(&added) {
 		t.Fatalf("Affine addition check failed")
 	}

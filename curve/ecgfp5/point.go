@@ -119,7 +119,7 @@ func (p *ECgFp5Point) IsNeutral() bool {
 }
 
 // General point addition. formulas are complete (no special case).
-func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
+func (p ECgFp5Point) Add(rhs *ECgFp5Point) ECgFp5Point {
 	// cost: 10M
 
 	x1 := p.x
@@ -323,7 +323,7 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 }
 
 // Add a point in affine coordinates to this one.
-func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
+func (p ECgFp5Point) AddAffine(rhs *AffinePoint) ECgFp5Point {
 	// cost: 8M
 	x1, z1, u1, _t1 := p.x, p.z, p.u, p.t
 	x2, u2 := rhs.x, rhs.u
@@ -410,7 +410,7 @@ func (p ECgFp5Point) MakeWindowAffine() []AffinePoint {
 	tmp[0] = p
 	for i := 1; i < WIN_SIZE; i++ {
 		if (i & 1) == 0 {
-			tmp[i] = tmp[i-1].Add(p)
+			tmp[i] = tmp[i-1].Add(&p)
 		} else {
 			tmp[i] = tmp[i>>1].Double()
 		}
@@ -430,7 +430,7 @@ func (p *ECgFp5Point) SetMul(s *ECgFp5Scalar) {
 	for i := len(digits) - 2; i >= 0; i-- {
 		p.SetMDouble(uint32(WINDOW))
 		lookup := Lookup(win, digits[i])
-		*p = p.AddAffine(lookup)
+		*p = p.AddAffine(&lookup)
 	}
 }
 

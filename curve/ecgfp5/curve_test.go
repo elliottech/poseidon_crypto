@@ -685,7 +685,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		Y:     gFp5.FP5_ZERO,
 		IsInf: true,
 	}
-	p0, success := DecodeFp5AsWeierstrass(vectors[0])
+	p0, success := DecodeFp5AsWeierstrass(&vectors[0])
 	if !success {
 		t.Fatalf("w0 should succeslly decode")
 	}
@@ -710,7 +710,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p1, success := DecodeFp5AsWeierstrass(vectors[1])
+	p1, success := DecodeFp5AsWeierstrass(&vectors[1])
 	if !success {
 		t.Fatalf("w1 should succeslly decode")
 	}
@@ -735,7 +735,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p2, success := DecodeFp5AsWeierstrass(vectors[2])
+	p2, success := DecodeFp5AsWeierstrass(&vectors[2])
 	if !success {
 		t.Fatalf("w2 should succeslly decode")
 	}
@@ -760,7 +760,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p3, success := DecodeFp5AsWeierstrass(vectors[3])
+	p3, success := DecodeFp5AsWeierstrass(&vectors[3])
 	if !success {
 		t.Fatalf("w3 should succeslly decode")
 	}
@@ -785,7 +785,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p4, success := DecodeFp5AsWeierstrass(vectors[4])
+	p4, success := DecodeFp5AsWeierstrass(&vectors[4])
 	if !success {
 		t.Fatalf("w4 should succeslly decode")
 	}
@@ -810,7 +810,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p5, success := DecodeFp5AsWeierstrass(vectors[5])
+	p5, success := DecodeFp5AsWeierstrass(&vectors[5])
 	if !success {
 		t.Fatalf("w5 should succeslly decode")
 	}
@@ -835,7 +835,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p6, success := DecodeFp5AsWeierstrass(vectors[6])
+	p6, success := DecodeFp5AsWeierstrass(&vectors[6])
 	if !success {
 		t.Fatalf("w6 should succeslly decode")
 	}
@@ -860,7 +860,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 		},
 		IsInf: false,
 	}
-	p7, success := DecodeFp5AsWeierstrass(vectors[7])
+	p7, success := DecodeFp5AsWeierstrass(&vectors[7])
 	if !success {
 		t.Fatalf("w7 should succeslly decode")
 	}
@@ -869,7 +869,7 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 
 	wGen := gFp5.FromUint64(4)
-	g, success := DecodeFp5AsWeierstrass(wGen)
+	g, success := DecodeFp5AsWeierstrass(&wGen)
 	if !success {
 		t.Fatalf("w_gen should succeslly decode")
 	}

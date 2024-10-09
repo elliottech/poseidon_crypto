@@ -83,11 +83,11 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 		return fmt.Errorf("signature byte length should be 80 but is %d", len(sig))
 	}
 
-	pk, err := gFp5.FromNonCanonicalLittleEndianBytes(pubKey)
+	pk, err := gFp5.FromCanonicalLittleEndianBytes(pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to convert public key bytes to field element: %w", err)
 	}
-	hashedMsgElem, err := gFp5.FromNonCanonicalLittleEndianBytes(hashedMsg)
+	hashedMsgElem, err := gFp5.FromCanonicalLittleEndianBytes(hashedMsg)
 	if err != nil {
 		return fmt.Errorf("failed to convert hashed message bytes to field element: %w", err)
 	}
@@ -104,13 +104,12 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 }
 
 func isSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig *Signature) bool {
-	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(*pubKey)
+	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
 	if !ok {
 		return false
 	}
 
-	rV := curve.MulAdd2(&curve.GENERATOR_WEIERSTRASS, &pubKeyWs, &sig.S, &sig.E) // r_v = s*G + e*pk
-	rVEncoded := rV.Encode()                                                     // r_v = s*G
+	rVEncoded := curve.MulAdd2(&curve.GENERATOR_WEIERSTRASS, &pubKeyWs, &sig.S, &sig.E).Encode() // r_v = s*G + e*pk
 
 	return curve.FromGfp5(p2.HashToQuinticExtension([]g.Element{
 		rVEncoded[0], rVEncoded[1], rVEncoded[2], rVEncoded[3], rVEncoded[4],

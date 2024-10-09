@@ -57,8 +57,8 @@ func (p *WeierstrassPoint) Encode() gFp5.Element {
 	return *gFp5.Div(&p.Y, gFp5.Sub(gFp5.Div(&A_ECgFp5Point, gFp5.FP5_THREE), &p.X))
 }
 
-func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
-	e := gFp5.Sub(gFp5.Square(&w), &A_ECgFp5Point)
+func DecodeFp5AsWeierstrass(w *gFp5.Element) (WeierstrassPoint, bool) {
+	e := gFp5.Sub(gFp5.Square(w), &A_ECgFp5Point)
 	delta := gFp5.Sub(gFp5.Square(e), &B_MUL4_ECgFp5Point)
 	r, success := gFp5.CanonicalSqrt(delta)
 	if !success {
@@ -74,7 +74,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 		x = x2
 	}
 
-	y := gFp5.Neg(gFp5.Mul(&w, x))
+	y := gFp5.Neg(gFp5.Mul(w, x))
 	if success {
 		x = gFp5.Add(x, gFp5.Div(&A_ECgFp5Point, gFp5.FP5_THREE))
 	} else {
@@ -84,7 +84,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	isInf := !success
 
 	// If w == 0 then this is in fact a success.
-	if success || gFp5.IsZero(&w) {
+	if success || gFp5.IsZero(w) {
 		return WeierstrassPoint{X: *x, Y: *y, IsInf: isInf}, true
 	}
 	return WeierstrassPoint{}, false
@@ -160,7 +160,7 @@ func (p *WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoin
 	return multiples
 }
 
-func MulAdd2(a, b *WeierstrassPoint, scalarA, scalarB *ECgFp5Scalar) WeierstrassPoint {
+func MulAdd2(a, b *WeierstrassPoint, scalarA, scalarB *ECgFp5Scalar) *WeierstrassPoint {
 	aWindow := a.PrecomputeWindow(4)
 	aFourBitLimbs := scalarA.SplitTo4BitLimbs()
 
@@ -177,5 +177,5 @@ func MulAdd2(a, b *WeierstrassPoint, scalarA, scalarB *ECgFp5Scalar) Weierstrass
 		added := aWindow[aFourBitLimbs[i]].Add(&bWindow[bFourBitLimbs[i]])
 		res = res.Add(&added)
 	}
-	return res
+	return &res
 }

@@ -10,6 +10,12 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
+var (
+	ORDER, _ = new(big.Int).SetString("1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241", 10)
+	ZERO     = ECgFp5Scalar{}
+	ONE      = ECgFp5Scalar{1, 0, 0, 0, 0}
+)
+
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar [5]uint64
@@ -26,7 +32,6 @@ func ScalarElementFromLittleEndianBytes(data []byte) *ECgFp5Scalar {
 	if len(data) != 40 {
 		panic("invalid length")
 	}
-
 	return &ECgFp5Scalar{
 		binary.LittleEndian.Uint64(data[0:]),
 		binary.LittleEndian.Uint64(data[8:]),
@@ -62,23 +67,6 @@ func SampleScalar(seed *string) *ECgFp5Scalar {
 
 	return FromNonCanonicalBigInt(new(big.Int).Rand(rng, ORDER))
 }
-
-var (
-	ORDER, _ = new(big.Int).SetString("1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241", 10)
-	ZERO     = ECgFp5Scalar{}
-	ONE      = ECgFp5Scalar{1, 0, 0, 0, 0}
-	TWO      = ECgFp5Scalar{2, 0, 0, 0, 0}
-	NEG_ONE  = ECgFp5Scalar{
-		0xE80FD996948BFFE0,
-		0xE8885C39D724A09C,
-		0x7FFFFFE6CFB80639,
-		0x7FFFFFF100000016,
-		0x7FFFFFFD80000007,
-	}
-
-	two128 = new(big.Int).Lsh(big.NewInt(1), 128) // 2^128
-	two64  = new(big.Int).Lsh(big.NewInt(1), 64)  // 2^64
-)
 
 func (s *ECgFp5Scalar) Order() *big.Int {
 	return ORDER
@@ -216,36 +204,21 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 		//                            + (2^64 - 1) * n
 		//                         < 2^384
 		// Thus, the new r fits on 320 bits.
-		m := new(big.Int).SetUint64(rhs[i])
-		f := new(big.Int).Mul(m, new(big.Int).SetUint64(s[0]))
-		f.Add(f, new(big.Int).SetUint64(r[0]))
-		f.Mul(f, new(big.Int).SetUint64(N0I))
-		f.Mod(f, two64) // Simulate u64 wrapping
+		m := rhs[i]
+		f := (s[0]*m + r[0]) * N0I
 
-		var cc1, cc2 big.Int
+		cc1, cc2 := uint64(0), uint64(0)
 		for j := 0; j < 5; j++ {
-			z := new(big.Int).Mul(new(big.Int).SetUint64(s[j]), m)
-			z.Add(z, new(big.Int).SetUint64(r[j]))
-			z.Add(z, &cc1)
-
-			z.Mod(z, two128) // Simulate u128 wrapping
-
-			cc1 = *new(big.Int).Rsh(z, 64) // Low 64
-
-			z = new(big.Int).Add(
-				new(big.Int).Mul(f, new(big.Int).SetUint64(N[j])),
-				new(big.Int).Add(&cc2, new(big.Int).SetUint64(z.Uint64())),
-			)
-
-			z.Mod(z, two128)               // Simulate u128 wrapping
-			cc2 = *new(big.Int).Rsh(z, 64) // Low 64
-
+			z := U128From64(s[j]).Mul64(m).Add64(r[j]).Add64(cc1)
+			cc1 = z.Hi
+			z = U128From64(f).Mul64(N[j]).Add64(z.Lo).Add64(cc2)
+			cc2 = z.Hi
 			if j > 0 {
-				r[j-1] = z.Uint64()
+				r[j-1] = z.Lo
 			}
 		}
 		// No overflow here since the new r fits on 320 bits.
-		r[4] = new(big.Int).Mod(new(big.Int).Add(&cc1, &cc2), two64).Uint64() // Simulate u64 wrapping
+		r[4] = cc1 + cc2
 	}
 	// We computed (self*rhs + ff*n) / 2^320, with:
 	//    self < n

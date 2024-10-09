@@ -50,19 +50,19 @@ func (p WeierstrassPoint) Equals(q WeierstrassPoint) bool {
 	if p.IsInf && q.IsInf {
 		return true
 	}
-	return gFp5.Equals(p.X, q.X) && gFp5.Equals(p.Y, q.Y)
+	return gFp5.Equals(&p.X, &q.X) && gFp5.Equals(&p.Y, &q.Y)
 }
 
 func (p WeierstrassPoint) Encode() gFp5.Element {
-	return gFp5.Div(p.Y, gFp5.Sub(gFp5.Div(A_ECgFp5Point, gFp5.FromUint64(3)), p.X))
+	return *gFp5.Div(&p.Y, gFp5.Sub(gFp5.Div(&A_ECgFp5Point, gFp5.FP5_THREE), &p.X))
 }
 
 func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
-	e := gFp5.Sub(gFp5.Square(w), A_ECgFp5Point)
-	delta := gFp5.Sub(gFp5.Square(e), B_MUL4_ECgFp5Point)
+	e := gFp5.Sub(gFp5.Square(&w), &A_ECgFp5Point)
+	delta := gFp5.Sub(gFp5.Square(e), &B_MUL4_ECgFp5Point)
 	r, success := gFp5.CanonicalSqrt(delta)
 	if !success {
-		r = gFp5.FP5_ZERO
+		r = &gFp5.FP5_ZERO
 	}
 
 	x1 := gFp5.Div(gFp5.Add(e, r), gFp5.FP5_TWO)
@@ -74,18 +74,18 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 		x = x2
 	}
 
-	y := gFp5.Neg(gFp5.Mul(w, x))
+	y := gFp5.Neg(gFp5.Mul(&w, x))
 	if success {
-		x = gFp5.Add(x, gFp5.Div(A_ECgFp5Point, gFp5.FromUint64(3)))
+		x = gFp5.Add(x, gFp5.Div(&A_ECgFp5Point, gFp5.FP5_THREE))
 	} else {
-		x = gFp5.FP5_ZERO
+		x = &gFp5.FP5_ZERO
 	}
 
 	isInf := !success
 
 	// If w == 0 then this is in fact a success.
-	if success || gFp5.IsZero(w) {
-		return WeierstrassPoint{X: x, Y: y, IsInf: isInf}, true
+	if success || gFp5.IsZero(&w) {
+		return WeierstrassPoint{X: *x, Y: *y, IsInf: isInf}, true
 	}
 	return WeierstrassPoint{}, false
 }
@@ -102,23 +102,23 @@ func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 	x2, y2 := q.X, q.Y
 
 	// note: paper has a typo. sx == 1 when x1 != x2, not when x1 == x2
-	xSame := gFp5.Equals(x1, x2)
-	yDiff := !gFp5.Equals(y1, y2)
+	xSame := gFp5.Equals(&x1, &x2)
+	yDiff := !gFp5.Equals(&y1, &y2)
 
 	var lambda0, lambda1 gFp5.Element
 	if xSame {
-		lambda0 = gFp5.Add(gFp5.Triple(gFp5.Square(x1)), A_WEIERSTRASS)
-		lambda1 = gFp5.Double(y1)
+		lambda0 = *gFp5.Add(gFp5.Triple(gFp5.Square(&x1)), &A_WEIERSTRASS)
+		lambda1 = *gFp5.Double(&y1)
 	} else {
-		lambda0 = gFp5.Sub(y2, y1)
-		lambda1 = gFp5.Sub(x2, x1)
+		lambda0 = *gFp5.Sub(&y2, &y1)
+		lambda1 = *gFp5.Sub(&x2, &x1)
 	}
-	lambda := gFp5.Div(lambda0, lambda1)
+	lambda := gFp5.Div(&lambda0, &lambda1)
 
-	x3 := gFp5.Sub(gFp5.Sub(gFp5.Square(lambda), x1), x2)
-	y3 := gFp5.Sub(gFp5.Mul(lambda, gFp5.Sub(x1, x3)), y1)
+	x3 := gFp5.Sub(gFp5.Sub(gFp5.Square(lambda), &x1), &x2)
+	y3 := gFp5.Sub(gFp5.Mul(lambda, gFp5.Sub(&x1, x3)), &y1)
 
-	return WeierstrassPoint{X: x3, Y: y3, IsInf: xSame && yDiff}
+	return WeierstrassPoint{X: *x3, Y: *y3, IsInf: xSame && yDiff}
 }
 
 func (p WeierstrassPoint) Double() WeierstrassPoint {
@@ -130,23 +130,23 @@ func (p WeierstrassPoint) Double() WeierstrassPoint {
 		return p
 	}
 
-	lambda0 := gFp5.Square(x)
+	lambda0 := gFp5.Square(&x)
 	lambda0 = gFp5.Triple(lambda0)
-	lambda0 = gFp5.Add(lambda0, A_WEIERSTRASS)
+	lambda0 = gFp5.Add(lambda0, &A_WEIERSTRASS)
 
-	lambda1 := gFp5.Double(y)
+	lambda1 := gFp5.Double(&y)
 
 	lambda := gFp5.Div(lambda0, lambda1)
 
 	x2 := gFp5.Square(lambda)
-	two_x := gFp5.Double(x)
+	two_x := gFp5.Double(&x)
 	x2 = gFp5.Sub(x2, two_x)
 
-	y2 := gFp5.Sub(x, x2)
+	y2 := gFp5.Sub(&x, x2)
 	y2 = gFp5.Mul(lambda, y2)
-	y2 = gFp5.Sub(y2, y)
+	y2 = gFp5.Sub(y2, &y)
 
-	return WeierstrassPoint{X: x2, Y: y2, IsInf: is_inf}
+	return WeierstrassPoint{X: *x2, Y: *y2, IsInf: is_inf}
 }
 
 func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint {

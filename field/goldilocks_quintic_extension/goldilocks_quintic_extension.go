@@ -14,9 +14,11 @@ const Bytes = g.Bytes * 5
 var (
 	FP5_D = 5
 
-	FP5_ZERO = Element{g.Zero(), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
-	FP5_ONE  = Element{g.One(), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
-	FP5_TWO  = FromF(g.FromUint64(2))
+	FP5_ZERO  = Element{g.Zero(), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
+	FP5_ONE   = Element{g.One(), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
+	FP5_TWO   = FromF(g.FromUint64(2))
+	FP5_THREE = FromF(g.FromUint64(3))
+	FP5_FOUR  = FromF(g.FromUint64(4))
 
 	FP5_W        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
@@ -83,16 +85,16 @@ func Sample() Element {
 	return Element{arr[0], arr[1], arr[2], arr[3], arr[4]}
 }
 
-func Equals(a, b Element) bool {
+func Equals(a, b *Element) bool {
 	return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3] && a[4] == b[4]
 }
 
-func IsZero(e Element) bool {
+func IsZero(e *Element) bool {
 	return e[0].IsZero() && e[1].IsZero() && e[2].IsZero() && e[3].IsZero() && e[4].IsZero()
 }
 
-func FromF(elem g.Element) Element {
-	return Element{elem, g.Zero(), g.Zero(), g.Zero(), g.Zero()}
+func FromF(elem g.Element) *Element {
+	return &Element{elem, g.Zero(), g.Zero(), g.Zero(), g.Zero()}
 }
 
 func FromUint64(a uint64) Element {
@@ -109,12 +111,12 @@ func FromUint64Array(e1, e2, e3, e4, e5 uint64) Element {
 	}
 }
 
-func Neg(e Element) Element {
-	return Element{g.Neg(&e[0]), g.Neg(&e[1]), g.Neg(&e[2]), g.Neg(&e[3]), g.Neg(&e[4])}
+func Neg(e *Element) *Element {
+	return &Element{g.Neg(&e[0]), g.Neg(&e[1]), g.Neg(&e[2]), g.Neg(&e[3]), g.Neg(&e[4])}
 }
 
-func Add(a, b Element) Element {
-	return Element{
+func Add(a, b *Element) *Element {
+	return &Element{
 		g.Add(&a[0], &b[0]),
 		g.Add(&a[1], &b[1]),
 		g.Add(&a[2], &b[2]),
@@ -123,8 +125,8 @@ func Add(a, b Element) Element {
 	}
 }
 
-func Sub(a, b Element) Element {
-	return Element{
+func Sub(a, b *Element) *Element {
+	return &Element{
 		g.Sub(&a[0], &b[0]),
 		g.Sub(&a[1], &b[1]),
 		g.Sub(&a[2], &b[2]),
@@ -133,7 +135,7 @@ func Sub(a, b Element) Element {
 	}
 }
 
-func Mul(a, b Element) Element {
+func Mul(a, b *Element) *Element {
 	a0b0 := g.Mul(&a[0], &b[0])
 	a1b4 := g.Mul(&a[1], &b[4])
 	a2b3 := g.Mul(&a[2], &b[3])
@@ -176,10 +178,10 @@ func Mul(a, b Element) Element {
 	a4b0 := g.Mul(&a[4], &b[0])
 	c4 := g.Add(&a0b4, &a1b3, &a2b2, &a3b1, &a4b0)
 
-	return Element{c0, c1, c2, c3, c4}
+	return &Element{c0, c1, c2, c3, c4}
 }
 
-func Div(a, b Element) Element {
+func Div(a, b *Element) *Element {
 	bInv := InverseOrZero(b)
 	if IsZero(bInv) {
 		panic("division by zero")
@@ -187,15 +189,15 @@ func Div(a, b Element) Element {
 	return Mul(a, bInv)
 }
 
-func ExpPowerOf2(x Element, power int) Element {
-	res := Element{x[0], x[1], x[2], x[3], x[4]}
+func ExpPowerOf2(x *Element, power int) *Element {
+	res := &Element{x[0], x[1], x[2], x[3], x[4]}
 	for i := 0; i < power; i++ {
 		res = Square(res)
 	}
 	return res
 }
 
-func Square(a Element) Element {
+func Square(a *Element) *Element {
 	double_w := g.Add(&FP5_W, &FP5_W)
 
 	a0s := g.Mul(&a[0], &a[0])
@@ -227,11 +229,11 @@ func Square(a Element) Element {
 	a2Square := g.Mul(&a[2], &a[2])
 	c4 := g.Add(&a0Doublea4, &a1Doublea3, &a2Square)
 
-	return Element{c0, c1, c2, c3, c4}
+	return &Element{c0, c1, c2, c3, c4}
 }
 
-func Triple(a Element) Element {
-	return Element{
+func Triple(a *Element) *Element {
+	return &Element{
 		g.Mul(&a[0], &three),
 		g.Mul(&a[1], &three),
 		g.Mul(&a[2], &three),
@@ -240,7 +242,7 @@ func Triple(a Element) Element {
 	}
 }
 
-func Sqrt(x Element) (Element, bool) {
+func Sqrt(x *Element) (*Element, bool) {
 	v := ExpPowerOf2(x, 31)
 	d := Mul(Mul(x, ExpPowerOf2(v, 32)), InverseOrZero(v))
 	e := Frobenius(Mul(d, RepeatedFrobenius(d, 2)))
@@ -257,7 +259,7 @@ func Sqrt(x Element) (Element, bool) {
 	_g := g.Add(&x0f0, &muld)
 	s := g.Sqrt(&_g)
 	if s == nil {
-		return Element{}, false
+		return &Element{}, false
 	}
 
 	eInv := InverseOrZero(e)
@@ -266,7 +268,7 @@ func Sqrt(x Element) (Element, bool) {
 	return Mul(sFp5, eInv), true
 }
 
-func Sgn0(x Element) bool {
+func Sgn0(x *Element) bool {
 	sign := false
 	zero := true
 	for _, limb := range x {
@@ -278,35 +280,36 @@ func Sgn0(x Element) bool {
 	return sign
 }
 
-func CanonicalSqrt(x Element) (Element, bool) {
+func CanonicalSqrt(x *Element) (*Element, bool) {
 	sqrtX, exists := Sqrt(x)
 	if !exists {
-		return Element{}, false
+		return &Element{}, false
 	}
 
 	if Sgn0(sqrtX) {
-		return Neg(sqrtX), true
+		res := Neg(sqrtX)
+		return res, true
 	}
 	return sqrtX, true
 }
 
-func ScalarMul(a Element, scalar g.Element) Element {
-	return Element{
-		g.Mul(&a[0], &scalar),
-		g.Mul(&a[1], &scalar),
-		g.Mul(&a[2], &scalar),
-		g.Mul(&a[3], &scalar),
-		g.Mul(&a[4], &scalar),
+func ScalarMul(a *Element, scalar *g.Element) *Element {
+	return &Element{
+		g.Mul(&a[0], scalar),
+		g.Mul(&a[1], scalar),
+		g.Mul(&a[2], scalar),
+		g.Mul(&a[3], scalar),
+		g.Mul(&a[4], scalar),
 	}
 }
 
-func Double(a Element) Element {
+func Double(a *Element) *Element {
 	return Add(a, a)
 }
 
-func InverseOrZero(a Element) Element {
+func InverseOrZero(a *Element) *Element {
 	if IsZero(a) {
-		return FP5_ZERO
+		return &FP5_ZERO
 	}
 
 	d := Frobenius(a)
@@ -322,14 +325,14 @@ func InverseOrZero(a Element) Element {
 	muld := g.Mul(&FP5_W, &added)
 	g := g.Add(&a0b0, &muld)
 
-	return ScalarMul(f, *g.Inverse(&g))
+	return ScalarMul(f, g.Inverse(&g))
 }
 
-func Frobenius(x Element) Element {
+func Frobenius(x *Element) *Element {
 	return RepeatedFrobenius(x, 1)
 }
 
-func RepeatedFrobenius(x Element, count int) Element {
+func RepeatedFrobenius(x *Element, count int) *Element {
 	if count == 0 {
 		return x
 	} else if count >= FP5_D {
@@ -345,10 +348,10 @@ func RepeatedFrobenius(x Element, count int) Element {
 	for i, z := range g.Powers(&z0, FP5_D) {
 		res[i] = g.Mul(&x[i], &z)
 	}
-	return res
+	return &res
 }
 
-func Legendre(x Element) g.Element {
+func Legendre(x *Element) g.Element {
 	frob1 := Frobenius(x)
 	frob2 := Frobenius(frob1)
 

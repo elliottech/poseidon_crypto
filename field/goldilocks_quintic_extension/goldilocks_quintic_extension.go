@@ -26,11 +26,6 @@ func (e Element) DeepCopy() Element {
 	return Element{e[0], e[1], e[2], e[3], e[4]}
 }
 
-// @irfanbozkurt
-func ToBasefieldArray(e Element) [5]g.Element {
-	return e
-}
-
 func (e Element) ToLittleEndianBytes() []byte {
 	elemBytes := [Bytes]byte{}
 	for i, limb := range e {
@@ -138,75 +133,66 @@ func Neg(e Element) Element {
 }
 
 func Add(a, b Element) Element {
-	aCopy := ToBasefieldArray(a)
-	bCopy := ToBasefieldArray(b)
-
 	return Element{
-		g.Add(aCopy[0], bCopy[0]),
-		g.Add(aCopy[1], bCopy[1]),
-		g.Add(aCopy[2], bCopy[2]),
-		g.Add(aCopy[3], bCopy[3]),
-		g.Add(aCopy[4], bCopy[4]),
+		g.Add(a[0], b[0]),
+		g.Add(a[1], b[1]),
+		g.Add(a[2], b[2]),
+		g.Add(a[3], b[3]),
+		g.Add(a[4], b[4]),
 	}
 }
 
 func Sub(a, b Element) Element {
-	aCopy := ToBasefieldArray(a)
-	bCopy := ToBasefieldArray(b)
 	return Element{
-		g.Sub(&aCopy[0], &bCopy[0]),
-		g.Sub(&aCopy[1], &bCopy[1]),
-		g.Sub(&aCopy[2], &bCopy[2]),
-		g.Sub(&aCopy[3], &bCopy[3]),
-		g.Sub(&aCopy[4], &bCopy[4]),
+		g.Sub(&a[0], &b[0]),
+		g.Sub(&a[1], &b[1]),
+		g.Sub(&a[2], &b[2]),
+		g.Sub(&a[3], &b[3]),
+		g.Sub(&a[4], &b[4]),
 	}
 }
 
 func Mul(a, b Element) Element {
-	aCopy := ToBasefieldArray(a)
-	bCopy := ToBasefieldArray(b)
-	w := g.DeepCopy(&FP5_W)
-
-	a0b0 := g.Mul(&aCopy[0], &bCopy[0])
-	a1b4 := g.Mul(&aCopy[1], &bCopy[4])
-	a2b3 := g.Mul(&aCopy[2], &bCopy[3])
-	a3b2 := g.Mul(&aCopy[3], &bCopy[2])
-	a4b1 := g.Mul(&aCopy[4], &bCopy[1])
+	a0b0 := g.Mul(&a[0], &b[0])
+	a1b4 := g.Mul(&a[1], &b[4])
+	a2b3 := g.Mul(&a[2], &b[3])
+	a3b2 := g.Mul(&a[3], &b[2])
+	a4b1 := g.Mul(&a[4], &b[1])
 	added := g.Add(a1b4, a2b3, a3b2, a4b1)
-	muld := g.Mul(&w, &added)
+	muld := g.Mul(&FP5_W, &added)
 	c0 := g.Add(a0b0, muld)
 
-	a0b1 := g.Mul(&aCopy[0], &bCopy[1])
-	a1b0 := g.Mul(&aCopy[1], &bCopy[0])
-	a2b4 := g.Mul(&aCopy[2], &bCopy[4])
-	a3b3 := g.Mul(&aCopy[3], &bCopy[3])
-	a4b2 := g.Mul(&aCopy[4], &bCopy[2])
+	a0b1 := g.Mul(&a[0], &b[1])
+	a1b0 := g.Mul(&a[1], &b[0])
+	a2b4 := g.Mul(&a[2], &b[4])
+	a3b3 := g.Mul(&a[3], &b[3])
+	a4b2 := g.Mul(&a[4], &b[2])
 	added = g.Add(a2b4, a3b3, a4b2)
-	muld = g.Mul(&w, &added)
+	muld = g.Mul(&FP5_W, &added)
 	c1 := g.Add(a0b1, a1b0, muld)
 
-	a0b2 := g.Mul(&aCopy[0], &bCopy[2])
-	a1b1 := g.Mul(&aCopy[1], &bCopy[1])
-	a2b0 := g.Mul(&aCopy[2], &bCopy[0])
-	a3b4 := g.Mul(&aCopy[3], &bCopy[4])
-	a4b3 := g.Mul(&aCopy[4], &bCopy[3])
+	a0b2 := g.Mul(&a[0], &b[2])
+	a1b1 := g.Mul(&a[1], &b[1])
+	a2b0 := g.Mul(&a[2], &b[0])
+	a3b4 := g.Mul(&a[3], &b[4])
+	a4b3 := g.Mul(&a[4], &b[3])
 	added = g.Add(a3b4, a4b3)
-	muld = g.Mul(&w, &added)
+	muld = g.Mul(&FP5_W, &added)
 	c2 := g.Add(a0b2, a1b1, a2b0, muld)
 
-	a0b3 := g.Mul(&aCopy[0], &bCopy[3])
-	a1b2 := g.Mul(&aCopy[1], &bCopy[2])
-	a2b1 := g.Mul(&aCopy[2], &bCopy[1])
-	a3b0 := g.Mul(&aCopy[3], &bCopy[0])
-	a4b4 := g.Mul(&aCopy[4], &bCopy[4])
-	muld = g.Mul(&w, &a4b4)
+	a0b3 := g.Mul(&a[0], &b[3])
+	a1b2 := g.Mul(&a[1], &b[2])
+	a2b1 := g.Mul(&a[2], &b[1])
+	a3b0 := g.Mul(&a[3], &b[0])
+	a4b4 := g.Mul(&a[4], &b[4])
+	muld = g.Mul(&FP5_W, &a4b4)
 	c3 := g.Add(a0b3, a1b2, a2b1, a3b0, muld)
 
-	a0b4 := g.Mul(&aCopy[0], &bCopy[4])
-	a1b3 := g.Mul(&aCopy[1], &bCopy[3])
-	a2b2 := g.Mul(&aCopy[2], &bCopy[2])
-	a3b1 := g.Mul(&aCopy[3], &bCopy[1])
-	a4b0 := g.Mul(&aCopy[4], &bCopy[0])
+	a0b4 := g.Mul(&a[0], &b[4])
+	a1b3 := g.Mul(&a[1], &b[3])
+	a2b2 := g.Mul(&a[2], &b[2])
+	a3b1 := g.Mul(&a[3], &b[1])
+	a4b0 := g.Mul(&a[4], &b[0])
 	c4 := g.Add(a0b4, a1b3, a2b2, a3b1, a4b0)
 
 	return Element{c0, c1, c2, c3, c4}
@@ -229,37 +215,35 @@ func ExpPowerOf2(x Element, power int) Element {
 }
 
 func Square(a Element) Element {
-	aCopy := ToBasefieldArray(a)
-	w := g.DeepCopy(&FP5_W)
-	double_w := g.Add(w, w)
+	double_w := g.Add(FP5_W, FP5_W)
 
-	a0s := g.Mul(&aCopy[0], &aCopy[0])
-	a1a4 := g.Mul(&aCopy[1], &aCopy[4])
-	a2a3 := g.Mul(&aCopy[2], &aCopy[3])
+	a0s := g.Mul(&a[0], &a[0])
+	a1a4 := g.Mul(&a[1], &a[4])
+	a2a3 := g.Mul(&a[2], &a[3])
 	added := g.Add(a1a4, a2a3)
 	muld := g.Mul(&double_w, &added)
 	c0 := g.Add(a0s, muld)
 
-	a0Double := g.Add(aCopy[0], aCopy[0])
-	a0Doublea1 := g.Mul(&a0Double, &aCopy[1])
-	a2a4DoubleW := g.Mul(&aCopy[2], &aCopy[4], &double_w)
-	a3a3w := g.Mul(&aCopy[3], &aCopy[3], &w)
+	a0Double := g.Add(a[0], a[0])
+	a0Doublea1 := g.Mul(&a0Double, &a[1])
+	a2a4DoubleW := g.Mul(&a[2], &a[4], &double_w)
+	a3a3w := g.Mul(&a[3], &a[3], &FP5_W)
 	c1 := g.Add(a0Doublea1, a2a4DoubleW, a3a3w)
 
-	a0Doublea2 := g.Mul(&a0Double, &aCopy[2])
-	a1Square := g.Mul(&aCopy[1], &aCopy[1])
-	a4a3DoubleW := g.Mul(&aCopy[4], &aCopy[3], &double_w)
+	a0Doublea2 := g.Mul(&a0Double, &a[2])
+	a1Square := g.Mul(&a[1], &a[1])
+	a4a3DoubleW := g.Mul(&a[4], &a[3], &double_w)
 	c2 := g.Add(a0Doublea2, a1Square, a4a3DoubleW)
 
-	a1Double := g.Add(aCopy[1], aCopy[1])
-	a0Doublea3 := g.Mul(&a0Double, &aCopy[3])
-	a1Doublea2 := g.Mul(&a1Double, &aCopy[2])
-	a4SquareW := g.Mul(&aCopy[4], &aCopy[4], &w)
+	a1Double := g.Add(a[1], a[1])
+	a0Doublea3 := g.Mul(&a0Double, &a[3])
+	a1Doublea2 := g.Mul(&a1Double, &a[2])
+	a4SquareW := g.Mul(&a[4], &a[4], &FP5_W)
 	c3 := g.Add(a0Doublea3, a1Doublea2, a4SquareW)
 
-	a0Doublea4 := g.Mul(&a0Double, &aCopy[4])
-	a1Doublea3 := g.Mul(&a1Double, &aCopy[3])
-	a2Square := g.Mul(&aCopy[2], &aCopy[2])
+	a0Doublea4 := g.Mul(&a0Double, &a[4])
+	a1Doublea3 := g.Mul(&a1Double, &a[3])
+	a2Square := g.Mul(&a[2], &a[2])
 	c4 := g.Add(a0Doublea4, a1Doublea3, a2Square)
 
 	return Element{c0, c1, c2, c3, c4}
@@ -267,14 +251,12 @@ func Square(a Element) Element {
 
 func Triple(a Element) Element {
 	three := g.FromUint64(3)
-	aCopy := ToBasefieldArray(a)
-
 	return Element{
-		g.Mul(&aCopy[0], &three),
-		g.Mul(&aCopy[1], &three),
-		g.Mul(&aCopy[2], &three),
-		g.Mul(&aCopy[3], &three),
-		g.Mul(&aCopy[4], &three),
+		g.Mul(&a[0], &three),
+		g.Mul(&a[1], &three),
+		g.Mul(&a[2], &three),
+		g.Mul(&a[3], &three),
+		g.Mul(&a[4], &three),
 	}
 }
 
@@ -284,17 +266,14 @@ func Sqrt(x Element) (Element, bool) {
 	e := Frobenius(Mul(d, RepeatedFrobenius(d, 2)))
 	_f := Square(e)
 
-	xArr := ToBasefieldArray(x)
-	fArr := ToBasefieldArray(_f)
-
-	x1f4 := g.Mul(&xArr[1], &fArr[4])
-	x2f3 := g.Mul(&xArr[2], &fArr[3])
-	x3f2 := g.Mul(&xArr[3], &fArr[2])
-	x4f1 := g.Mul(&xArr[4], &fArr[1])
+	x1f4 := g.Mul(&x[1], &_f[4])
+	x2f3 := g.Mul(&x[2], &_f[3])
+	x3f2 := g.Mul(&x[3], &_f[2])
+	x4f1 := g.Mul(&x[4], &_f[1])
 	added := g.Add(x1f4, x2f3, x3f2, x4f1)
 	three := g.FromUint64(3)
 	muld := g.Mul(&three, &added)
-	x0f0 := g.Mul(&xArr[0], &fArr[0])
+	x0f0 := g.Mul(&x[0], &_f[0])
 	_g := g.Add(x0f0, muld)
 	s := g.Sqrt(&_g)
 	if s == nil {
@@ -354,14 +333,11 @@ func InverseOrZero(a Element) Element {
 	e := Mul(d, Frobenius(d))
 	f := Mul(e, RepeatedFrobenius(e, 2))
 
-	aCopy := ToBasefieldArray(a)
-	fCopy := ToBasefieldArray(f)
-
-	a0b0 := g.Mul(&aCopy[0], &fCopy[0])
-	a1b4 := g.Mul(&aCopy[1], &fCopy[4])
-	a2b3 := g.Mul(&aCopy[2], &fCopy[3])
-	a3b2 := g.Mul(&aCopy[3], &fCopy[2])
-	a4b1 := g.Mul(&aCopy[4], &fCopy[1])
+	a0b0 := g.Mul(&a[0], &f[0])
+	a1b4 := g.Mul(&a[1], &f[4])
+	a2b3 := g.Mul(&a[2], &f[3])
+	a3b2 := g.Mul(&a[3], &f[2])
+	a4b1 := g.Mul(&a[4], &f[1])
 	added := g.Add(a1b4, a2b3, a3b2, a4b1)
 	muld := g.Mul(&FP5_W, &added)
 	g := g.Add(a0b0, muld)
@@ -399,8 +375,7 @@ func Legendre(x Element) g.Element {
 	frob1TimesFrob2 := Mul(frob1, frob2)
 	frob2Frob1TimesFrob2 := RepeatedFrobenius(frob1TimesFrob2, 2)
 
-	xrExt := Mul(Mul(x, frob1TimesFrob2), frob2Frob1TimesFrob2)
-	xr := ToBasefieldArray(xrExt)[0]
+	xr := Mul(Mul(x, frob1TimesFrob2), frob2Frob1TimesFrob2)[0]
 
 	xr31 := xr.Exp(xr, new(big.Int).SetUint64(1<<31))
 	xr31InvOrZero := g.FromUint64(0)

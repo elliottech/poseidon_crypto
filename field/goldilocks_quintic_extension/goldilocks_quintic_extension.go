@@ -1,23 +1,22 @@
 package goldilocks_quintic_extension
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/big"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
-type Element [5]uint64
+type Element [5]g.Element
 
 const Bytes = g.Bytes * 5
 
 var (
 	FP5_D = 5
 
-	FP5_ZERO = Element{0, 0, 0, 0, 0}
-	FP5_ONE  = Element{1, 0, 0, 0, 0}
-	FP5_TWO  = Element{2, 0, 0, 0, 0}
+	FP5_ZERO = Element{g.Zero(), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
+	FP5_ONE  = Element{g.One(), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
+	FP5_TWO  = FromF(g.FromUint64(2))
 
 	FP5_W        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
@@ -27,10 +26,18 @@ func (e Element) DeepCopy() Element {
 	return Element{e[0], e[1], e[2], e[3], e[4]}
 }
 
+func ToBasefieldArray(e Element) [5]g.Element {
+	return e
+}
+
+func FromBasefieldArray(e [5]g.Element) Element {
+	return e
+}
+
 func (e Element) ToLittleEndianBytes() []byte {
 	elemBytes := [Bytes]byte{}
 	for i, limb := range e {
-		binary.LittleEndian.PutUint64(elemBytes[i*g.Bytes:], limb)
+		copy(elemBytes[i*g.Bytes:], g.ToLittleEndianBytes(limb))
 	}
 	return elemBytes[:]
 }
@@ -99,39 +106,25 @@ func Equals(a, b Element) bool {
 }
 
 func IsZero(e Element) bool {
-	return e[0] == 0 && e[1] == 0 && e[2] == 0 && e[3] == 0 && e[4] == 0
+	return e[0].IsZero() && e[1].IsZero() && e[2].IsZero() && e[3].IsZero() && e[4].IsZero()
 }
 
 func FromF(elem g.Element) Element {
-	return Element{elem.Uint64(), 0, 0, 0, 0}
-}
-
-func ToBasefieldArray(e Element) [5]g.Element {
-	return [5]g.Element{
-		g.FromUint64(e[0]),
-		g.FromUint64(e[1]),
-		g.FromUint64(e[2]),
-		g.FromUint64(e[3]),
-		g.FromUint64(e[4]),
-	}
-}
-
-func FromBasefieldArray(e [5]g.Element) Element {
-	return Element{
-		e[0].Uint64(),
-		e[1].Uint64(),
-		e[2].Uint64(),
-		e[3].Uint64(),
-		e[4].Uint64(),
-	}
+	return Element{elem, g.Zero(), g.Zero(), g.Zero(), g.Zero()}
 }
 
 func FromUint64(a uint64) Element {
-	return Element{a, 0, 0, 0, 0}
+	return Element{g.FromUint64(a), g.Zero(), g.Zero(), g.Zero(), g.Zero()}
 }
 
 func FromUint64Array(e1, e2, e3, e4, e5 uint64) Element {
-	return Element{e1, e2, e3, e4, e5}
+	return Element{
+		g.FromUint64(e1),
+		g.FromUint64(e2),
+		g.FromUint64(e3),
+		g.FromUint64(e4),
+		g.FromUint64(e5),
+	}
 }
 
 func Neg(e Element) Element {
@@ -319,8 +312,8 @@ func Sgn0(x Element) bool {
 	sign := false
 	zero := true
 	for _, limb := range x {
-		sign_i := (limb & 1) == 0
-		zero_i := limb == 0
+		sign_i := (limb.Uint64() & 1) == 0
+		zero_i := limb.IsZero()
 		sign = sign || (zero && sign_i)
 		zero = zero && zero_i
 	}
@@ -349,11 +342,6 @@ func ScalarMul(a Element, scalar g.Element) Element {
 
 func Double(a Element) Element {
 	return Add(a, a)
-}
-
-func NegOne() Element {
-	negOne := g.NegOne()
-	return Element{negOne.Uint64(), 0, 0, 0, 0}
 }
 
 func InverseOrZero(a Element) Element {

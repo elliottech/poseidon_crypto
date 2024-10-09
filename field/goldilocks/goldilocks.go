@@ -131,8 +131,9 @@ func Neg(e Element) Element {
 	return res
 }
 
-func NegOne() Element {
-	return Neg(One())
+func NegOne() *Element {
+	res := Neg(One())
+	return &res
 }
 
 func Sample() Element {

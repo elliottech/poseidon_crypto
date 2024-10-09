@@ -211,13 +211,7 @@ func TestRecodeSigned(t *testing.T) {
 }
 
 func TestFromQuinticExtension(t *testing.T) {
-	scalar := FromGfp5(gFp5.Element{
-		g.Modulus() - 1,
-		g.Modulus() - 1,
-		g.Modulus() - 1,
-		g.Modulus() - 1,
-		g.Modulus() - 1,
-	})
+	scalar := FromGfp5(gFp5.Element{*g.NegOne(), *g.NegOne(), *g.NegOne(), *g.NegOne(), *g.NegOne()})
 
 	expectedValues := ECgFp5Scalar{
 		3449841778703204414,

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
-	"math/bits"
 	"math/rand"
 	"time"
 
@@ -255,20 +254,6 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 	return Select(c, r2, r)
 }
 
-func (s ECgFp5Scalar) expU64(power uint64) ECgFp5Scalar {
-	current := s
-	product := ONE
-
-	bitsU64 := 64 - bits.LeadingZeros64(power)
-	for j := 0; j < bitsU64; j++ {
-		if (power>>j)&1 != 0 {
-			product = *product.Mul(&current)
-		}
-		current = *current.Square()
-	}
-	return product
-}
-
 func (s ECgFp5Scalar) expPowerOf2(exp int) ECgFp5Scalar {
 	result := s
 	for i := 0; i < exp; i++ {
@@ -283,11 +268,7 @@ func (s ECgFp5Scalar) expPowerOf2(exp int) ECgFp5Scalar {
 
 func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
 	return FromNonCanonicalBigInt(BigIntFromArray([5]uint64{
-		fp5[0],
-		fp5[1],
-		fp5[2],
-		fp5[3],
-		fp5[4],
+		fp5[0].Uint64(), fp5[1].Uint64(), fp5[2].Uint64(), fp5[3].Uint64(), fp5[4].Uint64(),
 	}))
 }
 

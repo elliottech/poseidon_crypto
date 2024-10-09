@@ -27,7 +27,7 @@ func TestHashToQuinticExtension(t *testing.T) {
 		14449776097783372302,
 	}
 	for i := 0; i < 5; i++ {
-		if result[i] != expected[i] {
+		if result[i] != g.FromUint64(expected[i]) {
 			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 		}
 	}
@@ -43,11 +43,11 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	}
 
 	hashedMessage := gFp5.Element{
-		8398652514106806347,
-		11069112711939986896,
-		9732488227085561369,
-		18076754337204438535,
-		17155407358725346236,
+		g.FromUint64(8398652514106806347),
+		g.FromUint64(11069112711939986896),
+		g.FromUint64(9732488227085561369),
+		g.FromUint64(18076754337204438535),
+		g.FromUint64(17155407358725346236),
 	}
 
 	k := curve.ECgFp5Scalar{
@@ -100,11 +100,11 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	}
 
 	hashedMessage = gFp5.Element{
-		14569490467507212064,
-		2707063505563578676,
-		7506743487465742335,
-		12569771346154554175,
-		4305083698940175790,
+		g.FromUint64(14569490467507212064),
+		g.FromUint64(2707063505563578676),
+		g.FromUint64(7506743487465742335),
+		g.FromUint64(12569771346154554175),
+		g.FromUint64(4305083698940175790),
 	}
 
 	k = curve.ECgFp5Scalar{

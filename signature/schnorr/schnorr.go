@@ -96,14 +96,14 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 		return fmt.Errorf("failed to convert signature bytes to Schnorr signature: %w", err)
 	}
 
-	if !isSchnorrSignatureValid(&pk, &hashedMsgElem, s) {
+	if !isSchnorrSignatureValid(&pk, &hashedMsgElem, &s) {
 		return fmt.Errorf("signature is invalid")
 	}
 
 	return nil
 }
 
-func isSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) bool {
+func isSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig *Signature) bool {
 	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(*pubKey)
 	if !ok {
 		return false

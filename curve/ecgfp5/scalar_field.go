@@ -203,7 +203,15 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 	return Select(c, r2, r)
 }
 
-func FromGfp5(fp5 *gFp5.Element) *ECgFp5Scalar {
+// @irfanbozkurt
+func FromGfp5(e *gFp5.Element) *ECgFp5Scalar {
+	fp5 := [5]uint64{
+		e[0].Uint64(),
+		e[1].Uint64(),
+		e[2].Uint64(),
+		e[3].Uint64(),
+		e[4].Uint64(),
+	}
 	return FromNonCanonicalBigInt(new(big.Int).SetBytes(
 		[]byte{
 			byte(fp5[4] >> 32), byte(fp5[4] >> 40), byte(fp5[4] >> 48), byte(fp5[4] >> 56),

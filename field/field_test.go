@@ -42,24 +42,24 @@ func TestBytes(t *testing.T) {
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	val1 := gFp5.Element{
-		0x1234567890ABCDEF,
-		0x0FEDCBA987654321,
-		0x1122334455667788,
-		0x8877665544332211,
-		0xAABBCCDDEEFF0011,
+		g.FromUint64(0x1234567890ABCDEF),
+		g.FromUint64(0x0FEDCBA987654321),
+		g.FromUint64(0x1122334455667788),
+		g.FromUint64(0x8877665544332211),
+		g.FromUint64(0xAABBCCDDEEFF0011),
 	}
 	val2 := gFp5.Element{
-		0xFFFFFFFFFFFFFFFF,
-		0xFFFFFFFFFFFFFFFF,
-		0xFFFFFFFFFFFFFFFF,
-		0xFFFFFFFFFFFFFFFF,
-		0xFFFFFFFFFFFFFFFF,
+		g.FromUint64(0xFFFFFFFFFFFFFFFF),
+		g.FromUint64(0xFFFFFFFFFFFFFFFF),
+		g.FromUint64(0xFFFFFFFFFFFFFFFF),
+		g.FromUint64(0xFFFFFFFFFFFFFFFF),
+		g.FromUint64(0xFFFFFFFFFFFFFFFF),
 	}
 
 	add := gFp5.Add(val1, val2)
 	expectedAdd := [5]uint64{1311768471589866989, 1147797413325783839, 1234605620731475846, 9833440832084189711, 12302652064957136911}
 	for i := 0; i < 5; i++ {
-		if add[i] != expectedAdd[i] {
+		if add[i] != g.FromUint64(expectedAdd[i]) {
 			t.Fatalf("Addition: Expected limb %d to be %x, but got %x", i, expectedAdd[i], add[i])
 		}
 	}
@@ -67,7 +67,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	sub := gFp5.Sub(val1, val2)
 	expectedSub := [5]uint64{1311768462999932401, 1147797404735849251, 1234605612141541258, 9833440823494255123, 12302652056367202323}
 	for i := 0; i < 5; i++ {
-		if sub[i] != expectedSub[i] {
+		if sub[i] != g.FromUint64(expectedSub[i]) {
 			t.Fatalf("Subtraction: Expected limb %d to be %x, but got %x", i, expectedSub[i], sub[i])
 		}
 	}
@@ -75,7 +75,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	mul := gFp5.Mul(val1, val2)
 	expectedMul := [5]uint64{12801331769143413385, 14031114708135177824, 4192851210753422088, 14031114723597060086, 4193451712464626164}
 	for i := 0; i < 5; i++ {
-		if mul[i] != expectedMul[i] {
+		if mul[i] != g.FromUint64(expectedMul[i]) {
 			t.Fatalf("Multiplication: Expected limb %d to be %x, but got %x", i, expectedMul[i], mul[i])
 		}
 	}
@@ -89,7 +89,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		2864528669572451733,
 	}
 	for i := 0; i < 5; i++ {
-		if square[i] != expectedSquare[i] {
+		if square[i] != g.FromUint64(expectedSquare[i]) {
 			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expectedSquare[i], square[i])
 		}
 	}
@@ -97,11 +97,11 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 
 func TestRepeatedFrobeniusgFp5(t *testing.T) {
 	val := gFp5.Element{
-		0x1234567890ABCDEF,
-		0x0FEDCBA987654321,
-		0x1122334455667788,
-		0x8877665544332211,
-		0xAABBCCDDEEFF0011,
+		g.FromUint64(0x1234567890ABCDEF),
+		g.FromUint64(0x0FEDCBA987654321),
+		g.FromUint64(0x1122334455667788),
+		g.FromUint64(0x8877665544332211),
+		g.FromUint64(0xAABBCCDDEEFF0011),
 	}
 
 	res := gFp5.RepeatedFrobenius(val, 1)
@@ -114,7 +114,7 @@ func TestRepeatedFrobeniusgFp5(t *testing.T) {
 		17855579289599571296,
 	}
 	for i := 0; i < 5; i++ {
-		if res[i] != expected[i] {
+		if res[i] != g.FromUint64(expected[i]) {
 			t.Fatalf("Assertion failed at index %d: expected %d, got %d", i, expected[i], res[i])
 		}
 	}
@@ -122,11 +122,11 @@ func TestRepeatedFrobeniusgFp5(t *testing.T) {
 
 func TestTryInverse(t *testing.T) {
 	val := gFp5.Element{
-		0x1234567890ABCDEF,
-		0x0FEDCBA987654321,
-		0x1122334455667788,
-		0x8877665544332211,
-		0xAABBCCDDEEFF0011,
+		g.FromUint64(0x1234567890ABCDEF),
+		g.FromUint64(0x0FEDCBA987654321),
+		g.FromUint64(0x1122334455667788),
+		g.FromUint64(0x8877665544332211),
+		g.FromUint64(0xAABBCCDDEEFF0011),
 	}
 	result := gFp5.InverseOrZero(val)
 
@@ -148,11 +148,11 @@ func TestTryInverse(t *testing.T) {
 
 func TestQuinticExtSgn0(t *testing.T) {
 	if !gFp5.Sgn0(gFp5.Element{
-		7146494650688613286,
-		2524706331227574337,
-		2805008444831673606,
-		10342159727506097401,
-		5582307593199735986,
+		g.FromUint64(7146494650688613286),
+		g.FromUint64(2524706331227574337),
+		g.FromUint64(2805008444831673606),
+		g.FromUint64(10342159727506097401),
+		g.FromUint64(5582307593199735986),
 	}) {
 		t.Fatalf("Expected sign to be true, but got false")
 	}
@@ -160,19 +160,19 @@ func TestQuinticExtSgn0(t *testing.T) {
 
 func TestSqrtFunctions(t *testing.T) {
 	x := gFp5.Element{
-		17397692312497920520,
-		4597259071399531684,
-		15835726694542307225,
-		16979717054676631815,
-		12876043227925845432,
+		g.FromUint64(17397692312497920520),
+		g.FromUint64(4597259071399531684),
+		g.FromUint64(15835726694542307225),
+		g.FromUint64(16979717054676631815),
+		g.FromUint64(12876043227925845432),
 	}
 
 	expected := gFp5.Element{
-		16260118390353633405,
-		2204473665618140400,
-		10421517006653550782,
-		4618467884536173852,
-		15556190572415033139,
+		g.FromUint64(16260118390353633405),
+		g.FromUint64(2204473665618140400),
+		g.FromUint64(10421517006653550782),
+		g.FromUint64(4618467884536173852),
+		g.FromUint64(15556190572415033139),
 	}
 
 	result, exists := gFp5.CanonicalSqrt(x)
@@ -196,11 +196,11 @@ func TestSqrtFunctions(t *testing.T) {
 
 func TestSqrtNonExistent(t *testing.T) {
 	_, exists := gFp5.Sqrt(gFp5.Element{
-		3558249639744866495,
-		2615658757916804776,
-		14375546700029059319,
-		16160052538060569780,
-		8366525948816396307,
+		g.FromUint64(3558249639744866495),
+		g.FromUint64(2615658757916804776),
+		g.FromUint64(14375546700029059319),
+		g.FromUint64(16160052538060569780),
+		g.FromUint64(8366525948816396307),
 	})
 	if exists {
 		t.Fatalf("Expected sqrt not to exist, but it does")

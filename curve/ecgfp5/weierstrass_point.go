@@ -1,6 +1,9 @@
 package ecgfp5
 
-import gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+import (
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+)
 
 // A curve point in short Weirstrass form (x, y). This is used by the in-circuit representation
 type WeierstrassPoint struct {
@@ -12,28 +15,28 @@ type WeierstrassPoint struct {
 var (
 	GENERATOR_WEIERSTRASS = WeierstrassPoint{
 		X: gFp5.Element{
-			11712523173042564207,
-			14090224426659529053,
-			13197813503519687414,
-			16280770174934269299,
-			15998333998318935536,
+			g.FromUint64(11712523173042564207),
+			g.FromUint64(14090224426659529053),
+			g.FromUint64(13197813503519687414),
+			g.FromUint64(16280770174934269299),
+			g.FromUint64(15998333998318935536),
 		},
 		Y: gFp5.Element{
-			14639054205878357578,
-			17426078571020221072,
-			2548978194165003307,
-			8663895577921260088,
-			9793640284382595140,
+			g.FromUint64(14639054205878357578),
+			g.FromUint64(17426078571020221072),
+			g.FromUint64(2548978194165003307),
+			g.FromUint64(8663895577921260088),
+			g.FromUint64(9793640284382595140),
 		},
 		IsInf: false,
 	}
 
 	A_WEIERSTRASS = gFp5.Element{
-		6148914689804861439,
-		263,
-		0,
-		0,
-		0,
+		g.FromUint64(6148914689804861439),
+		g.FromUint64(263),
+		g.FromUint64(0),
+		g.FromUint64(0),
+		g.FromUint64(0),
 	}
 
 	NEUTRAL_WEIERSTRASS = WeierstrassPoint{

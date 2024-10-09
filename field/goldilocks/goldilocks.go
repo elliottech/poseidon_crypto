@@ -172,11 +172,12 @@ func Mul(elems ...*Element) Element {
 }
 
 func Sqrt(elem *Element) *Element {
-	elemCopy := DeepCopy(elem)
-	return elemCopy.Sqrt(&elemCopy)
+	sqrt := g.NewElement(0)
+	return sqrt.Sqrt(elem)
 }
 
-// Powers starting from 1
+// Powers starting from 1. Does not implement double and add optimization, because
+// the only caller passes in "5" as "count".
 func Powers(e *Element, count int) []Element {
 	ret := make([]Element, count)
 	ret[0] = g.One()
@@ -184,8 +185,4 @@ func Powers(e *Element, count int) []Element {
 		ret[i].Mul(&ret[i-1], e)
 	}
 	return ret
-}
-
-func DeepCopy(source *Element) Element {
-	return Element{source[0]}
 }

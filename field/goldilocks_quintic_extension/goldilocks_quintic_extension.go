@@ -20,11 +20,9 @@ var (
 
 	FP5_W        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
-)
 
-func (e Element) DeepCopy() Element {
-	return Element{e[0], e[1], e[2], e[3], e[4]}
-}
+	three = g.FromUint64(3)
+)
 
 func (e Element) ToLittleEndianBytes() []byte {
 	elemBytes := [Bytes]byte{}
@@ -44,19 +42,12 @@ func (e Element) ToBigEndianBytes() []byte {
 }
 
 func FromCanonicalLittleEndianBytes(in []byte) Element {
-	elemBytesLittleEndian := [5][]byte{
-		{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]},
-		{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]},
-		{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]},
-		{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]},
-		{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]},
-	}
 	return Element{
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[0]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[1]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[2]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[3]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[4]),
+		g.FromCanonicalLittleEndianBytes([]byte{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]}),
+		g.FromCanonicalLittleEndianBytes([]byte{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]}),
+		g.FromCanonicalLittleEndianBytes([]byte{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]}),
+		g.FromCanonicalLittleEndianBytes([]byte{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]}),
+		g.FromCanonicalLittleEndianBytes([]byte{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]}),
 	}
 }
 
@@ -64,36 +55,26 @@ func FromNonCanonicalLittleEndianBytes(in []byte) (Element, error) {
 	if len(in) != Bytes {
 		return Element{}, fmt.Errorf("input bytes len should be 40 but is %d", len(in))
 	}
-
-	elemBytesLittleEndian := [5][]byte{
-		{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]},
-		{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]},
-		{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]},
-		{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]},
-		{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]},
-	}
-
-	e1, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[0])
+	e1, err := g.FromNonCanonicalLittleEndianBytes([]byte{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]})
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e2, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[1])
+	e2, err := g.FromNonCanonicalLittleEndianBytes([]byte{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]})
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e3, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[2])
+	e3, err := g.FromNonCanonicalLittleEndianBytes([]byte{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]})
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e4, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[3])
+	e4, err := g.FromNonCanonicalLittleEndianBytes([]byte{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]})
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e5, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[4])
+	e5, err := g.FromNonCanonicalLittleEndianBytes([]byte{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]})
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-
 	return Element{*e1, *e2, *e3, *e4, *e5}, nil
 }
 
@@ -250,7 +231,6 @@ func Square(a Element) Element {
 }
 
 func Triple(a Element) Element {
-	three := g.FromUint64(3)
 	return Element{
 		g.Mul(&a[0], &three),
 		g.Mul(&a[1], &three),
@@ -356,7 +336,7 @@ func RepeatedFrobenius(x Element, count int) Element {
 		return RepeatedFrobenius(x, count%FP5_D)
 	}
 
-	z0 := g.DeepCopy(&FP5_DTH_ROOT)
+	z0 := FP5_DTH_ROOT
 	for i := 1; i < count; i++ {
 		z0 = g.Mul(&FP5_DTH_ROOT, &z0)
 	}

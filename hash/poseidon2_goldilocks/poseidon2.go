@@ -149,7 +149,6 @@ func sbox(state *[WIDTH]g.Element) {
 	}
 }
 
-// TODO @irfanbozkurt
 func sboxP(a *g.Element) g.Element {
 	res := g.FromUint64(0)
 	return *res.Exp(*a, big.NewInt(D))

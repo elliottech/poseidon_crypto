@@ -392,23 +392,20 @@ func RepeatedFrobenius(x Element, count int) Element {
 		return RepeatedFrobenius(x, count%FP5_D)
 	}
 
-	arr := ToBasefieldArray(x)
-
 	z0 := g.DeepCopy(&FP5_DTH_ROOT)
 	for i := 1; i < count; i++ {
 		z0 = g.Mul(&FP5_DTH_ROOT, &z0)
 	}
 
-	res := ToBasefieldArray(FP5_ZERO)
+	arr := ToBasefieldArray(x)
+	res := [5]g.Element{}
 	for i, z := range g.Powers(&z0, FP5_D) {
 		muld := g.Mul(&arr[i], &z)
 		res[i] = muld
 	}
-
 	return FromBasefieldArray(res)
 }
 
-// TODO @irfanbozkurt
 func Legendre(x Element) g.Element {
 	frob1 := Frobenius(x)
 	frob2 := Frobenius(frob1)
@@ -420,11 +417,10 @@ func Legendre(x Element) g.Element {
 	xr := ToBasefieldArray(xrExt)[0]
 
 	xr31 := xr.Exp(xr, new(big.Int).SetUint64(1<<31))
-	xr31Copy := g.DeepCopy(xr31)
-	xr63 := xr31Copy.Exp(*xr31, new(big.Int).SetUint64(1<<32))
-
 	xr31InvOrZero := g.FromUint64(0)
 	xr31InvOrZero = *xr31InvOrZero.Inverse(xr31)
+
+	xr63 := xr31.Exp(*xr31, new(big.Int).SetUint64(1<<32))
 
 	return g.Mul(xr63, &xr31InvOrZero)
 }

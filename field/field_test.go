@@ -22,7 +22,7 @@ func TestBytes(t *testing.T) {
 		}
 	}
 
-	e1ReconstructedLE := g.FromCanonicalLittleEndianBytes(leBytes)
+	e1ReconstructedLE, _ := g.FromLittleEndianBytes(leBytes)
 	if !g.Equals(&e1, e1ReconstructedLE) {
 		t.Fatalf("bytes do not match")
 	}
@@ -175,13 +175,13 @@ func TestSqrtFunctions(t *testing.T) {
 		g.FromUint64(15556190572415033139),
 	}
 
-	result, exists := gFp5.CanonicalSqrt(&x)
+	result, exists := gFp5.Sqrt(&x)
 	if !exists {
-		t.Fatalf("Expected canonical sqrt to exist, but it does not")
+		t.Fatalf("Expected sqrt to exist, but it does not")
 	}
 
 	if !gFp5.Equals(result, &expected) {
-		t.Fatalf("Expected canonical sqrt to be %v, but got %v", expected, result)
+		t.Fatalf("Expected sqrt to be %v, but got %v", expected, result)
 	}
 
 	result2, exists2 := gFp5.Sqrt(&x)

@@ -61,9 +61,6 @@ func (s *ECgFp5Scalar) ToLittleEndianBytes() []byte {
 }
 
 func ScalarElementFromLittleEndianBytes(data []byte) *ECgFp5Scalar {
-	if len(data) != 40 {
-		panic("invalid length")
-	}
 	return &ECgFp5Scalar{
 		binary.LittleEndian.Uint64(data[0:]),
 		binary.LittleEndian.Uint64(data[8:]),

@@ -73,21 +73,11 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 }
 
 func Validate(pubKey, hashedMsg, sig []byte) error {
-	if len(pubKey) != 40 {
-		return fmt.Errorf("public key byte length should be 40 but is %d", len(pubKey))
-	}
-	if len(hashedMsg) != 40 {
-		return fmt.Errorf("hashed message byte length should be 40 but is %d", len(hashedMsg))
-	}
-	if len(sig) != 80 {
-		return fmt.Errorf("signature byte length should be 80 but is %d", len(sig))
-	}
-
-	pk, err := gFp5.FromCanonicalLittleEndianBytes(pubKey)
+	pk, err := gFp5.FromLittleEndianBytes(pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to convert public key bytes to field element: %w", err)
 	}
-	hashedMsgElem, err := gFp5.FromCanonicalLittleEndianBytes(hashedMsg)
+	hashedMsgElem, err := gFp5.FromLittleEndianBytes(hashedMsg)
 	if err != nil {
 		return fmt.Errorf("failed to convert hashed message bytes to field element: %w", err)
 	}

@@ -75,7 +75,7 @@ func Decode(w *gFp5.Element) (ECgFp5Point, bool) {
 
 	e := gFp5.Sub(gFp5.Square(w), &A_ECgFp5Point)
 	delta := gFp5.Sub(gFp5.Square(e), &B_MUL4_ECgFp5Point)
-	r, c := gFp5.CanonicalSqrt(delta)
+	r, c := gFp5.Sqrt(delta)
 	if !c {
 		r = &gFp5.FP5_ZERO
 	}

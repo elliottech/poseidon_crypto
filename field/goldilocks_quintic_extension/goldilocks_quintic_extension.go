@@ -43,17 +43,23 @@ func (e Element) ToBigEndianBytes() []byte {
 	return elemBytes[:]
 }
 
-func FromCanonicalLittleEndianBytes(in []byte) (Element, error) {
+func FromLittleEndianBytes(in []byte) (Element, error) {
 	if len(in) != Bytes {
 		return Element{}, fmt.Errorf("input bytes len should be 40 but is %d", len(in))
 	}
-	return Element{
-		*g.FromCanonicalLittleEndianBytes([]byte{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]}),
-		*g.FromCanonicalLittleEndianBytes([]byte{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]}),
-		*g.FromCanonicalLittleEndianBytes([]byte{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]}),
-		*g.FromCanonicalLittleEndianBytes([]byte{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]}),
-		*g.FromCanonicalLittleEndianBytes([]byte{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]}),
-	}, nil
+
+	var elements [5]*g.Element
+	for i := 0; i < 5; i++ {
+		start := i * g.Bytes
+		end := (i + 1) * g.Bytes
+		e, err := g.FromLittleEndianBytes(in[start:end])
+		if err != nil {
+			return Element{}, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", in[start:end], err)
+		}
+		elements[i] = e
+	}
+
+	return Element{*elements[0], *elements[1], *elements[2], *elements[3], *elements[4]}, nil
 }
 
 func Sample() Element {
@@ -254,19 +260,6 @@ func Sgn0(x *Element) bool {
 		zero = zero && zero_i
 	}
 	return sign
-}
-
-func CanonicalSqrt(x *Element) (*Element, bool) {
-	sqrtX, exists := Sqrt(x)
-	if !exists {
-		return &Element{}, false
-	}
-
-	if Sgn0(sqrtX) {
-		res := Neg(sqrtX)
-		return res, true
-	}
-	return sqrtX, true
 }
 
 func ScalarMul(a *Element, scalar *g.Element) *Element {

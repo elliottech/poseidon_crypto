@@ -20,7 +20,7 @@ func reverseBytes(b []byte) []byte {
 	return res
 }
 
-func ArrayFromNonCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
+func ArrayFromLittleEndianBytes(in []byte) ([]Element, error) {
 	inClone := make([]byte, len(in))
 	copy(inClone, in)
 
@@ -32,7 +32,7 @@ func ArrayFromNonCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
 	ret := make([]Element, 0)
 	for i := 0; i < len(inClone); {
 		nextStart := i + 8
-		elem, err := FromNonCanonicalLittleEndianBytes(inClone[i:nextStart])
+		elem, err := FromLittleEndianBytes(inClone[i:nextStart])
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", inClone[i:nextStart], err)
 		}
@@ -51,19 +51,10 @@ func ToLittleEndianBytes(e ...*Element) []byte {
 	return res
 }
 
-func FromNonCanonicalLittleEndianBytes(in []byte) (*Element, error) {
+func FromLittleEndianBytes(in []byte) (*Element, error) {
 	elem := g.NewElement(0)
 	err := elem.SetBytesCanonical(reverseBytes(in))
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert bytes to field element: %w", err)
-	}
-	return &elem, nil
-}
-
-func FromCanonicalLittleEndianBytes(in []byte) *Element {
-	elem := g.NewElement(0)
-	elem.SetBytesCanonical(reverseBytes(in))
-	return &elem
+	return &elem, err
 }
 
 func ArrayToLittleEndianBytes(e []*Element) []byte {

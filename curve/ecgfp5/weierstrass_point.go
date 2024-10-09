@@ -60,7 +60,7 @@ func (p *WeierstrassPoint) Encode() gFp5.Element {
 func DecodeFp5AsWeierstrass(w *gFp5.Element) (WeierstrassPoint, bool) {
 	e := gFp5.Sub(gFp5.Square(w), &A_ECgFp5Point)
 	delta := gFp5.Sub(gFp5.Square(e), &B_MUL4_ECgFp5Point)
-	r, success := gFp5.CanonicalSqrt(delta)
+	r, success := gFp5.Sqrt(delta)
 	if !success {
 		r = &gFp5.FP5_ZERO
 	}

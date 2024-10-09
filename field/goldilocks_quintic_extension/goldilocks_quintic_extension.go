@@ -22,10 +22,6 @@ var (
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 )
 
-func (e Element) DeepCopy() Element {
-	return Element{e[0], e[1], e[2], e[3], e[4]}
-}
-
 // @irfanbozkurt
 func ToBasefieldArray(e Element) [5]g.Element {
 	return e
@@ -165,7 +161,7 @@ func Sub(a, b Element) Element {
 func Mul(a, b Element) Element {
 	aCopy := ToBasefieldArray(a)
 	bCopy := ToBasefieldArray(b)
-	w := g.DeepCopy(&FP5_W)
+	w := FP5_W
 
 	a0b0 := g.Mul(&aCopy[0], &bCopy[0])
 	a1b4 := g.Mul(&aCopy[1], &bCopy[4])
@@ -230,7 +226,7 @@ func ExpPowerOf2(x Element, power int) Element {
 
 func Square(a Element) Element {
 	aCopy := ToBasefieldArray(a)
-	w := g.DeepCopy(&FP5_W)
+	w := FP5_W
 	double_w := g.Add(w, w)
 
 	a0s := g.Mul(&aCopy[0], &aCopy[0])
@@ -380,7 +376,7 @@ func RepeatedFrobenius(x Element, count int) Element {
 		return RepeatedFrobenius(x, count%FP5_D)
 	}
 
-	z0 := g.DeepCopy(&FP5_DTH_ROOT)
+	z0 := FP5_DTH_ROOT
 	for i := 1; i < count; i++ {
 		z0 = g.Mul(&FP5_DTH_ROOT, &z0)
 	}

@@ -13,7 +13,7 @@ import (
 func TestBytes(t *testing.T) {
 	e1 := g.Sample()
 
-	leBytes := g.ToLittleEndianBytes(e1)
+	leBytes := g.ToLittleEndianBytes(&e1)
 	beBytess := e1.Bytes()
 	beBytes := beBytess[:]
 	for i := 0; i < g.Bytes; i++ {
@@ -23,7 +23,7 @@ func TestBytes(t *testing.T) {
 	}
 
 	e1ReconstructedLE := g.FromCanonicalLittleEndianBytes(leBytes)
-	if !g.Equals(&e1, &e1ReconstructedLE) {
+	if !g.Equals(&e1, e1ReconstructedLE) {
 		t.Fatalf("bytes do not match")
 	}
 
@@ -32,7 +32,7 @@ func TestBytes(t *testing.T) {
 
 	leBytesUint64 := make([]byte, 8)
 	binary.LittleEndian.PutUint64(leBytesUint64, randUint64)
-	leBytesElem := g.ToLittleEndianBytes(elem)
+	leBytesElem := g.ToLittleEndianBytes(&elem)
 	for i := 0; i < 8; i++ {
 		if leBytesUint64[i] != leBytesElem[i] {
 			t.Fatalf("Little-endian bytes do not match at index %d: expected %x, got %x", i, leBytesUint64[i], leBytesElem[i])

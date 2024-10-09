@@ -12,7 +12,7 @@ import (
 type HashOut [4]g.Element
 
 func (h HashOut) ToLittleEndianBytes() []byte {
-	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
+	return g.ArrayToLittleEndianBytes([]*g.Element{&h[0], &h[1], &h[2], &h[3]})
 }
 
 func HashToQuinticExtension(m []g.Element) *gFp5.Element {

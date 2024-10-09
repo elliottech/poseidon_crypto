@@ -42,7 +42,7 @@ func ArrayFromNonCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
 	return ret, nil
 }
 
-func ToLittleEndianBytes(e ...Element) []byte {
+func ToLittleEndianBytes(e ...*Element) []byte {
 	res := make([]byte, 0)
 	for _, elem := range e {
 		bytes := elem.Bytes()
@@ -60,13 +60,13 @@ func FromNonCanonicalLittleEndianBytes(in []byte) (*Element, error) {
 	return &elem, nil
 }
 
-func FromCanonicalLittleEndianBytes(in []byte) Element {
+func FromCanonicalLittleEndianBytes(in []byte) *Element {
 	elem := g.NewElement(0)
 	elem.SetBytesCanonical(reverseBytes(in))
-	return elem
+	return &elem
 }
 
-func ArrayToLittleEndianBytes(e []Element) []byte {
+func ArrayToLittleEndianBytes(e []*Element) []byte {
 	res := make([]byte, 0)
 	for _, elem := range e {
 		res = append(res, ToLittleEndianBytes(elem)...)
@@ -125,14 +125,15 @@ func One() Element {
 	return g.NewElement(1)
 }
 
-func Neg(e Element) Element {
+func Neg(e *Element) Element {
 	res := g.NewElement(0)
-	res.Neg(&e)
+	res.Neg(e)
 	return res
 }
 
 func NegOne() Element {
-	return Neg(One())
+	one := One()
+	return Neg(&one)
 }
 
 func Sample() Element {
@@ -149,10 +150,10 @@ func RandArray(count int) []Element {
 	return ret
 }
 
-func Add(elems ...Element) Element {
+func Add(elems ...*Element) Element {
 	res := g.NewElement(0)
 	for _, elem := range elems {
-		res.Add(&res, &elem)
+		res.Add(&res, elem)
 	}
 	return res
 }

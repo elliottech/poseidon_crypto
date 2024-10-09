@@ -26,11 +26,8 @@ func (e Element) DeepCopy() Element {
 	return Element{e[0], e[1], e[2], e[3], e[4]}
 }
 
+// @irfanbozkurt
 func ToBasefieldArray(e Element) [5]g.Element {
-	return e
-}
-
-func FromBasefieldArray(e [5]g.Element) Element {
 	return e
 }
 
@@ -38,6 +35,15 @@ func (e Element) ToLittleEndianBytes() []byte {
 	elemBytes := [Bytes]byte{}
 	for i, limb := range e {
 		copy(elemBytes[i*g.Bytes:], g.ToLittleEndianBytes(limb))
+	}
+	return elemBytes[:]
+}
+
+func (e Element) ToBigEndianBytes() []byte {
+	elemBytes := [Bytes]byte{}
+	for i, limb := range e {
+		bytes := limb.Bytes()
+		copy(elemBytes[i*g.Bytes:], bytes[:])
 	}
 	return elemBytes[:]
 }
@@ -50,13 +56,13 @@ func FromCanonicalLittleEndianBytes(in []byte) Element {
 		{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]},
 		{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]},
 	}
-	return FromBasefieldArray([5]g.Element{
+	return Element{
 		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[0]),
 		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[1]),
 		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[2]),
 		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[3]),
 		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[4]),
-	})
+	}
 }
 
 func FromNonCanonicalLittleEndianBytes(in []byte) (Element, error) {
@@ -93,12 +99,12 @@ func FromNonCanonicalLittleEndianBytes(in []byte) (Element, error) {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
 
-	return FromBasefieldArray([5]g.Element{*e1, *e2, *e3, *e4, *e5}), nil
+	return Element{*e1, *e2, *e3, *e4, *e5}, nil
 }
 
 func Sample() Element {
 	arr := g.RandArray(5)
-	return FromBasefieldArray([5]g.Element{arr[0], arr[1], arr[2], arr[3], arr[4]})
+	return Element{arr[0], arr[1], arr[2], arr[3], arr[4]}
 }
 
 func Equals(a, b Element) bool {
@@ -128,39 +134,32 @@ func FromUint64Array(e1, e2, e3, e4, e5 uint64) Element {
 }
 
 func Neg(e Element) Element {
-	eCopy := ToBasefieldArray(e)
-	return FromBasefieldArray([5]g.Element{
-		g.Neg(eCopy[0]),
-		g.Neg(eCopy[1]),
-		g.Neg(eCopy[2]),
-		g.Neg(eCopy[3]),
-		g.Neg(eCopy[4]),
-	})
+	return Element{g.Neg(e[0]), g.Neg(e[1]), g.Neg(e[2]), g.Neg(e[3]), g.Neg(e[4])}
 }
 
 func Add(a, b Element) Element {
 	aCopy := ToBasefieldArray(a)
 	bCopy := ToBasefieldArray(b)
 
-	return FromBasefieldArray([5]g.Element{
+	return Element{
 		g.Add(aCopy[0], bCopy[0]),
 		g.Add(aCopy[1], bCopy[1]),
 		g.Add(aCopy[2], bCopy[2]),
 		g.Add(aCopy[3], bCopy[3]),
 		g.Add(aCopy[4], bCopy[4]),
-	})
+	}
 }
 
 func Sub(a, b Element) Element {
 	aCopy := ToBasefieldArray(a)
 	bCopy := ToBasefieldArray(b)
-	return FromBasefieldArray([5]g.Element{
+	return Element{
 		g.Sub(&aCopy[0], &bCopy[0]),
 		g.Sub(&aCopy[1], &bCopy[1]),
 		g.Sub(&aCopy[2], &bCopy[2]),
 		g.Sub(&aCopy[3], &bCopy[3]),
 		g.Sub(&aCopy[4], &bCopy[4]),
-	})
+	}
 }
 
 func Mul(a, b Element) Element {
@@ -210,7 +209,7 @@ func Mul(a, b Element) Element {
 	a4b0 := g.Mul(&aCopy[4], &bCopy[0])
 	c4 := g.Add(a0b4, a1b3, a2b2, a3b1, a4b0)
 
-	return FromBasefieldArray([5]g.Element{c0, c1, c2, c3, c4})
+	return Element{c0, c1, c2, c3, c4}
 }
 
 func Div(a, b Element) Element {
@@ -263,20 +262,20 @@ func Square(a Element) Element {
 	a2Square := g.Mul(&aCopy[2], &aCopy[2])
 	c4 := g.Add(a0Doublea4, a1Doublea3, a2Square)
 
-	return FromBasefieldArray([5]g.Element{c0, c1, c2, c3, c4})
+	return Element{c0, c1, c2, c3, c4}
 }
 
 func Triple(a Element) Element {
 	three := g.FromUint64(3)
 	aCopy := ToBasefieldArray(a)
 
-	return FromBasefieldArray([5]g.Element{
+	return Element{
 		g.Mul(&aCopy[0], &three),
 		g.Mul(&aCopy[1], &three),
 		g.Mul(&aCopy[2], &three),
 		g.Mul(&aCopy[3], &three),
 		g.Mul(&aCopy[4], &three),
-	})
+	}
 }
 
 func Sqrt(x Element) (Element, bool) {
@@ -333,11 +332,13 @@ func CanonicalSqrt(x Element) (Element, bool) {
 }
 
 func ScalarMul(a Element, scalar g.Element) Element {
-	arr := ToBasefieldArray(a)
-	for i := 0; i < len(arr); i++ {
-		arr[i].Mul(&arr[i], &scalar)
+	return Element{
+		g.Mul(&a[0], &scalar),
+		g.Mul(&a[1], &scalar),
+		g.Mul(&a[2], &scalar),
+		g.Mul(&a[3], &scalar),
+		g.Mul(&a[4], &scalar),
 	}
-	return FromBasefieldArray(arr)
 }
 
 func Double(a Element) Element {
@@ -384,13 +385,11 @@ func RepeatedFrobenius(x Element, count int) Element {
 		z0 = g.Mul(&FP5_DTH_ROOT, &z0)
 	}
 
-	arr := ToBasefieldArray(x)
-	res := [5]g.Element{}
+	res := Element{}
 	for i, z := range g.Powers(&z0, FP5_D) {
-		muld := g.Mul(&arr[i], &z)
-		res[i] = muld
+		res[i] = g.Mul(&x[i], &z)
 	}
-	return FromBasefieldArray(res)
+	return res
 }
 
 func Legendre(x Element) g.Element {

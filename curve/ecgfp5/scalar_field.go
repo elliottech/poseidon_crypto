@@ -203,29 +203,8 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 	return Select(c, r2, r)
 }
 
-// @irfanbozkurt
 func FromGfp5(e *gFp5.Element) *ECgFp5Scalar {
-	fp5 := [5]uint64{
-		e[0].Uint64(),
-		e[1].Uint64(),
-		e[2].Uint64(),
-		e[3].Uint64(),
-		e[4].Uint64(),
-	}
-	return FromNonCanonicalBigInt(new(big.Int).SetBytes(
-		[]byte{
-			byte(fp5[4] >> 32), byte(fp5[4] >> 40), byte(fp5[4] >> 48), byte(fp5[4] >> 56),
-			byte(fp5[4] >> 0), byte(fp5[4] >> 8), byte(fp5[4] >> 16), byte(fp5[4] >> 24),
-			byte(fp5[3] >> 32), byte(fp5[3] >> 40), byte(fp5[3] >> 48), byte(fp5[3] >> 56),
-			byte(fp5[3] >> 0), byte(fp5[3] >> 8), byte(fp5[3] >> 16), byte(fp5[3] >> 24),
-			byte(fp5[2] >> 32), byte(fp5[2] >> 40), byte(fp5[2] >> 48), byte(fp5[2] >> 56),
-			byte(fp5[2] >> 0), byte(fp5[2] >> 8), byte(fp5[2] >> 16), byte(fp5[2] >> 24),
-			byte(fp5[1] >> 32), byte(fp5[1] >> 40), byte(fp5[1] >> 48), byte(fp5[1] >> 56),
-			byte(fp5[1] >> 0), byte(fp5[1] >> 8), byte(fp5[1] >> 16), byte(fp5[1] >> 24),
-			byte(fp5[0] >> 32), byte(fp5[0] >> 40), byte(fp5[0] >> 48), byte(fp5[0] >> 56),
-			byte(fp5[0] >> 0), byte(fp5[0] >> 8), byte(fp5[0] >> 16), byte(fp5[0] >> 24),
-		},
-	))
+	return FromNonCanonicalBigInt(new(big.Int).SetBytes(e.ToBigEndianBytes()))
 }
 
 func FromNonCanonicalBigInt(val *big.Int) *ECgFp5Scalar {

@@ -51,17 +51,19 @@ var ONE_SK = curve.ONE
 
 // Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
 func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
-	return curve.GENERATOR_ECgFp5Point.Mul(&sk).Encode()
+	res := curve.GENERATOR_ECgFp5Point.Mul(&sk)
+	return res.Encode()
 }
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
 	k := curve.SampleScalar(nil)
-	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
+	r := curve.GENERATOR_ECgFp5Point.Mul(k)
+	rEncoded := r.Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	e := curve.FromGfp5(p2.HashToQuinticExtension([]g.Element{
-		r[0], r[1], r[2], r[3], r[4],
+		rEncoded[0], rEncoded[1], rEncoded[2], rEncoded[3], rEncoded[4],
 		hashedMsg[0], hashedMsg[1], hashedMsg[2], hashedMsg[3], hashedMsg[4],
 	}))
 	return Signature{
@@ -107,10 +109,11 @@ func isSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 		return false
 	}
 
-	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+	rV := curve.MulAdd2(&curve.GENERATOR_WEIERSTRASS, &pubKeyWs, &sig.S, &sig.E) // r_v = s*G + e*pk
+	rVEncoded := rV.Encode()                                                     // r_v = s*G
 
 	return curve.FromGfp5(p2.HashToQuinticExtension([]g.Element{
-		rV[0], rV[1], rV[2], rV[3], rV[4],
+		rVEncoded[0], rVEncoded[1], rVEncoded[2], rVEncoded[3], rVEncoded[4],
 		hashedMsg[0], hashedMsg[1], hashedMsg[2], hashedMsg[3], hashedMsg[4],
 	})).Equals(&sig.E) // e_v == e
 }

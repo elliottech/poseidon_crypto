@@ -44,7 +44,7 @@ var (
 	}
 )
 
-func (p ECgFp5Point) Equals(rhs ECgFp5Point) bool {
+func (p *ECgFp5Point) Equals(rhs *ECgFp5Point) bool {
 	return gFp5.Equals(
 		gFp5.Mul(&p.u, &rhs.t),
 		gFp5.Mul(&rhs.u, &p.t),
@@ -60,12 +60,12 @@ func CanBeDecodedIntoPoint(w gFp5.Element) bool {
 	return gFp5.IsZero(&w) || deltaLegendre.IsOne()
 }
 
-func (p ECgFp5Point) Encode() gFp5.Element {
+func (p *ECgFp5Point) Encode() gFp5.Element {
 	return *gFp5.Mul(&p.t, gFp5.InverseOrZero(&p.u))
 }
 
 // Attempt to decode a point from an gFp5 element
-func Decode(w gFp5.Element) (ECgFp5Point, bool) {
+func Decode(w *gFp5.Element) (ECgFp5Point, bool) {
 	// Curve equation is y^2 = x*(x^2 + a*x + b); encoded value
 	// is w = y/x. Dividing by x, we get the equation:
 	//   x^2 - (w^2 - a)*x + b = 0
@@ -73,7 +73,7 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 	// square (if there are solutions, exactly one of them will be
 	// a square, and the other will not be a square).
 
-	e := gFp5.Sub(gFp5.Square(&w), &A_ECgFp5Point)
+	e := gFp5.Sub(gFp5.Square(w), &A_ECgFp5Point)
 	delta := gFp5.Sub(gFp5.Square(e), &B_MUL4_ECgFp5Point)
 	r, c := gFp5.CanonicalSqrt(delta)
 	if !c {
@@ -103,18 +103,18 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 	}
 	t := w
 	if !c {
-		t = gFp5.FP5_ONE
+		t = &gFp5.FP5_ONE
 	}
 
 	// If w == 0 then this is in fact a success.
-	if c || gFp5.IsZero(&w) {
-		return ECgFp5Point{x: *x, z: z, u: u, t: t}, true
+	if c || gFp5.IsZero(w) {
+		return ECgFp5Point{x: *x, z: z, u: u, t: *t}, true
 	}
 
 	return ECgFp5Point{}, false
 }
 
-func (p ECgFp5Point) IsNeutral() bool {
+func (p *ECgFp5Point) IsNeutral() bool {
 	return gFp5.IsZero(&p.u)
 }
 
@@ -425,7 +425,8 @@ func (p *ECgFp5Point) SetMul(s *ECgFp5Scalar) {
 	digits := make([]int32, (319+WINDOW)/WINDOW)
 	s.RecodeSigned(digits, int32(WINDOW))
 
-	*p = LookupVarTime(win, digits[len(digits)-1]).ToPoint()
+	lookedUp := LookupVarTime(win, digits[len(digits)-1])
+	*p = lookedUp.ToPoint()
 	for i := len(digits) - 2; i >= 0; i-- {
 		p.SetMDouble(uint32(WINDOW))
 		lookup := Lookup(win, digits[i])

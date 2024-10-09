@@ -46,14 +46,14 @@ var (
 	}
 )
 
-func (p WeierstrassPoint) Equals(q WeierstrassPoint) bool {
+func (p *WeierstrassPoint) Equals(q *WeierstrassPoint) bool {
 	if p.IsInf && q.IsInf {
 		return true
 	}
 	return gFp5.Equals(&p.X, &q.X) && gFp5.Equals(&p.Y, &q.Y)
 }
 
-func (p WeierstrassPoint) Encode() gFp5.Element {
+func (p *WeierstrassPoint) Encode() gFp5.Element {
 	return *gFp5.Div(&p.Y, gFp5.Sub(gFp5.Div(&A_ECgFp5Point, gFp5.FP5_THREE), &p.X))
 }
 
@@ -90,9 +90,9 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	return WeierstrassPoint{}, false
 }
 
-func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
+func (p WeierstrassPoint) Add(q *WeierstrassPoint) WeierstrassPoint {
 	if p.IsInf {
-		return q
+		return *q
 	}
 	if q.IsInf {
 		return p
@@ -149,18 +149,18 @@ func (p WeierstrassPoint) Double() WeierstrassPoint {
 	return WeierstrassPoint{X: *x2, Y: *y2, IsInf: is_inf}
 }
 
-func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint {
+func (p *WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint {
 	if windowBits < 2 {
 		panic("windowBits in PrecomputeWindow for WeierstrassPoint must be at least 2")
 	}
-	multiples := []WeierstrassPoint{NEUTRAL_WEIERSTRASS, p, p.Double()}
+	multiples := []WeierstrassPoint{NEUTRAL_WEIERSTRASS, *p, p.Double()}
 	for i := 3; i < 1<<windowBits; i++ {
-		multiples = append(multiples, p.Add(multiples[len(multiples)-1]))
+		multiples = append(multiples, p.Add(&multiples[len(multiples)-1]))
 	}
 	return multiples
 }
 
-func MulAdd2(a, b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPoint {
+func MulAdd2(a, b *WeierstrassPoint, scalarA, scalarB *ECgFp5Scalar) WeierstrassPoint {
 	aWindow := a.PrecomputeWindow(4)
 	aFourBitLimbs := scalarA.SplitTo4BitLimbs()
 
@@ -169,12 +169,13 @@ func MulAdd2(a, b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPo
 
 	numLimbs := len(aFourBitLimbs)
 
-	res := aWindow[aFourBitLimbs[numLimbs-1]].Add(bWindow[bFourBitLimbs[numLimbs-1]])
+	res := aWindow[aFourBitLimbs[numLimbs-1]].Add(&bWindow[bFourBitLimbs[numLimbs-1]])
 	for i := numLimbs - 2; i >= 0; i-- {
 		for j := 0; j < 4; j++ {
 			res = res.Double()
 		}
-		res = res.Add(aWindow[aFourBitLimbs[i]].Add(bWindow[bFourBitLimbs[i]]))
+		added := aWindow[aFourBitLimbs[i]].Add(&bWindow[bFourBitLimbs[i]])
+		res = res.Add(&added)
 	}
 	return res
 }

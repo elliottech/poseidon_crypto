@@ -15,14 +15,14 @@ var AFFINE_NEUTRAL = AffinePoint{
 	u: gFp5.FP5_ZERO,
 }
 
-func (p AffinePoint) DeepCopy() AffinePoint {
+func (p *AffinePoint) DeepCopy() AffinePoint {
 	return AffinePoint{
 		x: p.x,
 		u: p.u,
 	}
 }
 
-func (p AffinePoint) ToPoint() ECgFp5Point {
+func (p *AffinePoint) ToPoint() ECgFp5Point {
 	return ECgFp5Point{
 		x: p.x,
 		z: gFp5.FP5_ONE,

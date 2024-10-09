@@ -14,6 +14,13 @@ type Signature struct {
 	E curve.ECgFp5Scalar
 }
 
+func (s Signature) DeepCopy() Signature {
+	return Signature{
+		S: s.S.DeepCopy(),
+		E: s.E.DeepCopy(),
+	}
+}
+
 // (s little endian) || (e little endian)
 func (s Signature) ToBytes() []byte {
 	sBytes := s.S.ToLittleEndianBytes()

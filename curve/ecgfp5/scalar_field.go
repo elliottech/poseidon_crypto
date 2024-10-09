@@ -44,6 +44,10 @@ var (
 	}
 )
 
+func (s ECgFp5Scalar) DeepCopy() ECgFp5Scalar {
+	return ECgFp5Scalar{s[0], s[1], s[2], s[3], s[4]}
+}
+
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar [5]uint64

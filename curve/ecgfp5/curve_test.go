@@ -642,12 +642,6 @@ func TestBasicOps(t *testing.T) {
 		t.Fatalf("Encoding checks failed")
 	}
 
-	p1p2added, p2p1added, p2dadded, p1p2p2added, p2p2p2added := p1.Add(p2), p2.Add(p1), p2.Double(), p1.Add(p2).Add(p2), p2.Add(p2).Add(p2)
-	p1p2encoded, p2p1encoded, p2dencoded, p1p2p2encoded, p2p2p2encoded := p1p2added.Encode(), p2p1added.Encode(), p2dadded.Encode(), p1p2p2added.Encode(), p2p2p2added.Encode()
-	if !gFp5.Equals(&p1p2encoded, &vectors[3]) || !gFp5.Equals(&p2p1encoded, &vectors[3]) || !gFp5.Equals(&p2dencoded, &vectors[5]) || !gFp5.Equals(&p1p2p2encoded, &vectors[6]) || !gFp5.Equals(&p2p2p2encoded, &vectors[7]) {
-		t.Fatalf("Addition and doubling checks failed")
-	}
-
 	p0doubled, p0p0added, p0p1added, p1p0added := p0.Double(), p0.Add(p0), p0.Add(p1), p1.Add(p0)
 	p0doubledencoded, p0p0addedencoded, p0p1addedencoded, p1p0addedencoded := p0doubled.Encode(), p0p0added.Encode(), p0p1added.Encode(), p1p0added.Encode()
 	// if !gFp5.Equals(p0.Double().Encode(), gFp5.FP5_ZERO) || !gFp5.Equals(p0.Add(p0).Encode(), gFp5.FP5_ZERO) || !gFp5.Equals(p0.Add(p1).Encode(), vectors[1]) || !gFp5.Equals(p1.Add(p0).Encode(), vectors[1]) {

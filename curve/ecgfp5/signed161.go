@@ -1,9 +1,5 @@
 package ecgfp5
 
-import (
-	"math/big"
-)
-
 // A custom 161-bit integer type; used for splitting a scalar into a
 // fraction. Negative values use two's complement notation; the value
 // is truncated to 161 bits (upper bits in the top limb are ignored).
@@ -21,7 +17,7 @@ func (s Signed161) ToU192() [3]uint64 {
 }
 
 func FromScalar(s ECgFp5Scalar) Signed161 {
-	return Signed161{[3]uint64{s.Value[0].Uint64(), s.Value[1].Uint64(), s.Value[2].Uint64()}}
+	return Signed161{[3]uint64{s[0], s[1], s[2]}}
 }
 
 // Convert that value into a scalar (integer modulo n).
@@ -40,22 +36,20 @@ func (s Signed161) ToScalarVartime() ECgFp5Scalar {
 		if cc {
 			tmp[2] = tmp[2] + 1
 		}
-		return ECgFp5Scalar{[5]big.Int{
-			*new(big.Int).SetUint64(tmp[0]),
-			*new(big.Int).SetUint64(tmp[1]),
-			*new(big.Int).SetUint64(tmp[2]),
-			*new(big.Int).SetUint64(0),
-			*new(big.Int).SetUint64(0),
-		}}.Neg()
+		return ECgFp5Scalar{
+			tmp[0],
+			tmp[1],
+			tmp[2],
+			0, 0,
+		}.Neg()
 	}
 
-	return ECgFp5Scalar{[5]big.Int{
-		*new(big.Int).SetUint64(tmp[0]),
-		*new(big.Int).SetUint64(tmp[1]),
-		*new(big.Int).SetUint64(tmp[2]),
-		*new(big.Int).SetUint64(0),
-		*new(big.Int).SetUint64(0),
-	}}
+	return ECgFp5Scalar{
+		tmp[0],
+		tmp[1],
+		tmp[2],
+		0, 0,
+	}
 }
 
 // Recode this integer into 33 signed digits for a 5-bit window.

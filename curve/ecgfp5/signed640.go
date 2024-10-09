@@ -35,14 +35,14 @@ func FromMulScalars(a, b ECgFp5Scalar) Signed640 {
 	two128 := new(big.Int).Lsh(big.NewInt(1), 128) // 2^128
 	var r Signed640
 	for i := 0; i < 5; i++ {
-		aw := new(big.Int).Set(&a.Value[i])
+		aw := new(big.Int).SetUint64(a[i])
 		var cc uint64
 		for j := 0; j < 5; j++ {
 			limbs := new(big.Int).Mod(
 				new(big.Int).Add(
 					new(big.Int).Mul(
 						aw,
-						new(big.Int).Set(&b.Value[j]),
+						new(big.Int).SetUint64(b[j]),
 					),
 					new(big.Int).Add(
 						new(big.Int).SetUint64(r.limbs[i+j]),

@@ -142,5 +142,5 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 	}
 	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 
-	return eV.Equals(sig.E) // e_v == e
+	return eV.Equals(&sig.E) // e_v == e
 }

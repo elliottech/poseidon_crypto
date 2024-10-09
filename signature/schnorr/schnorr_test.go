@@ -1,7 +1,6 @@
 package signature
 
 import (
-	"math/big"
 	"testing"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
@@ -36,13 +35,12 @@ func TestHashToQuinticExtension(t *testing.T) {
 
 func TestSchnorrSignAndVerify(t *testing.T) {
 	sk := curve.ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(12235002942052073545),
-			*new(big.Int).SetUint64(1175977464658719998),
-			*new(big.Int).SetUint64(8536934969147463310),
-			*new(big.Int).SetUint64(6524687619313720391),
-			*new(big.Int).SetUint64(2922072024880609112),
-		},
+
+		12235002942052073545,
+		1175977464658719998,
+		8536934969147463310,
+		6524687619313720391,
+		2922072024880609112,
 	}
 
 	hashedMessage := gFp5.Element{
@@ -54,13 +52,11 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	}
 
 	k := curve.ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(5245666847777449560),
-			*new(big.Int).SetUint64(15178169970799106939),
-			*new(big.Int).SetUint64(4403065012435293749),
-			*new(big.Int).SetUint64(15306540389399388999),
-			*new(big.Int).SetUint64(8935555081913173844),
-		},
+		5245666847777449560,
+		15178169970799106939,
+		4403065012435293749,
+		15306540389399388999,
+		8935555081913173844,
 	}
 
 	sig := SchnorrSignHashedMessage2(hashedMessage, sk, k)
@@ -73,8 +69,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		5882925226143600273,
 	}
 	for i := 0; i < 5; i++ {
-		if sig.S.Value[i].Uint64() != expectedS[i] {
-			t.Fatalf("sig.S[%d]: Expected %d, but got %d", i, expectedS[i], sig.S.Value[i].Uint64())
+		if sig.S[i] != expectedS[i] {
+			t.Fatalf("sig.S[%d]: Expected %d, but got %d", i, expectedS[i], sig.S[i])
 		}
 	}
 	expectedE := [5]uint64{
@@ -85,8 +81,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		6775027260348937828,
 	}
 	for i := 0; i < 5; i++ {
-		if sig.E.Value[i].Uint64() != expectedE[i] {
-			t.Fatalf("sig.E[%d]: Expected %d, but got %d", i, expectedE[i], sig.E.Value[i].Uint64())
+		if sig.E[i] != expectedE[i] {
+			t.Fatalf("sig.E[%d]: Expected %d, but got %d", i, expectedE[i], sig.E[i])
 		}
 	}
 
@@ -96,13 +92,12 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	}
 
 	sk = curve.ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(14609471659974493146),
-			*new(big.Int).SetUint64(15558617123161593410),
-			*new(big.Int).SetUint64(853367204868339037),
-			*new(big.Int).SetUint64(17594253198278631904),
-			*new(big.Int).SetUint64(368396584122947478),
-		},
+
+		14609471659974493146,
+		15558617123161593410,
+		853367204868339037,
+		17594253198278631904,
+		368396584122947478,
 	}
 
 	hashedMessage = gFp5.Element{
@@ -114,13 +109,12 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	}
 
 	k = curve.ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(1980123857560067020),
-			*new(big.Int).SetUint64(10696795398834097509),
-			*new(big.Int).SetUint64(3211831869376171671),
-			*new(big.Int).SetUint64(6194822139276031840),
-			*new(big.Int).SetUint64(3482023782412490864),
-		},
+
+		1980123857560067020,
+		10696795398834097509,
+		3211831869376171671,
+		6194822139276031840,
+		3482023782412490864,
 	}
 
 	sig = SchnorrSignHashedMessage2(hashedMessage, sk, k)
@@ -133,8 +127,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		2245797172600273048,
 	}
 	for i := 0; i < 5; i++ {
-		if sig.S.Value[i].Uint64() != expectedS[i] {
-			t.Fatalf("sig.S[%d]: Expected %d, but got %d", i, expectedS[i], sig.S.Value[i].Uint64())
+		if sig.S[i] != expectedS[i] {
+			t.Fatalf("sig.S[%d]: Expected %d, but got %d", i, expectedS[i], sig.S[i])
 		}
 	}
 	expectedE = [5]uint64{
@@ -145,8 +139,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 		7078247668913970626,
 	}
 	for i := 0; i < 5; i++ {
-		if sig.E.Value[i].Uint64() != expectedE[i] {
-			t.Fatalf("sig.E[%d]: Expected %d, but got %d", i, expectedE[i], sig.E.Value[i].Uint64())
+		if sig.E[i] != expectedE[i] {
+			t.Fatalf("sig.E[%d]: Expected %d, but got %d", i, expectedE[i], sig.E[i])
 		}
 	}
 
@@ -174,7 +168,7 @@ func TestBytes(t *testing.T) {
 
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)
 	sig2, _ := SigFromBytes(sig.ToBytes())
-	if !sig2.S.Equals(sig.S) || !sig2.E.Equals(sig.E) {
+	if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
 		t.Fatalf("bytes do not match")
 	}
 

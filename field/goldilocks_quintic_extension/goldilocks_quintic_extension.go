@@ -8,6 +8,7 @@ import (
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
+// TODO @irfanbozkurt: make goldilocks
 type Element [5]uint64
 
 const Bytes = g.Bytes * 5

@@ -37,8 +37,8 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
 	hashedMsg := p2.HashToQuinticExtension(msg)
-	sig := SchnorrSignHashedMessage(hashedMsg, sk)
-	pk := SchnorrPkFromSk(sk)
+	sig := SchnorrSignHashedMessage(*hashedMsg, *sk)
+	pk := SchnorrPkFromSk(*sk)
 
 	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
@@ -50,13 +50,13 @@ func TestBytes(t *testing.T) {
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
 	hashedMsg := p2.HashToQuinticExtension(msg)
 
-	sig := SchnorrSignHashedMessage(hashedMsg, sk)
+	sig := SchnorrSignHashedMessage(*hashedMsg, *sk)
 	sig2, _ := SigFromBytes(sig.ToBytes())
-	if !sig2.S.Equals(sig.S) || !sig2.E.Equals(sig.E) {
+	if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
 		t.Fatalf("bytes do not match")
 	}
 
-	pk := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	pk := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(*sk).ToLittleEndianBytes())
 
 	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")

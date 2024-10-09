@@ -14,13 +14,6 @@ type Signature struct {
 	E curve.ECgFp5Scalar
 }
 
-func (s Signature) DeepCopy() Signature {
-	return Signature{
-		S: s.S.DeepCopy(),
-		E: s.E.DeepCopy(),
-	}
-}
-
 // (s little endian) || (e little endian)
 func (s Signature) ToBytes() []byte {
 	sBytes := s.S.ToLittleEndianBytes()
@@ -37,8 +30,8 @@ func SigFromBytes(b []byte) (Signature, error) {
 	}
 
 	return Signature{
-		S: curve.ScalarElementFromLittleEndianBytes(b[:40]),
-		E: curve.ScalarElementFromLittleEndianBytes(b[40:]),
+		S: *curve.ScalarElementFromLittleEndianBytes(b[:40]),
+		E: *curve.ScalarElementFromLittleEndianBytes(b[40:]),
 	}, nil
 }
 
@@ -57,7 +50,7 @@ func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
 	k := curve.SampleScalar(nil)
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
+	r := curve.GENERATOR_ECgFp5Point.Mul(k)
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.Element, 5+5)
@@ -70,8 +63,8 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 
 	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 	return Signature{
-		S: k.Sub(e.Mul(sk)),
-		E: e,
+		S: *k.Sub(e.Mul(&sk)),
+		E: *e,
 	}
 }
 
@@ -99,8 +92,7 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 		return fmt.Errorf("failed to convert signature bytes to Schnorr signature: %w", err)
 	}
 
-	valid := isSchnorrSignatureValid(&pk, &hashedMsgElem, s)
-	if !valid {
+	if !isSchnorrSignatureValid(&pk, &hashedMsgElem, s) {
 		return fmt.Errorf("signature is invalid")
 	}
 
@@ -124,5 +116,5 @@ func isSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 	}
 	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 
-	return eV.Equals(sig.E) // e_v == e
+	return eV.Equals(&sig.E) // e_v == e
 }

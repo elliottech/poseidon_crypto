@@ -1,7 +1,6 @@
 package ecgfp5
 
 import (
-	"math/big"
 	"testing"
 
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -427,13 +426,11 @@ func TestScalarMul(t *testing.T) {
 	}
 
 	if !p1.Mul(&ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(996458928865875995),
-			*new(big.Int).SetUint64(7368213710557165165),
-			*new(big.Int).SetUint64(8553572641065079816),
-			*new(big.Int).SetUint64(15282443801767955752),
-			*new(big.Int).SetUint64(251150557732720826),
-		},
+		996458928865875995,
+		7368213710557165165,
+		8553572641065079816,
+		15282443801767955752,
+		251150557732720826,
 	}).Equals(ECgFp5Point{
 		x: gFp5.FromUint64Array(
 			16885333682092300432,
@@ -1387,22 +1384,19 @@ func TestWeierstrassMulAdd2(t *testing.T) {
 	}
 
 	s := ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(6950590877883398434),
-			*new(big.Int).SetUint64(17178336263794770543),
-			*new(big.Int).SetUint64(11012823478139181320),
-			*new(big.Int).SetUint64(16445091359523510936),
-			*new(big.Int).SetUint64(5882925226143600273),
-		},
+		6950590877883398434,
+		17178336263794770543,
+		11012823478139181320,
+		16445091359523510936,
+		5882925226143600273,
 	}
+
 	e := ECgFp5Scalar{
-		Value: [5]big.Int{
-			*new(big.Int).SetUint64(4544744459434870309),
-			*new(big.Int).SetUint64(4180764085957612004),
-			*new(big.Int).SetUint64(3024669018778978615),
-			*new(big.Int).SetUint64(15433417688859446606),
-			*new(big.Int).SetUint64(6775027260348937828),
-		},
+		4544744459434870309,
+		4180764085957612004,
+		3024669018778978615,
+		15433417688859446606,
+		6775027260348937828,
 	}
 
 	muladd := MulAdd2(qwe, abc, s, e)

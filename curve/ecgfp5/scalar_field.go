@@ -14,6 +14,34 @@ var (
 	ORDER, _ = new(big.Int).SetString("1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241", 10)
 	ZERO     = ECgFp5Scalar{}
 	ONE      = ECgFp5Scalar{1, 0, 0, 0, 0}
+
+	// Group order n is slightly below 2^319. We store values over five
+	// 64-bit limbs. We use Montgomery multiplication to perform
+	// computations; however, we keep the limbs in normal
+	// (non-Montgomery) representation, so that operations that do not
+	// require any multiplication of scalars, just encoding and
+	// decoding, are fastest.
+
+	// The modulus itself, stored in a Scalar structure (which
+	// contravenes to the rules of a Scalar; this constant MUST NOT leak
+	// outside the API).
+	N = ECgFp5Scalar{
+		0xE80FD996948BFFE1,
+		0xE8885C39D724A09C,
+		0x7FFFFFE6CFB80639,
+		0x7FFFFFF100000016,
+		0x7FFFFFFD80000007,
+	}
+	// -1/N[0] mod 2^64
+	N0I = uint64(0xD78BEF72057B7BDF)
+	// 2^640 mod n
+	R2 = ECgFp5Scalar{
+		0xA01001DCE33DC739,
+		0x6C3228D33F62ACCF,
+		0xD1D796CC91CF8525,
+		0xAADFFF5D1574C1D8,
+		0x4ACA13B28CA251F5,
+	}
 )
 
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
@@ -66,57 +94,6 @@ func SampleScalar(seed *string) *ECgFp5Scalar {
 	}
 
 	return FromNonCanonicalBigInt(new(big.Int).Rand(rng, ORDER))
-}
-
-func (s *ECgFp5Scalar) Order() *big.Int {
-	return ORDER
-}
-
-var (
-	// Group order n is slightly below 2^319. We store values over five
-	// 64-bit limbs. We use Montgomery multiplication to perform
-	// computations; however, we keep the limbs in normal
-	// (non-Montgomery) representation, so that operations that do not
-	// require any multiplication of scalars, just encoding and
-	// decoding, are fastest.
-
-	// The modulus itself, stored in a Scalar structure (which
-	// contravenes to the rules of a Scalar; this constant MUST NOT leak
-	// outside the API).
-	N = ECgFp5Scalar{
-		0xE80FD996948BFFE1,
-		0xE8885C39D724A09C,
-		0x7FFFFFE6CFB80639,
-		0x7FFFFFF100000016,
-		0x7FFFFFFD80000007,
-	}
-	// -1/N[0] mod 2^64
-	N0I = uint64(0xD78BEF72057B7BDF)
-	// 2^640 mod n
-	R2 = ECgFp5Scalar{
-		0xA01001DCE33DC739,
-		0x6C3228D33F62ACCF,
-		0xD1D796CC91CF8525,
-		0xAADFFF5D1574C1D8,
-		0x4ACA13B28CA251F5,
-	}
-	// 2^632 mod n
-	T632 = ECgFp5Scalar{
-		0x2B0266F317CA91B3,
-		0xEC1D26528E984773,
-		0x8651D7865E12DB94,
-		0xDA2ADFF5941574D0,
-		0x53CACA12110CA256,
-	}
-)
-
-func (s *ECgFp5Scalar) IsZero() bool {
-	for i := 0; i < 5; i++ {
-		if s[i] != 0 {
-			return false
-		}
-	}
-	return true
 }
 
 func (s *ECgFp5Scalar) Equals(rhs *ECgFp5Scalar) bool {
@@ -181,10 +158,6 @@ func (s *ECgFp5Scalar) Mul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 	return res
 }
 
-func (s *ECgFp5Scalar) Square() *ECgFp5Scalar {
-	return s.Mul(s)
-}
-
 // Montgomery multiplication.
 // Returns (self*rhs)/2^320 mod n.
 // 'self' MUST be less than n (the other operand can be up to 2^320-1).
@@ -230,14 +203,6 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 	return Select(c, r2, r)
 }
 
-func FromNonCanonicalBigInt(val *big.Int) *ECgFp5Scalar {
-	limbs := new(big.Int).Mod(val, ORDER).Bits()
-	if len(limbs) < 5 {
-		limbs = append(limbs, 0)
-	}
-	return &ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])}
-}
-
 func FromGfp5(fp5 *gFp5.Element) *ECgFp5Scalar {
 	return FromNonCanonicalBigInt(new(big.Int).SetBytes(
 		[]byte{
@@ -253,6 +218,14 @@ func FromGfp5(fp5 *gFp5.Element) *ECgFp5Scalar {
 			byte(fp5[0] >> 0), byte(fp5[0] >> 8), byte(fp5[0] >> 16), byte(fp5[0] >> 24),
 		},
 	))
+}
+
+func FromNonCanonicalBigInt(val *big.Int) *ECgFp5Scalar {
+	limbs := new(big.Int).Mod(val, ORDER).Bits()
+	if len(limbs) < 5 {
+		limbs = append(limbs, 0)
+	}
+	return &ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])}
 }
 
 // Recode a scalar into signed integers. For a window width of w

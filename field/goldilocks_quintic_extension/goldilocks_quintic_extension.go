@@ -408,6 +408,7 @@ func RepeatedFrobenius(x Element, count int) Element {
 	return FromBasefieldArray(res)
 }
 
+// TODO @irfanbozkurt
 func Legendre(x Element) g.Element {
 	frob1 := Frobenius(x)
 	frob2 := Frobenius(frob1)

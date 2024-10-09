@@ -132,45 +132,6 @@ func TestSub(t *testing.T) {
 			t.Fatalf("Expected result[%d] to be %d, but got %d", i, expectedValues[i], result[i])
 		}
 	}
-
-	// 	func TestSub(t *testing.T) {
-	// 	scalar1 := ECgFp5Scalar{
-	// 		[5]big.Int{
-	// 			*new(big.Int).SetUint64(1),
-	// 			*new(big.Int).SetUint64(2),
-	// 			*new(big.Int).SetUint64(0),
-	// 			*new(big.Int).SetUint64(0),
-	// 			*new(big.Int).SetUint64(0),
-	// 		},
-	// 	}
-	// 	scalar2 := ECgFp5Scalar{
-	// 		[5]big.Int{
-	// 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),
-	// 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),
-	// 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),
-	// 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),
-	// 			*new(big.Int).SetUint64(0xFFFFFFFFFFFFFFFF),
-	// 		},
-	// 	}
-
-	// 	result := scalar1.Sub(scalar2)
-
-	// 	expectedValues := [5]string{
-	// 		"16721823182210465763",
-	// 		"16755743817124323486",
-	// 		"9223371928670570041",
-	// 		"9223371972430266390",
-	// 		"9223372026117357575",
-	// 	}
-
-	//		for i := 0; i < 5; i++ {
-	//			expected := new(big.Int)
-	//			expected.SetString(expectedValues[i], 10)
-	//			if result.Value[i].Cmp(expected) != 0 {
-	//				t.Fatalf("Expected result.Value[%d] to be %s, but got %s", i, expected.String(), result.Value[i].String())
-	//			}
-	//		}
-	//	}
 }
 
 func TestSelect(t *testing.T) {
@@ -210,19 +171,6 @@ func TestMul(t *testing.T) {
 	scalar := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF}
 
 	result := scalar.Mul(&scalar)
-	expectedValues := ECgFp5Scalar{471447996674510360, 3520142298321118626, 17240611161823899731, 5610669884293437850, 1193611606749909414}
-
-	for i := 0; i < 5; i++ {
-		if result[i] != expectedValues[i] {
-			t.Fatalf("Expected result[%d] to be %d, but got %d", i, expectedValues[i], result[i])
-		}
-	}
-}
-
-func TestSquare(t *testing.T) {
-	scalar := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF}
-
-	result := scalar.Square()
 	expectedValues := ECgFp5Scalar{471447996674510360, 3520142298321118626, 17240611161823899731, 5610669884293437850, 1193611606749909414}
 
 	for i := 0; i < 5; i++ {
@@ -486,7 +434,7 @@ func TestFromMulScalars(t *testing.T) {
 		0xFFFFFFFFFFFFFFFF,
 		0xFFFFFFFFFFFFFFFF,
 	}
-	result := FromMulScalars(a, b)
+	result := FromMulScalars(&a, &b)
 
 	expectedValues := [10]uint64{
 		1,

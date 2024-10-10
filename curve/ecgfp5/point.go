@@ -1,6 +1,9 @@
 package ecgfp5
 
 import (
+	"fmt"
+	"time"
+
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
@@ -22,6 +25,8 @@ var (
 	B_MUL2_ECgFp5Point  = gFp5.FromUint64Array(0, 2*B1, 0, 0, 0)
 	B_MUL4_ECgFp5Point  = gFp5.FromUint64Array(0, 4*B1, 0, 0, 0)
 	B_MUL16_ECgFp5Point = gFp5.FromUint64Array(0, 16*B1, 0, 0, 0)
+
+	B_MUL4_ECgFp5Point_minus_4 = gFp5.Sub(&B_MUL4_ECgFp5Point, gFp5.FP5_FOUR)
 
 	NEUTRAL_ECgFp5Point = ECgFp5Point{
 		x: gFp5.FP5_ZERO,
@@ -227,6 +232,13 @@ func (p *ECgFp5Point) MDouble(n uint32) ECgFp5Point {
 }
 
 func (p *ECgFp5Point) SetMDouble(n uint32) {
+
+	fmt.Println()
+	fmt.Println("SetMDouble")
+	fmt.Println("SetMDouble")
+	fmt.Println("SetMDouble")
+	fmt.Println()
+
 	if n == 0 {
 		return
 	}
@@ -246,80 +258,43 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 	x1 := gFp5.Square(t2)
 	z1 := gFp5.Mul(t1, &u0)
 	t3 := gFp5.Square(&u0)
-	w1 := gFp5.Sub(
-		t2,
-		gFp5.Mul(
-			gFp5.Double(gFp5.Add(&x0, &z0)),
-			t3,
-		),
-	)
+	w1 := gFp5.Sub(t2, gFp5.Mul(gFp5.Double(gFp5.Add(&x0, &z0)), t3))
 	t4 := gFp5.Square(w1)
 	t5 := gFp5.Square(z1)
 	x := gFp5.Mul(gFp5.Square(t5), &B_MUL16_ECgFp5Point)
-	w := gFp5.Sub(
-		gFp5.Double(x1),
-		gFp5.Add(
-			gFp5.Mul(t5, gFp5.FP5_FOUR),
-			t4,
-		),
-	)
-	z := gFp5.Sub(
-		gFp5.Square(gFp5.Add(w1, z1)),
-		gFp5.Add(t4, t5),
-	)
+	w := gFp5.Sub(gFp5.Double(x1), gFp5.Add(gFp5.Mul(t5, gFp5.FP5_FOUR), t4))
 
+	z := gFp5.Sub(gFp5.Square(gFp5.Add(w1, z1)), gFp5.Add(t4, t5))
+
+	start := time.Now()
 	for i := 2; i < int(n); i++ {
 		t1 = gFp5.Square(z)
 		t2 = gFp5.Square(t1)
 		t3 = gFp5.Square(w)
 		t4 = gFp5.Square(t3)
-		t5 = gFp5.Sub(
-			gFp5.Square(gFp5.Add(w, z)),
-			gFp5.Add(t1, t3),
-		)
-		z = gFp5.Mul(
-			t5,
-			gFp5.Sub(
-				gFp5.Double(gFp5.Add(x, t1)),
-				t3,
-			),
-		)
+		t5 = gFp5.Sub(gFp5.Square(gFp5.Add(w, z)), gFp5.Add(t1, t3))
+		z = gFp5.Mul(t5, gFp5.Sub(gFp5.Double(gFp5.Add(x, t1)), t3))
 		x = gFp5.Mul(gFp5.Mul(t2, t4), &B_MUL16_ECgFp5Point)
-		w = gFp5.Neg(
-			gFp5.Add(
-				t4,
-				gFp5.Mul(
-					t2,
-					gFp5.Sub(
-						&B_MUL4_ECgFp5Point,
-						gFp5.FP5_FOUR,
-					),
-				),
-			),
-		)
+		w = gFp5.Neg(gFp5.Add(t4, gFp5.Mul(t2, B_MUL4_ECgFp5Point_minus_4)))
 	}
+	fmt.Println()
+	fmt.Printf("SetMDouble A: %d ns\n", time.Since(start).Nanoseconds())
+	fmt.Println()
 
 	t1 = gFp5.Square(w)
 	t2 = gFp5.Square(z)
-	t3 = gFp5.Sub(
-		gFp5.Square(gFp5.Add(w, z)),
-		gFp5.Add(t1, t2),
-	)
-	w1 = gFp5.Sub(
-		t1,
-		gFp5.Double(gFp5.Add(x, t2)),
-	)
+	t3 = gFp5.Sub(gFp5.Square(gFp5.Add(w, z)), gFp5.Add(t1, t2))
+	w1 = gFp5.Sub(t1, gFp5.Double(gFp5.Add(x, t2)))
 
 	p.x = *gFp5.Mul(gFp5.Square(t3), &B_ECgFp5Point)
 	p.z = *gFp5.Square(w1)
 	p.u = *gFp5.Mul(t3, w1)
-	p.t = *gFp5.Sub(
-		gFp5.Mul(
-			gFp5.Double(t1),
-			gFp5.Sub(t1, gFp5.Double(t2)),
-		),
-		&p.z,
-	)
+	p.t = *gFp5.Sub(gFp5.Mul(gFp5.Double(t1), gFp5.Sub(t1, gFp5.Double(t2))), &p.z)
+
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
 }
 
 // Add a point in affine coordinates to this one.
@@ -420,18 +395,42 @@ func (p ECgFp5Point) MakeWindowAffine() []AffinePoint {
 
 // Multiply this point by a scalar.
 func (p *ECgFp5Point) SetMul(s *ECgFp5Scalar) {
-	// Make a window with affine points.
+
+	fmt.Println()
+	fmt.Println("SetMul")
+	fmt.Println("SetMul")
+	fmt.Println("SetMul")
+	fmt.Println()
+
+	start := time.Now()
 	win := p.MakeWindowAffine()
+	fmt.Println()
+	fmt.Printf("SetMul A %d ns\n", time.Since(start).Nanoseconds())
+	fmt.Println()
+
 	digits := make([]int32, (319+WINDOW)/WINDOW)
+
 	s.RecodeSigned(digits, int32(WINDOW))
 
+	start = time.Now()
 	lookedUp := LookupVarTime(win, digits[len(digits)-1])
 	*p = lookedUp.ToPoint()
+
 	for i := len(digits) - 2; i >= 0; i-- {
+		start = time.Now()
 		p.SetMDouble(uint32(WINDOW))
+		fmt.Println()
+		fmt.Printf("SetMul E %d ns\n", time.Since(start).Nanoseconds())
+		fmt.Println()
+
 		lookup := Lookup(win, digits[i])
 		*p = p.AddAffine(&lookup)
 	}
+
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
+	fmt.Println()
 }
 
 func (p ECgFp5Point) Mul(s *ECgFp5Scalar) ECgFp5Point {

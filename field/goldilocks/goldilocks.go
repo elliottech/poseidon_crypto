@@ -149,9 +149,21 @@ func Add(elems ...*Element) Element {
 	return res
 }
 
+func Add2(a, b *Element) Element {
+	res := g.NewElement(0)
+	res.Add(a, b)
+	return res
+}
+
 func Sub(a, b *Element) Element {
 	res := g.NewElement(0)
 	res.Sub(a, b)
+	return res
+}
+
+func Mul2(a, b *Element) Element {
+	res := g.NewElement(0)
+	res.Mul(a, b)
 	return res
 }
 

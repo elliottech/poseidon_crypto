@@ -23,7 +23,8 @@ var (
 	FP5_W        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 
-	three = g.FromUint64(3)
+	three    = g.FromUint64(3)
+	double_w = g.Add2(&FP5_W, &FP5_W)
 )
 
 func (e Element) ToLittleEndianBytes() []byte {
@@ -99,11 +100,11 @@ func Neg(e *Element) *Element {
 
 func Add(a, b *Element) *Element {
 	return &Element{
-		g.Add(&a[0], &b[0]),
-		g.Add(&a[1], &b[1]),
-		g.Add(&a[2], &b[2]),
-		g.Add(&a[3], &b[3]),
-		g.Add(&a[4], &b[4]),
+		g.Add2(&a[0], &b[0]),
+		g.Add2(&a[1], &b[1]),
+		g.Add2(&a[2], &b[2]),
+		g.Add2(&a[3], &b[3]),
+		g.Add2(&a[4], &b[4]),
 	}
 }
 
@@ -118,46 +119,47 @@ func Sub(a, b *Element) *Element {
 }
 
 func Mul(a, b *Element) *Element {
-	a0b0 := g.Mul(&a[0], &b[0])
-	a1b4 := g.Mul(&a[1], &b[4])
-	a2b3 := g.Mul(&a[2], &b[3])
-	a3b2 := g.Mul(&a[3], &b[2])
-	a4b1 := g.Mul(&a[4], &b[1])
-	added := g.Add(&a1b4, &a2b3, &a3b2, &a4b1)
-	muld := g.Mul(&FP5_W, &added)
-	c0 := g.Add(&a0b0, &muld)
+	a0b0 := g.Mul2(&a[0], &b[0])
+	a1b4 := g.Mul2(&a[1], &b[4])
+	a2b3 := g.Mul2(&a[2], &b[3])
+	a3b2 := g.Mul2(&a[3], &b[2])
+	a4b1 := g.Mul2(&a[4], &b[1])
 
-	a0b1 := g.Mul(&a[0], &b[1])
-	a1b0 := g.Mul(&a[1], &b[0])
-	a2b4 := g.Mul(&a[2], &b[4])
-	a3b3 := g.Mul(&a[3], &b[3])
-	a4b2 := g.Mul(&a[4], &b[2])
+	added := g.Add(&a1b4, &a2b3, &a3b2, &a4b1)
+	muld := g.Mul2(&FP5_W, &added)
+	c0 := g.Add2(&a0b0, &muld)
+
+	a0b1 := g.Mul2(&a[0], &b[1])
+	a1b0 := g.Mul2(&a[1], &b[0])
+	a2b4 := g.Mul2(&a[2], &b[4])
+	a3b3 := g.Mul2(&a[3], &b[3])
+	a4b2 := g.Mul2(&a[4], &b[2])
 	added = g.Add(&a2b4, &a3b3, &a4b2)
-	muld = g.Mul(&FP5_W, &added)
+	muld = g.Mul2(&FP5_W, &added)
 	c1 := g.Add(&a0b1, &a1b0, &muld)
 
-	a0b2 := g.Mul(&a[0], &b[2])
-	a1b1 := g.Mul(&a[1], &b[1])
-	a2b0 := g.Mul(&a[2], &b[0])
-	a3b4 := g.Mul(&a[3], &b[4])
-	a4b3 := g.Mul(&a[4], &b[3])
-	added = g.Add(&a3b4, &a4b3)
-	muld = g.Mul(&FP5_W, &added)
+	a0b2 := g.Mul2(&a[0], &b[2])
+	a1b1 := g.Mul2(&a[1], &b[1])
+	a2b0 := g.Mul2(&a[2], &b[0])
+	a3b4 := g.Mul2(&a[3], &b[4])
+	a4b3 := g.Mul2(&a[4], &b[3])
+	added = g.Add2(&a3b4, &a4b3)
+	muld = g.Mul2(&FP5_W, &added)
 	c2 := g.Add(&a0b2, &a1b1, &a2b0, &muld)
 
-	a0b3 := g.Mul(&a[0], &b[3])
-	a1b2 := g.Mul(&a[1], &b[2])
-	a2b1 := g.Mul(&a[2], &b[1])
-	a3b0 := g.Mul(&a[3], &b[0])
-	a4b4 := g.Mul(&a[4], &b[4])
-	muld = g.Mul(&FP5_W, &a4b4)
+	a0b3 := g.Mul2(&a[0], &b[3])
+	a1b2 := g.Mul2(&a[1], &b[2])
+	a2b1 := g.Mul2(&a[2], &b[1])
+	a3b0 := g.Mul2(&a[3], &b[0])
+	a4b4 := g.Mul2(&a[4], &b[4])
+	muld = g.Mul2(&FP5_W, &a4b4)
 	c3 := g.Add(&a0b3, &a1b2, &a2b1, &a3b0, &muld)
 
-	a0b4 := g.Mul(&a[0], &b[4])
-	a1b3 := g.Mul(&a[1], &b[3])
-	a2b2 := g.Mul(&a[2], &b[2])
-	a3b1 := g.Mul(&a[3], &b[1])
-	a4b0 := g.Mul(&a[4], &b[0])
+	a0b4 := g.Mul2(&a[0], &b[4])
+	a1b3 := g.Mul2(&a[1], &b[3])
+	a2b2 := g.Mul2(&a[2], &b[2])
+	a3b1 := g.Mul2(&a[3], &b[1])
+	a4b0 := g.Mul2(&a[4], &b[0])
 	c4 := g.Add(&a0b4, &a1b3, &a2b2, &a3b1, &a4b0)
 
 	return &Element{c0, c1, c2, c3, c4}
@@ -180,35 +182,40 @@ func ExpPowerOf2(x *Element, power int) *Element {
 }
 
 func Square(a *Element) *Element {
-	double_w := g.Add(&FP5_W, &FP5_W)
+	// TODO değişkene atamak array access yerine
+	//
 
-	a0s := g.Mul(&a[0], &a[0])
-	a1a4 := g.Mul(&a[1], &a[4])
-	a2a3 := g.Mul(&a[2], &a[3])
-	added := g.Add(&a1a4, &a2a3)
-	muld := g.Mul(&double_w, &added)
-	c0 := g.Add(&a0s, &muld)
+	a0s := g.Mul2(&a[0], &a[0])
+	a1a4 := g.Mul2(&a[1], &a[4])
+	a2a3 := g.Mul2(&a[2], &a[3])
+	added := g.Add2(&a1a4, &a2a3)
+	muld := g.Mul2(&double_w, &added)
+	c0 := g.Add2(&a0s, &muld)
 
-	a0Double := g.Add(&a[0], &a[0])
-	a0Doublea1 := g.Mul(&a0Double, &a[1])
-	a2a4DoubleW := g.Mul(&a[2], &a[4], &double_w)
-	a3a3w := g.Mul(&a[3], &a[3], &FP5_W)
+	a0Double := g.Add2(&a[0], &a[0])
+	a0Doublea1 := g.Mul2(&a0Double, &a[1])
+	a2a4 := g.Mul2(&a[2], &a[4])
+	a2a4DoubleW := g.Mul2(&a2a4, &double_w)
+	a3a3 := g.Mul2(&a[3], &a[3])
+	a3a3w := g.Mul2(&a3a3, &FP5_W)
 	c1 := g.Add(&a0Doublea1, &a2a4DoubleW, &a3a3w)
 
-	a0Doublea2 := g.Mul(&a0Double, &a[2])
-	a1Square := g.Mul(&a[1], &a[1])
-	a4a3DoubleW := g.Mul(&a[4], &a[3], &double_w)
+	a0Doublea2 := g.Mul2(&a0Double, &a[2])
+	a1Square := g.Mul2(&a[1], &a[1])
+	a4a3 := g.Mul2(&a[4], &a[3])
+	a4a3DoubleW := g.Mul2(&a4a3, &double_w)
 	c2 := g.Add(&a0Doublea2, &a1Square, &a4a3DoubleW)
 
 	a1Double := g.Add(&a[1], &a[1])
-	a0Doublea3 := g.Mul(&a0Double, &a[3])
-	a1Doublea2 := g.Mul(&a1Double, &a[2])
-	a4SquareW := g.Mul(&a[4], &a[4], &FP5_W)
+	a0Doublea3 := g.Mul2(&a0Double, &a[3])
+	a1Doublea2 := g.Mul2(&a1Double, &a[2])
+	a4a4 := g.Mul2(&a[4], &a[4])
+	a4SquareW := g.Mul2(&a4a4, &FP5_W)
 	c3 := g.Add(&a0Doublea3, &a1Doublea2, &a4SquareW)
 
-	a0Doublea4 := g.Mul(&a0Double, &a[4])
-	a1Doublea3 := g.Mul(&a1Double, &a[3])
-	a2Square := g.Mul(&a[2], &a[2])
+	a0Doublea4 := g.Mul2(&a0Double, &a[4])
+	a1Doublea3 := g.Mul2(&a1Double, &a[3])
+	a2Square := g.Mul2(&a[2], &a[2])
 	c4 := g.Add(&a0Doublea4, &a1Doublea3, &a2Square)
 
 	return &Element{c0, c1, c2, c3, c4}

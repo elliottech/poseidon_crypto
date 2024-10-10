@@ -2,6 +2,7 @@ package signature
 
 import (
 	"fmt"
+	"time"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -57,15 +58,46 @@ func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
-	k := curve.SampleScalar(nil)
-	r := curve.GENERATOR_ECgFp5Point.Mul(k)
-	rEncoded := r.Encode()
 
-	// Compute `e = H(r || H(m))`, which is a scalar point
-	e := curve.FromGfp5(p2.HashToQuinticExtension([]g.Element{
+	start := time.Now()
+	k := curve.SampleScalar(nil)
+	elapsed := time.Since(start).Nanoseconds()
+	fmt.Println()
+	fmt.Printf("k := curve.SampleScalar(nil): %d ns\n", elapsed)
+	fmt.Println()
+
+	start = time.Now()
+	r := curve.GENERATOR_ECgFp5Point.Mul(k)
+	elapsed = time.Since(start).Nanoseconds()
+	fmt.Println()
+	fmt.Printf("r := curve.GENERATOR_ECgFp5Point.Mul(k): %d ns\n", elapsed)
+	fmt.Println()
+
+	start = time.Now()
+	rEncoded := r.Encode()
+	elapsed = time.Since(start).Nanoseconds()
+	fmt.Println()
+	fmt.Printf("r.Encode(): %d ns\n", elapsed)
+	fmt.Println()
+
+	start = time.Now()
+	hashed := p2.HashToQuinticExtension([]g.Element{
 		rEncoded[0], rEncoded[1], rEncoded[2], rEncoded[3], rEncoded[4],
 		hashedMsg[0], hashedMsg[1], hashedMsg[2], hashedMsg[3], hashedMsg[4],
-	}))
+	})
+	elapsed = time.Since(start).Nanoseconds()
+	fmt.Println()
+	fmt.Printf("hashed := p2.HashToQuinticExtension: %d ns\n", elapsed)
+	fmt.Println()
+
+	// Compute `e = H(r || H(m))`, which is a scalar point
+	start = time.Now()
+	e := curve.FromGfp5(hashed)
+	elapsed = time.Since(start).Nanoseconds()
+	fmt.Println()
+	fmt.Printf("e := curve.FromGfp5(hashed): %d ns\n", elapsed)
+	fmt.Println()
+
 	return Signature{
 		S: *k.Sub(e.Mul(&sk)),
 		E: *e,

@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/elliottech/poseidon_crypto/poseidon_bn254/constants"
+	"github.com/elliottech/poseidon_crypto/hash/poseidon_bn254/constants"
 )
 
 // Number of full rounds

@@ -79,9 +79,6 @@ var (
 		0x7FFFFFF100000016,
 		0x7FFFFFFD80000007,
 	}
-
-	two128 = new(big.Int).Lsh(big.NewInt(1), 128) // 2^128
-	two64  = new(big.Int).Lsh(big.NewInt(1), 64)  // 2^64
 )
 
 func (s ECgFp5Scalar) Order() *big.Int {

@@ -40,47 +40,25 @@ func (s *Signed161) AddShifted(v *Signed161, shift int32) {
 }
 
 func (s *Signed161) AddShiftedSmall(v []uint64, shift int32) {
-	var cc uint64
-	j := 3 - len(v)
-	var vbits uint64
+	cc, vbits, j := uint64(0), uint64(0), 3-len(v)
 	for i := j; i < 3; i++ {
 		vw := v[i-j]
+
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
-		z := Uint128Add(s[i], vws, cc)
-		limbs := z.Bits()
 
-		low := uint64(0)
-		if len(limbs) > 0 {
-			low = uint64(limbs[0])
-		}
-		s[i] = low
-
-		high := uint64(0)
-		if len(limbs) > 1 {
-			high = uint64(limbs[1])
-		}
-		cc = high
+		z := U128From64(s[i]).Add64(vws).Add64(cc)
+		s[i] = z.Lo
+		cc = z.Hi
 	}
 }
 
 func (s *Signed161) Add(v []uint64) {
-	var cc uint64
-	j := 3 - len(v)
+	cc, j := uint64(0), 3-len(v)
 	for i := j; i < 3; i++ {
-		z := Uint128Add(s[i], v[i-j], cc)
-		limbs := z.Bits()
-		low := uint64(0)
-		if len(limbs) > 0 {
-			low = uint64(limbs[0])
-		}
-		s[i] = low
-
-		high := uint64(0)
-		if len(limbs) > 1 {
-			high = uint64(limbs[1])
-		}
-		cc = uint64(high)
+		z := U128From64(s[i]).Add64(v[i-j]).Add64(cc)
+		s[i] = z.Lo
+		cc = z.Hi
 	}
 }
 
@@ -96,47 +74,23 @@ func (s *Signed161) SubShifted(v *Signed161, shift int32) {
 }
 
 func (s *Signed161) SubShiftedSmall(v []uint64, shift int32) {
-	var cc uint64
-	j := 3 - len(v)
-	var vbits uint64
+	cc, vbits, j := uint64(0), uint64(0), 3-len(v)
 	for i := j; i < 3; i++ {
 		vw := v[i-j]
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
-		z := Uint128Sub(s[i], vws, cc)
-		limbs := z.Bits()
 
-		low := uint64(0)
-		if len(limbs) > 0 {
-			low = uint64(limbs[0])
-		}
-		s[i] = low
-
-		high := uint64(0)
-		if len(limbs) > 1 {
-			high = uint64(limbs[1])
-		}
-		cc = uint64(high) & 1
+		z := U128From64(s[i]).Sub64(vws).Sub64(cc)
+		s[i] = z.Lo
+		cc = z.Hi & 1
 	}
 }
 
 func (s *Signed161) Sub(v []uint64) {
-	var cc uint64
-	j := 3 - len(v)
+	cc, j := uint64(0), 3-len(v)
 	for i := j; i < 3; i++ {
-		z := Uint128Sub(s[i], v[i-j], cc)
-		limbs := z.Bits()
-
-		low := uint64(0)
-		if len(limbs) > 0 {
-			low = uint64(limbs[0])
-		}
-		s[i] = low
-
-		high := uint64(0)
-		if len(limbs) > 1 {
-			high = uint64(limbs[1])
-		}
-		cc = uint64(high) & 1
+		z := U128From64(s[i]).Sub64(v[i-j]).Sub64(cc)
+		s[i] = z.Lo
+		cc = z.Hi & 1
 	}
 }

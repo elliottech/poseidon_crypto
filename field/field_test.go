@@ -22,8 +22,8 @@ func TestBytes(t *testing.T) {
 		}
 	}
 
-	e1ReconstructedLE := g.FromCanonicalLittleEndianBytes(leBytes)
-	if !g.Equals(&e1, &e1ReconstructedLE) {
+	e1ReconstructedLE, _ := g.FromCanonicalLittleEndianBytes(leBytes)
+	if !g.Equals(&e1, e1ReconstructedLE) {
 		t.Fatalf("bytes do not match")
 	}
 

@@ -44,24 +44,7 @@ func (e Element) ToBigEndianBytes() []byte {
 	return elemBytes[:]
 }
 
-func FromCanonicalLittleEndianBytes(in []byte) Element {
-	elemBytesLittleEndian := [5][]byte{
-		{in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7]},
-		{in[8], in[9], in[10], in[11], in[12], in[13], in[14], in[15]},
-		{in[16], in[17], in[18], in[19], in[20], in[21], in[22], in[23]},
-		{in[24], in[25], in[26], in[27], in[28], in[29], in[30], in[31]},
-		{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]},
-	}
-	return Element{
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[0]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[1]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[2]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[3]),
-		g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[4]),
-	}
-}
-
-func FromNonCanonicalLittleEndianBytes(in []byte) (Element, error) {
+func FromCanonicalLittleEndianBytes(in []byte) (Element, error) {
 	if len(in) != Bytes {
 		return Element{}, fmt.Errorf("input bytes len should be 40 but is %d", len(in))
 	}
@@ -74,23 +57,23 @@ func FromNonCanonicalLittleEndianBytes(in []byte) (Element, error) {
 		{in[32], in[33], in[34], in[35], in[36], in[37], in[38], in[39]},
 	}
 
-	e1, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[0])
+	e1, err := g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[0])
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e2, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[1])
+	e2, err := g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[1])
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e3, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[2])
+	e3, err := g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[2])
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e4, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[3])
+	e4, err := g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[3])
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}
-	e5, err := g.FromNonCanonicalLittleEndianBytes(elemBytesLittleEndian[4])
+	e5, err := g.FromCanonicalLittleEndianBytes(elemBytesLittleEndian[4])
 	if err != nil {
 		return Element{}, fmt.Errorf("failed to convert bytes to field element: %w", err)
 	}

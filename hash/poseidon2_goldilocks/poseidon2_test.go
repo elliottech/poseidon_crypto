@@ -128,8 +128,8 @@ func TestDigest(t *testing.T) {
 	inputs[1][6] = 1
 	inputs[1][7] = 0
 
-	g1, _ := g.FromNonCanonicalLittleEndianBytes(inputs[0]) // 289077004332300282
-	g2, _ := g.FromNonCanonicalLittleEndianBytes(inputs[1]) // 289644378102298614
+	g1, _ := g.FromCanonicalLittleEndianBytes(inputs[0]) // 289077004332300282
+	g2, _ := g.FromCanonicalLittleEndianBytes(inputs[1]) // 289644378102298614
 
 	hFunc.Write(inputs[0])
 	hFunc.Write(inputs[1])

@@ -171,7 +171,7 @@ func TestBytes(t *testing.T) {
 		t.Fatalf("bytes do not match")
 	}
 
-	pk := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	pk, _ := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
 
 	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")

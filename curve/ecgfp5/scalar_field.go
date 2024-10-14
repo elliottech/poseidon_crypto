@@ -286,13 +286,7 @@ func FromNonCanonicalBigInt(val *big.Int) ECgFp5Scalar {
 }
 
 func (s ECgFp5Scalar) ToCanonicalBigInt() *big.Int {
-	result := BigIntFromArray([5]uint64{
-		s[0],
-		s[1],
-		s[2],
-		s[3],
-		s[4],
-	})
+	result := BigIntFromArray(s)
 
 	order := ORDER
 	if result.Cmp(order) >= 0 {

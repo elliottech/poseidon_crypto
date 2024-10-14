@@ -88,21 +88,6 @@ func (s ECgFp5Scalar) Order() *big.Int {
 	return ORDER
 }
 
-// Only the null element will not have an inverse.
-// Extended Euclidian would be more performant but we use Fermat's Little for ease.
-func (s ECgFp5Scalar) TryInverse() *ECgFp5Scalar {
-	if s.IsZero() {
-		return nil
-	}
-
-	// Fermat's Little Theorem: a^(p-1) = 1 mod p  <==>  a * a^(p-2) = a^{-1} mod p
-	order := s.Order()
-	exp := new(big.Int).Sub(order, new(big.Int).SetUint64(2)) // p - 2
-
-	inverse_big := s.ExpBigInt(exp)
-	return &inverse_big
-}
-
 var (
 	// Group order n is slightly below 2^319. We store values over five
 	// 64-bit limbs. We use Montgomery multiplication to perform
@@ -174,26 +159,17 @@ func (s ECgFp5Scalar) AddInner(a ECgFp5Scalar) ECgFp5Scalar {
 
 // raw subtraction (no reduction)
 // Final borrow is returned (0xFFFFFFFFFFFFFFFF if borrow, 0 otherwise).
-func (s ECgFp5Scalar) SubInner(a ECgFp5Scalar) (ECgFp5Scalar, uint64) {
-	var r ECgFp5Scalar
-	c := big.NewInt(0)
-	two128 := new(big.Int).Lsh(big.NewInt(1), 128) // 2^128
+func (s *ECgFp5Scalar) SubInner(a *ECgFp5Scalar) (*ECgFp5Scalar, uint64) {
+	r := new(ECgFp5Scalar)
+	c := uint64(0)
 
 	for i := 0; i < 5; i++ {
-		sVal := new(big.Int).SetUint64(s[i])
-		aVal := new(big.Int).SetUint64(a[i])
-		cVal := new(big.Int).Set(c)
-
-		aValPlusCval := new(big.Int).Add(aVal, cVal)
-		z := new(big.Int).Sub(sVal, aValPlusCval)
-
-		z.Mod(z, two128) // Simulate u128 wrapping
-
-		r[i] = z.Uint64()
-		c.SetUint64(new(big.Int).Rsh(z, 64).Uint64() & 1)
+		z := U128From64(s[i]).Sub64(a[i]).Sub64(c)
+		r[i] = z.Lo
+		c = z.Hi & 1
 	}
 
-	if c.Uint64() != 0 {
+	if c != 0 {
 		return r, 0xFFFFFFFFFFFFFFFF
 	}
 	return r, 0
@@ -214,35 +190,34 @@ func Select(c uint64, a0, a1 *ECgFp5Scalar) *ECgFp5Scalar {
 
 func (s ECgFp5Scalar) Add(rhs ECgFp5Scalar) ECgFp5Scalar {
 	r0 := s.AddInner(rhs)
-	r1, c := r0.SubInner(N)
-	return *Select(c, &r1, &r0)
+	r1, c := r0.SubInner(&N)
+	return *Select(c, r1, &r0)
 }
 
 func (s ECgFp5Scalar) Sub(rhs ECgFp5Scalar) ECgFp5Scalar {
-	r0, c := s.SubInner(rhs)
+	r0, c := s.SubInner(&rhs)
 	r1 := r0.AddInner(N)
-	return *Select(c, &r0, &r1)
+	return *Select(c, r0, &r1)
 }
 
 func (s ECgFp5Scalar) Neg() ECgFp5Scalar {
 	return ZERO.Sub(s)
 }
 
-func (s ECgFp5Scalar) Mul(rhs ECgFp5Scalar) ECgFp5Scalar {
-	return s.MontyMul(R2).MontyMul(rhs)
+func (s *ECgFp5Scalar) Mul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
+	res := s.MontyMul(&R2).MontyMul(rhs)
+	return res
 }
 
-func (s ECgFp5Scalar) Square() ECgFp5Scalar {
+func (s *ECgFp5Scalar) Square() *ECgFp5Scalar {
 	return s.Mul(s)
 }
 
 // Montgomery multiplication.
 // Returns (self*rhs)/2^320 mod n.
 // 'self' MUST be less than n (the other operand can be up to 2^320-1).
-func (s ECgFp5Scalar) MontyMul(rhs ECgFp5Scalar) ECgFp5Scalar {
-	two128 := new(big.Int).Lsh(big.NewInt(1), 128) // 2^128
-	two64 := new(big.Int).Lsh(big.NewInt(1), 64)   // 2^64
-	var r ECgFp5Scalar
+func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
+	r := new(ECgFp5Scalar)
 	for i := 0; i < 5; i++ {
 		// Iteration i computes r <- (r + self*rhs_i + f*n)/2^64.
 		// Factor f is at most 2^64-1 and set so that the division
@@ -257,41 +232,21 @@ func (s ECgFp5Scalar) MontyMul(rhs ECgFp5Scalar) ECgFp5Scalar {
 		//                            + (2^64 - 1) * n
 		//                         < 2^384
 		// Thus, the new r fits on 320 bits.
-		m := new(big.Int).SetUint64(rhs[i])
-		f := new(big.Int).Mul(new(big.Int).SetUint64(s[0]), m)
-		f.Add(f, new(big.Int).SetUint64(r[0]))
-		f.Mul(f, new(big.Int).SetUint64(N0I))
-		f.Mod(f, two64) // Simulate u64 wrapping
-		var cc1, cc2 big.Int
+		m := rhs[i]
+		f := (s[0]*m + r[0]) * N0I
+
+		cc1, cc2 := uint64(0), uint64(0)
 		for j := 0; j < 5; j++ {
-			z := new(big.Int).Mul(new(big.Int).SetUint64(s[j]), m)
-			z.Add(z, new(big.Int).SetUint64(r[j]))
-			z.Add(z, &cc1)
-
-			z.Mod(z, two128) // Simulate u128 wrapping
-
-			cc1.SetUint64(new(big.Int).Rsh(z, 64).Uint64())
-
-			z = new(big.Int).Add(
-				new(big.Int).Mul(f, new(big.Int).SetUint64(N[j])),
-				new(big.Int).Add(
-					new(big.Int).SetUint64(z.Uint64()),
-					&cc2,
-				),
-			)
-
-			z.Mod(z, two128) // Simulate u128 wrapping
-			cc2.SetUint64(new(big.Int).Rsh(z, 64).Uint64())
-
+			z := U128From64(s[j]).Mul64(m).Add64(r[j]).Add64(cc1)
+			cc1 = z.Hi
+			z = U128From64(f).Mul64(N[j]).Add64(z.Lo).Add64(cc2)
+			cc2 = z.Hi
 			if j > 0 {
-				r[j-1] = z.Uint64()
+				r[j-1] = z.Lo
 			}
 		}
-		// new(big.Int).SetUint64(
 		// No overflow here since the new r fits on 320 bits.
-		rFour := new(big.Int).Add(&cc1, &cc2)
-		rFour.Mod(rFour, two64) // Simulate u64 wrapping
-		r[4] = rFour.Uint64()
+		r[4] = cc1 + cc2
 	}
 	// We computed (self*rhs + ff*n) / 2^320, with:
 	//    self < n
@@ -299,8 +254,8 @@ func (s ECgFp5Scalar) MontyMul(rhs ECgFp5Scalar) ECgFp5Scalar {
 	//    ff < 2^320
 	// Thus, the value we obtained is lower than 2*n. Subtracting n
 	// once (conditionally) is sufficient to achieve full reduction.
-	r2, c := r.SubInner(N)
-	return *Select(c, &r2, &r)
+	r2, c := r.SubInner(&N)
+	return Select(c, r2, r)
 }
 
 func (s ECgFp5Scalar) expU64(power uint64) ECgFp5Scalar {
@@ -310,9 +265,9 @@ func (s ECgFp5Scalar) expU64(power uint64) ECgFp5Scalar {
 	bitsU64 := 64 - bits.LeadingZeros64(power)
 	for j := 0; j < bitsU64; j++ {
 		if (power>>j)&1 != 0 {
-			product = product.Mul(current)
+			product = *product.Mul(&current)
 		}
-		current = current.Square()
+		current = *current.Square()
 	}
 	return product
 }
@@ -320,17 +275,7 @@ func (s ECgFp5Scalar) expU64(power uint64) ECgFp5Scalar {
 func (s ECgFp5Scalar) expPowerOf2(exp int) ECgFp5Scalar {
 	result := s
 	for i := 0; i < exp; i++ {
-		result = result.Square()
-	}
-	return result
-}
-
-func (s ECgFp5Scalar) ExpBigInt(power *big.Int) ECgFp5Scalar {
-	result := ONE
-	digits := power.Bits()
-	for i := len(digits) - 1; i >= 0; i-- {
-		result = result.expPowerOf2(64)
-		result = result.Mul(s.expU64(uint64(digits[i])))
+		result = *result.Square()
 	}
 	return result
 }
@@ -359,15 +304,11 @@ func BigIntFromArray(arr [5]uint64) *big.Int {
 }
 
 func FromNonCanonicalBigInt(val *big.Int) ECgFp5Scalar {
-	val = new(big.Int).Mod(val, ORDER)
-
-	var value ECgFp5Scalar
-	limbs := val.Bits()
-	for i := 0; i < len(limbs) && i < 5; i++ {
-		value[i] = uint64(limbs[i])
+	limbs := new(big.Int).Mod(val, ORDER).Bits()
+	if len(limbs) < 5 {
+		limbs = append(limbs, 0)
 	}
-
-	return value
+	return ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])}
 }
 
 func (s ECgFp5Scalar) ToCanonicalBigInt() *big.Int {

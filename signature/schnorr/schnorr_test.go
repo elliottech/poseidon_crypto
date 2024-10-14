@@ -35,7 +35,6 @@ func TestHashToQuinticExtension(t *testing.T) {
 
 func TestSchnorrSignAndVerify(t *testing.T) {
 	sk := curve.ECgFp5Scalar{
-
 		12235002942052073545,
 		1175977464658719998,
 		8536934969147463310,

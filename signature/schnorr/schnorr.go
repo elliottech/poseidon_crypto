@@ -70,7 +70,7 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 
 	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 	return Signature{
-		S: k.Sub(e.Mul(sk)),
+		S: k.Sub(*e.Mul(&sk)),
 		E: e,
 	}
 }
@@ -88,7 +88,7 @@ func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar)
 
 	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 	return Signature{
-		S: k.Sub(e.Mul(sk)),
+		S: k.Sub(*e.Mul(&sk)),
 		E: e,
 	}
 }

@@ -15,13 +15,13 @@ type ECgFp5Point struct {
 
 // Constants for ECgFp5Point
 var (
-	A_ECgFp5Point = gFp5.FromUint64Array(2, 0, 0, 0, 0)
+	A_ECgFp5Point = gFp5.FromUint64Array([5]uint64{2, 0, 0, 0, 0})
 
 	B1                  = uint64(263)
-	B_ECgFp5Point       = gFp5.FromUint64Array(0, B1, 0, 0, 0)
-	B_MUL2_ECgFp5Point  = gFp5.FromUint64Array(0, 2*B1, 0, 0, 0)
-	B_MUL4_ECgFp5Point  = gFp5.FromUint64Array(0, 4*B1, 0, 0, 0)
-	B_MUL16_ECgFp5Point = gFp5.FromUint64Array(0, 16*B1, 0, 0, 0)
+	B_ECgFp5Point       = gFp5.FromUint64Array([5]uint64{0, B1, 0, 0, 0})
+	B_MUL2_ECgFp5Point  = gFp5.FromUint64Array([5]uint64{0, 2 * B1, 0, 0, 0})
+	B_MUL4_ECgFp5Point  = gFp5.FromUint64Array([5]uint64{0, 4 * B1, 0, 0, 0})
+	B_MUL16_ECgFp5Point = gFp5.FromUint64Array([5]uint64{0, 16 * B1, 0, 0, 0})
 
 	NEUTRAL_ECgFp5Point = ECgFp5Point{
 		x: gFp5.FP5_ZERO,
@@ -31,16 +31,17 @@ var (
 	}
 
 	GENERATOR_ECgFp5Point = ECgFp5Point{
-		x: gFp5.FromUint64Array(
+		x: gFp5.FromUint64Array([5]uint64{
 			12883135586176881569,
 			4356519642755055268,
 			5248930565894896907,
 			2165973894480315022,
 			2448410071095648785,
+		},
 		),
 		z: gFp5.FP5_ONE,
 		u: gFp5.FP5_ONE,
-		t: gFp5.FromUint64Array(4, 0, 0, 0, 0),
+		t: gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0}),
 	}
 )
 
@@ -209,7 +210,7 @@ func (p *ECgFp5Point) SetDouble() {
 	tNew := gFp5.Sub(
 		gFp5.Double(x1),
 		gFp5.Add(
-			gFp5.Mul(t4, gFp5.FromUint64Array(4, 0, 0, 0, 0)),
+			gFp5.Mul(t4, gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})),
 			zNew,
 		),
 	)
@@ -259,7 +260,7 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 	w := gFp5.Sub(
 		gFp5.Double(x1),
 		gFp5.Add(
-			gFp5.Mul(t5, gFp5.FromUint64Array(4, 0, 0, 0, 0)),
+			gFp5.Mul(t5, gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})),
 			t4,
 		),
 	)
@@ -292,7 +293,7 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 					t2,
 					gFp5.Sub(
 						B_MUL4_ECgFp5Point,
-						gFp5.FromUint64Array(4, 0, 0, 0, 0),
+						gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0}),
 					),
 				),
 			),

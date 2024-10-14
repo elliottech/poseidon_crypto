@@ -139,7 +139,7 @@ func TestTryInverse(t *testing.T) {
 		8256636258983026155,
 	}
 
-	for i, elem := range gFp5.ToBasefieldArray(result) {
+	for i, elem := range result.ToBasefieldArray() {
 		if elem.Uint64() != expected[i] {
 			t.Fatalf("Assertion failed at index %d: expected %d, got %d", i, expected[i], elem)
 		}

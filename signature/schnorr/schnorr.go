@@ -57,14 +57,14 @@ func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
 	k := curve.SampleScalar(nil)
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
+	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.ToBasefieldArray(r.Encode()) {
+	for i, elem := range r.ToBasefieldArray() {
 		preImage[i] = elem
 	}
-	for i, elem := range gFp5.ToBasefieldArray(hashedMsg) {
+	for i, elem := range hashedMsg.ToBasefieldArray() {
 		preImage[i+5] = elem
 	}
 
@@ -76,13 +76,13 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 }
 
 func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
+	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.ToBasefieldArray(r.Encode()) {
+	for i, elem := range r.ToBasefieldArray() {
 		preImage[i] = elem
 	}
-	for i, elem := range gFp5.ToBasefieldArray(hashedMsg) {
+	for i, elem := range hashedMsg.ToBasefieldArray() {
 		preImage[i+5] = elem
 	}
 
@@ -121,13 +121,13 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 		return false
 	}
 
-	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E) // r_v = s*G + e*pk
+	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
 
 	preImage := make([]g.Element, 5+5)
-	for i, elem := range gFp5.ToBasefieldArray(rV.Encode()) {
+	for i, elem := range rV.ToBasefieldArray() {
 		preImage[i] = elem
 	}
-	for i, elem := range gFp5.ToBasefieldArray(*hashedMsg) {
+	for i, elem := range hashedMsg.ToBasefieldArray() {
 		preImage[i+5] = elem
 	}
 	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))

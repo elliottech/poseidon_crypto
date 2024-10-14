@@ -53,6 +53,25 @@ func SchnorrSignHashedMessage(hashedMsg config.Element, sk sf.ECgFp5Scalar) Schn
 	}
 }
 
+func SchnorrSignHashedMessage2(hashedMsg config.Element, sk, k sf.ECgFp5Scalar) SchnorrSig {
+	r := curve.GENERATOR_ECgFp5Point.Mul(&k)
+	// Compute `e = H(r || H(m))`, which is a scalar point
+	preImage := make([]f.Element, 5+5)
+	for i, elem := range fp5.Fp5ToFArray(r.Encode()) {
+		preImage[i] = *elem
+	}
+	for i, elem := range fp5.Fp5ToFArray(hashedMsg) {
+		preImage[i+5] = *elem
+	}
+
+	e := sf.FromGfp5(HashToQuinticExtension(preImage))
+
+	return SchnorrSig{
+		S: k.Sub(e.Mul(sk)),
+		E: e,
+	}
+}
+
 func IsSchnorrSignatureValid(pubKey, hashedMsg config.Element, sig SchnorrSig) bool {
 	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
 	if !ok {

@@ -5,51 +5,13 @@ package ecgfp5
 // is truncated to 161 bits (upper bits in the top limb are ignored).
 // Elements are mutable containers.
 // WARNING: everything in here is vartime; do not use on secret values.
-type Signed161 struct {
-	limbs [3]uint64
-}
+type Signed161 [3]uint64
 
 // Export this value as a 192-bit integer (three 64-bit limbs, in little-endian order).
 func (s Signed161) ToU192() [3]uint64 {
-	x := s.limbs[2] & 0x00000001FFFFFFFF
+	x := s[2] & 0x00000001FFFFFFFF
 	x |= (^(x >> 32) + 1) << 33
-	return [3]uint64{s.limbs[0], s.limbs[1], x}
-}
-
-func FromScalar(s ECgFp5Scalar) Signed161 {
-	return Signed161{[3]uint64{s[0], s[1], s[2]}}
-}
-
-// Convert that value into a scalar (integer modulo n).
-func (s Signed161) ToScalarVartime() ECgFp5Scalar {
-	tmp := s.ToU192()
-	neg := (tmp[2] >> 63) != 0
-	if neg {
-		tmp[0] = (^tmp[0]) + 1
-		cc := tmp[0] == 0
-		tmp[1] = ^tmp[1]
-		if cc {
-			tmp[1] = tmp[1] + 1
-			cc = tmp[1] == 0
-		}
-		tmp[2] = ^tmp[2]
-		if cc {
-			tmp[2] = tmp[2] + 1
-		}
-		return ECgFp5Scalar{
-			tmp[0],
-			tmp[1],
-			tmp[2],
-			0, 0,
-		}.Neg()
-	}
-
-	return ECgFp5Scalar{
-		tmp[0],
-		tmp[1],
-		tmp[2],
-		0, 0,
-	}
+	return [3]uint64{s[0], s[1], x}
 }
 
 // Recode this integer into 33 signed digits for a 5-bit window.
@@ -69,11 +31,11 @@ func (s Signed161) RecodeSigned5() [33]int32 {
 // Add v*2^s to this value.
 func (s *Signed161) AddShifted(v *Signed161, shift int32) {
 	if shift == 0 {
-		s.Add(v.limbs[:])
+		s.Add(v[:])
 	} else if shift < 64 {
-		s.AddShiftedSmall(v.limbs[:], shift)
+		s.AddShiftedSmall(v[:], shift)
 	} else if shift < 161 {
-		s.AddShiftedSmall(v.limbs[(shift>>6):], shift&63)
+		s.AddShiftedSmall(v[(shift>>6):], shift&63)
 	}
 }
 
@@ -85,14 +47,14 @@ func (s *Signed161) AddShiftedSmall(v []uint64, shift int32) {
 		vw := v[i-j]
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
-		z := Uint128Add(s.limbs[i], vws, cc)
+		z := Uint128Add(s[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {
@@ -106,13 +68,13 @@ func (s *Signed161) Add(v []uint64) {
 	var cc uint64
 	j := 3 - len(v)
 	for i := j; i < 3; i++ {
-		z := Uint128Add(s.limbs[i], v[i-j], cc)
+		z := Uint128Add(s[i], v[i-j], cc)
 		limbs := z.Bits()
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {
@@ -125,11 +87,11 @@ func (s *Signed161) Add(v []uint64) {
 // Subtract v*2^s from this value.
 func (s *Signed161) SubShifted(v *Signed161, shift int32) {
 	if shift == 0 {
-		s.Sub(v.limbs[:])
+		s.Sub(v[:])
 	} else if shift < 64 {
-		s.SubShiftedSmall(v.limbs[:], shift)
+		s.SubShiftedSmall(v[:], shift)
 	} else if shift < 161 {
-		s.SubShiftedSmall(v.limbs[(shift>>6):], shift&63)
+		s.SubShiftedSmall(v[(shift>>6):], shift&63)
 	}
 }
 
@@ -141,14 +103,14 @@ func (s *Signed161) SubShiftedSmall(v []uint64, shift int32) {
 		vw := v[i-j]
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
-		z := Uint128Sub(s.limbs[i], vws, cc)
+		z := Uint128Sub(s[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {
@@ -162,14 +124,14 @@ func (s *Signed161) Sub(v []uint64) {
 	var cc uint64
 	j := 3 - len(v)
 	for i := j; i < 3; i++ {
-		z := Uint128Sub(s.limbs[i], v[i-j], cc)
+		z := Uint128Sub(s[i], v[i-j], cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {

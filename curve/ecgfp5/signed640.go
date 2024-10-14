@@ -7,25 +7,21 @@ import (
 // A custom 640-bit integer type (signed).
 // Elements are mutable containers.
 // WARNING: everything in here is vartime; do not use on secret values.
-type Signed640 struct {
-	limbs [10]uint64
-}
+type Signed640 [10]uint64
 
 // Obtain an instance containing n^2.
 func FromNsquared() Signed640 {
 	return Signed640{
-		limbs: [10]uint64{
-			0x8E6B7A18061803C1,
-			0x0AD8BDEE1594E2CF,
-			0x17640E465F2598BC,
-			0x90465B4214B27B1C,
-			0xD308FECCB1878B88,
-			0x3CC55EB2EAC07502,
-			0x59F038FB784335CE,
-			0xBFFFFE954FB808EA,
-			0xBFFFFFCB80000099,
-			0x3FFFFFFD8000000D,
-		},
+		0x8E6B7A18061803C1,
+		0x0AD8BDEE1594E2CF,
+		0x17640E465F2598BC,
+		0x90465B4214B27B1C,
+		0xD308FECCB1878B88,
+		0x3CC55EB2EAC07502,
+		0x59F038FB784335CE,
+		0xBFFFFE954FB808EA,
+		0xBFFFFFCB80000099,
+		0x3FFFFFFD8000000D,
 	}
 }
 
@@ -45,7 +41,7 @@ func FromMulScalars(a, b ECgFp5Scalar) Signed640 {
 						new(big.Int).SetUint64(b[j]),
 					),
 					new(big.Int).Add(
-						new(big.Int).SetUint64(r.limbs[i+j]),
+						new(big.Int).SetUint64(r[i+j]),
 						new(big.Int).SetUint64(cc),
 					),
 				),
@@ -56,7 +52,7 @@ func FromMulScalars(a, b ECgFp5Scalar) Signed640 {
 			if len(limbs) > 0 {
 				low = uint64(limbs[0])
 			}
-			r.limbs[i+j] = low
+			r[i+j] = low
 
 			high := uint64(0)
 			if len(limbs) > 1 {
@@ -64,7 +60,7 @@ func FromMulScalars(a, b ECgFp5Scalar) Signed640 {
 			}
 			cc = high
 		}
-		r.limbs[i+5] = cc
+		r[i+5] = cc
 	}
 	return r
 }
@@ -72,21 +68,21 @@ func FromMulScalars(a, b ECgFp5Scalar) Signed640 {
 // Add 1 to this instance.
 func (s *Signed640) Add1() {
 	for i := 0; i < 10; i++ {
-		s.limbs[i]++
-		if s.limbs[i] != 0 {
+		s[i]++
+		if s[i] != 0 {
 			return
 		}
 	}
 }
 
 func (s *Signed640) IsNonnegative() bool {
-	return (s.limbs[9] >> 63) == 0
+	return (s[9] >> 63) == 0
 }
 
 func (s *Signed640) LtUnsigned(rhs *Signed640) bool {
 	for i := 9; i >= 0; i-- {
-		aw := s.limbs[i]
-		bw := rhs.limbs[i]
+		aw := s[i]
+		bw := rhs[i]
 		if aw < bw {
 			return true
 		}
@@ -102,9 +98,9 @@ func (s *Signed640) LtUnsigned(rhs *Signed640) bool {
 // _excluding_ the sign bit (thus, -2^k has bit length k, whereas +2^k
 // has bit length k+1).
 func (s *Signed640) Bitlength() int32 {
-	sm := (^(s.limbs[9] >> 63) + 1)
+	sm := (^(s[9] >> 63) + 1)
 	for i := 9; i >= 0; i-- {
-		w := s.limbs[i] ^ sm
+		w := s[i] ^ sm
 		if w != 0 {
 			return (int32(i) << 6) + U64Bitlength(w)
 		}
@@ -144,11 +140,11 @@ func U64Bitlength(w uint64) int32 {
 // Add v*2^s to this instance.
 func (s *Signed640) AddShifted(v *Signed640, shift int32) {
 	if shift == 0 {
-		s.Add(v.limbs[:])
+		s.Add(v[:])
 	} else if shift < 64 {
-		s.AddShiftedSmall(v.limbs[:], shift)
+		s.AddShiftedSmall(v[:], shift)
 	} else if shift < 640 {
-		s.AddShiftedSmall(v.limbs[(shift>>6):], shift&63)
+		s.AddShiftedSmall(v[(shift>>6):], shift&63)
 	}
 }
 
@@ -160,14 +156,14 @@ func (s *Signed640) AddShiftedSmall(v []uint64, shift int32) {
 		vw := v[i-j]
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
-		z := Uint128Add(s.limbs[i], vws, cc)
+		z := Uint128Add(s[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {
@@ -181,14 +177,14 @@ func (s *Signed640) Add(v []uint64) {
 	var cc uint64
 	j := 10 - len(v)
 	for i := j; i < 10; i++ {
-		z := Uint128Add(s.limbs[i], v[i-j], cc)
+		z := Uint128Add(s[i], v[i-j], cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {
@@ -201,11 +197,11 @@ func (s *Signed640) Add(v []uint64) {
 // Subtract v*2^s from this instance.
 func (s *Signed640) SubShifted(v *Signed640, shift int32) {
 	if shift == 0 {
-		s.Sub(v.limbs[:])
+		s.Sub(v[:])
 	} else if shift < 64 {
-		s.SubShiftedSmall(v.limbs[:], shift)
+		s.SubShiftedSmall(v[:], shift)
 	} else if shift < 640 {
-		s.SubShiftedSmall(v.limbs[(shift>>6):], shift&63)
+		s.SubShiftedSmall(v[(shift>>6):], shift&63)
 	}
 }
 
@@ -217,14 +213,14 @@ func (s *Signed640) SubShiftedSmall(v []uint64, shift int32) {
 		vw := v[i-j]
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
-		z := Uint128Sub(s.limbs[i], vws, cc)
+		z := Uint128Sub(s[i], vws, cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {
@@ -238,14 +234,14 @@ func (s *Signed640) Sub(v []uint64) {
 	var cc uint64
 	j := 10 - len(v)
 	for i := j; i < 10; i++ {
-		z := Uint128Sub(s.limbs[i], v[i-j], cc)
+		z := Uint128Sub(s[i], v[i-j], cc)
 		limbs := z.Bits()
 
 		low := uint64(0)
 		if len(limbs) > 0 {
 			low = uint64(limbs[0])
 		}
-		s.limbs[i] = low
+		s[i] = low
 
 		high := uint64(0)
 		if len(limbs) > 1 {

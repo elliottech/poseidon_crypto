@@ -11,6 +11,8 @@ import (
 
 type HashOut [4]g.Element
 
+type NumericalHashOut [4]uint64
+
 func (h HashOut) ToLittleEndianBytes() []byte {
 	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
 }

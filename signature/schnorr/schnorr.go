@@ -14,6 +14,8 @@ type Signature struct {
 	E curve.ECgFp5Scalar
 }
 
+type NumericalSignature [10]uint64
+
 func (s Signature) DeepCopy() Signature {
 	return Signature{
 		S: s.S.DeepCopy(),

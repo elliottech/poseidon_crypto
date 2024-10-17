@@ -9,6 +9,8 @@ import (
 
 type Element [5]g.Element
 
+type NumericalElement [5]uint64
+
 const Bytes = g.Bytes * 5
 
 var (

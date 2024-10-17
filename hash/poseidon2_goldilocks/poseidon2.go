@@ -15,9 +15,17 @@ func (h HashOut) ToLittleEndianBytes() []byte {
 	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
 }
 
+func (h HashOut) ToUint64Array() [4]uint64 {
+	return [4]uint64{h[0].Uint64(), h[1].Uint64(), h[2].Uint64(), h[3].Uint64()}
+}
+
 func HashToQuinticExtension(m []g.Element) gFp5.Element {
 	res := HashNToMNoPad(m, 5)
 	return gFp5.Element(res[:])
+}
+
+func HashOutFromUint64Array(arr [4]uint64) HashOut {
+	return HashOut{g.FromUint64(arr[0]), g.FromUint64(arr[1]), g.FromUint64(arr[2]), g.FromUint64(arr[3])}
 }
 
 func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {

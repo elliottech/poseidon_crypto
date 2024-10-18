@@ -16,6 +16,13 @@ type Signature struct {
 
 type NumericalSignature [10]uint64
 
+func (s Signature) ToNumericalSignature() NumericalSignature {
+	return NumericalSignature{
+		s.S[0], s.S[1], s.S[2], s.S[3], s.S[4],
+		s.E[0], s.E[1], s.E[2], s.E[3], s.E[4],
+	}
+}
+
 func (s Signature) DeepCopy() Signature {
 	return Signature{
 		S: s.S.DeepCopy(),

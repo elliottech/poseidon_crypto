@@ -139,9 +139,14 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 	fmt.Printf("`pubKeyWs calculation` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
 	start = time.Now()
-	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+	rvDecoded := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E) // r_v = s*G + e*pk
 	since = time.Since(start)
-	fmt.Printf("`rV calculation` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+	fmt.Printf("`rvDecoded calculation` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+
+	start = time.Now()
+	rV := rvDecoded.Encode() // r_v = s*G + e*pk
+	since = time.Since(start)
+	fmt.Printf("`rV Encoding` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
 	start = time.Now()
 	preImage := make([]g.Element, 5+5)

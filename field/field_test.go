@@ -270,14 +270,14 @@ func TestPerformance(t *testing.T) {
 		elements[i] = g.Add(elements[i], samples[1])
 		elements[i] = g.Add(elements[i], samples[2])
 
-		elements[i] = g.Neg(elements[i])
-		elements[i] = g.Add(elements[i], samples[3])
+		// elements[i] = g.Neg(elements[i])
+		// elements[i] = g.Add(elements[i], samples[3])
 
-		elements[i] = g.Mul(&elements[i], &samples[4])
+		// elements[i] = g.Mul(&elements[i], &samples[4])
 
-		elements[i] = g.Mul(&elements[i], &samples[5])
+		// elements[i] = g.Mul(&elements[i], &samples[5])
 
-		elements[i] = g.Mul(&elements[i], &samples[6])
+		// elements[i] = g.Mul(&elements[i], &samples[6])
 	}
 	since = time.Since(start)
 	fmt.Printf("`for loop` took %s nanosecond\n", FormatWithUnderscores(since.Nanoseconds()))

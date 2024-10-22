@@ -256,10 +256,11 @@ func TestLegendre(t *testing.T) {
 }
 
 func TestPerformance(t *testing.T) {
-	n := 10000
+	n := 1_000_000
 	start := time.Now()
 	elements := g.RandArray(n)
-	fmt.Printf("`elements := g.RandArray(n)` took %s nanoseconds\n", FormatWithUnderscores(time.Since(start).Nanoseconds()))
+	since := time.Since(start)
+	fmt.Printf("`elements := g.RandArray(n)` took %s nanoseconds\n", FormatWithUnderscores(since.Nanoseconds()))
 
 	samples := g.RandArray(10)
 
@@ -278,5 +279,6 @@ func TestPerformance(t *testing.T) {
 
 		elements[i] = g.Mul(&elements[i], &samples[6])
 	}
-	fmt.Printf("`for loop` took %s nanosecond\n", FormatWithUnderscores(time.Since(start).Nanoseconds()))
+	since = time.Since(start)
+	fmt.Printf("`for loop` took %s nanosecond\n", FormatWithUnderscores(since.Nanoseconds()))
 }

@@ -2,7 +2,10 @@ package field
 
 import (
 	"encoding/binary"
+	"fmt"
+	"strconv"
 	"testing"
+	"time"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -251,4 +254,53 @@ func TestLegendre(t *testing.T) {
 	if !legendreSym.IsZero() {
 		t.Fatalf("Expected Legendre symbol of zero to be zero")
 	}
+}
+
+func formatWithUnderscores(n int64) string {
+	// Convert number to string
+	str := strconv.FormatInt(n, 10)
+
+	// Handle numbers with less than 4 digits
+	if len(str) < 4 {
+		return str
+	}
+
+	// Start from the end and work backwards
+	var result []byte
+	for i := 0; i < len(str); i++ {
+		// Add underscore before every 3rd digit from the right, but not at the start
+		if i > 0 && (len(str)-i)%3 == 0 {
+			result = append(result, '_')
+		}
+		result = append(result, str[i])
+	}
+
+	return string(result)
+}
+
+func TestPerformance(t *testing.T) {
+	n := 10000
+	start := time.Now()
+	elements := g.RandArray(n)
+	fmt.Printf("`elements := g.RandArray(n)` took %s nanoseconds\n", formatWithUnderscores(time.Since(start).Nanoseconds()))
+
+	start = time.Now()
+	for i := 0; i < n; i++ {
+		elements[i] = g.Add(elements[i], g.Sample())
+		elements[i] = g.Add(elements[i], g.Sample())
+		elements[i] = g.Add(elements[i], g.Sample())
+
+		elements[i] = g.Neg(elements[i])
+		elements[i] = g.Add(elements[i], g.Sample())
+
+		sample := g.Sample()
+		elements[i] = g.Mul(&elements[i], &sample)
+
+		sample2 := g.Sample()
+		elements[i] = g.Mul(&elements[i], &sample2)
+
+		sample3 := g.Sample()
+		elements[i] = g.Mul(&elements[i], &sample3)
+	}
+	fmt.Printf("`for loop` took %s nanosecond\n", formatWithUnderscores(time.Since(start).Nanoseconds()))
 }

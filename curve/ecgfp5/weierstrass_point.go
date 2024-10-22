@@ -1,6 +1,10 @@
 package ecgfp5
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/elliottech/poseidon_crypto/field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
@@ -161,20 +165,36 @@ func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint
 }
 
 func MulAdd2(a, b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPoint {
+	start := time.Now()
 	aWindow := a.PrecomputeWindow(4)
 	aFourBitLimbs := scalarA.SplitTo4BitLimbs()
 
 	bWindow := b.PrecomputeWindow(4)
 	bFourBitLimbs := scalarB.SplitTo4BitLimbs()
+	since := time.Since(start)
+	fmt.Printf("`MulAdd2: window calculations` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
 	numLimbs := len(aFourBitLimbs)
 
+	start = time.Now()
 	res := aWindow[aFourBitLimbs[numLimbs-1]].Add(bWindow[bFourBitLimbs[numLimbs-1]])
+	since = time.Since(start)
+	fmt.Printf("`MulAdd2: first Add on res` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+
+	double_sum := int64(0)
+
+	start = time.Now()
 	for i := numLimbs - 2; i >= 0; i-- {
+		start2 := time.Now()
 		for j := 0; j < 4; j++ {
 			res = res.Double()
 		}
+		double_sum += time.Since(start2).Nanoseconds()
+
 		res = res.Add(aWindow[aFourBitLimbs[i]].Add(bWindow[bFourBitLimbs[i]]))
 	}
+	since = time.Since(start)
+	fmt.Printf("`MulAdd2: rest of the operations on on res` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+	fmt.Printf("`MulAdd2: all doubles on on res` took %s nanosecond\n", field.FormatWithUnderscores(double_sum))
 	return res
 }

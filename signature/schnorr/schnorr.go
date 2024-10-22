@@ -2,8 +2,10 @@ package signature
 
 import (
 	"fmt"
+	"time"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
+	"github.com/elliottech/poseidon_crypto/field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
@@ -116,7 +118,10 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 		return fmt.Errorf("failed to convert signature bytes to Schnorr signature: %w", err)
 	}
 
+	start := time.Now()
 	valid := IsSchnorrSignatureValid(&pk, &hashedMsgElem, s)
+	since := time.Since(start)
+	fmt.Printf("`IsSchnorrSignatureValid()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 	if !valid {
 		return fmt.Errorf("signature is invalid")
 	}

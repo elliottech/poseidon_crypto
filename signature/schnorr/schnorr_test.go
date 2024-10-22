@@ -2,11 +2,11 @@ package signature
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
+	"github.com/elliottech/poseidon_crypto/field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
@@ -168,28 +168,6 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 	}
 }
 
-func formatWithUnderscores(n int64) string {
-	// Convert number to string
-	str := strconv.FormatInt(n, 10)
-
-	// Handle numbers with less than 4 digits
-	if len(str) < 4 {
-		return str
-	}
-
-	// Start from the end and work backwards
-	var result []byte
-	for i := 0; i < len(str); i++ {
-		// Add underscore before every 3rd digit from the right, but not at the start
-		if i > 0 && (len(str)-i)%3 == 0 {
-			result = append(result, '_')
-		}
-		result = append(result, str[i])
-	}
-
-	return string(result)
-}
-
 func TestBytes(t *testing.T) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
@@ -209,5 +187,5 @@ func TestBytes(t *testing.T) {
 	}
 
 	since := time.Since(start)
-	fmt.Printf("`Validate()` took %s nanosecond\n", formatWithUnderscores(since.Nanoseconds()))
+	fmt.Printf("`Validate()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 }

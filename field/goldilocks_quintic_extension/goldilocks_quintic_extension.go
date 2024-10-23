@@ -98,7 +98,7 @@ func Equals(a, b Element) bool {
 	return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3] && a[4] == b[4]
 }
 
-func IsZero(e Element) bool {
+func IsZero(e *Element) bool {
 	return e[0].IsZero() && e[1].IsZero() && e[2].IsZero() && e[3].IsZero() && e[4].IsZero()
 }
 
@@ -144,7 +144,7 @@ func Sub(a, b Element) Element {
 	}
 }
 
-func Mul(a, b Element) Element {
+func Mul(a, b *Element) Element {
 	w := FP5_W
 
 	a0b0 := g.Mul(&a[0], &b[0])
@@ -192,12 +192,14 @@ func Mul(a, b Element) Element {
 	return Element{c0, c1, c2, c3, c4}
 }
 
-func Div(a, b Element) Element {
+// TODO: make this a pass-by-ref
+func Div(a, b *Element) Element {
+	// TODO: make this a pass-by-ref
 	bInv := InverseOrZero(b)
-	if IsZero(bInv) {
+	if IsZero(&bInv) {
 		panic("division by zero")
 	}
-	return Mul(a, bInv)
+	return Mul(a, &bInv)
 }
 
 func ExpPowerOf2(x Element, power int) Element {
@@ -257,8 +259,12 @@ func Triple(a Element) Element {
 
 func Sqrt(x Element) (Element, bool) {
 	v := ExpPowerOf2(x, 31)
-	d := Mul(Mul(x, ExpPowerOf2(v, 32)), InverseOrZero(v))
-	e := Frobenius(Mul(d, RepeatedFrobenius(d, 2)))
+	v_32 := ExpPowerOf2(v, 32)
+	xv_32 := Mul(&x, &v_32)
+	v_inv := InverseOrZero(&v)
+	d := Mul(&xv_32, &v_inv)
+	rf_d := RepeatedFrobenius(d, 2)
+	e := Frobenius(Mul(&d, &rf_d))
 	_f := Square(e)
 
 	x1f4 := g.Mul(&x[1], &_f[4])
@@ -275,10 +281,10 @@ func Sqrt(x Element) (Element, bool) {
 		return Element{}, false
 	}
 
-	eInv := InverseOrZero(e)
+	eInv := InverseOrZero(&e)
 	sFp5 := FromF(*s)
 
-	return Mul(sFp5, eInv), true
+	return Mul(&sFp5, &eInv), true
 }
 
 func Sgn0(x Element) bool {
@@ -319,14 +325,16 @@ func Double(a Element) Element {
 	return Add(a, a)
 }
 
-func InverseOrZero(a Element) Element {
+func InverseOrZero(a *Element) Element {
 	if IsZero(a) {
 		return FP5_ZERO
 	}
 
-	d := Frobenius(a)
-	e := Mul(d, Frobenius(d))
-	f := Mul(e, RepeatedFrobenius(e, 2))
+	d := Frobenius(*a)
+	f_d := Frobenius(d)
+	e := Mul(&d, &f_d)
+	rf_e := RepeatedFrobenius(e, 2)
+	f := Mul(&e, &rf_e)
 
 	a0b0 := g.Mul(&a[0], &f[0])
 	a1b4 := g.Mul(&a[1], &f[4])
@@ -367,10 +375,11 @@ func Legendre(x Element) g.Element {
 	frob1 := Frobenius(x)
 	frob2 := Frobenius(frob1)
 
-	frob1TimesFrob2 := Mul(frob1, frob2)
+	frob1TimesFrob2 := Mul(&frob1, &frob2)
 	frob2Frob1TimesFrob2 := RepeatedFrobenius(frob1TimesFrob2, 2)
 
-	xrExt := Mul(Mul(x, frob1TimesFrob2), frob2Frob1TimesFrob2)
+	xfrob1TimesFrob2 := Mul(&x, &frob1TimesFrob2)
+	xrExt := Mul(&xfrob1TimesFrob2, &frob2Frob1TimesFrob2)
 	xr := g.FromUint64(xrExt[0].Uint64())
 
 	xr31 := xr.Exp(xr, new(big.Int).SetUint64(1<<31))

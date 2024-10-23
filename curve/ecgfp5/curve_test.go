@@ -355,10 +355,10 @@ func TestToAffineAndLookup(t *testing.T) {
 	for n := 1; n <= len(tab1); n++ {
 		tab2 := BatchToAffine(tab1)
 		for i := 0; i < n; i++ {
-			if !gFp5.Equals(gFp5.Mul(tab1[i].z, tab2[i].x), tab1[i].x) {
+			if !gFp5.Equals(gFp5.Mul(&tab1[i].z, &tab2[i].x), tab1[i].x) {
 				t.Fail()
 			}
-			if !gFp5.Equals(gFp5.Mul(tab1[i].t, tab2[i].u), tab1[i].u) {
+			if !gFp5.Equals(gFp5.Mul(&tab1[i].t, &tab2[i].u), tab1[i].u) {
 				t.Fail()
 			}
 		}
@@ -377,19 +377,19 @@ func TestToAffineAndLookup(t *testing.T) {
 
 	for i := 1; i <= 8; i++ {
 		p2Affine := Lookup(win, int32(i))
-		if !gFp5.Equals(gFp5.Mul(tab1[i-1].z, p2Affine.x), tab1[i-1].x) {
-			t.Fatalf("Lookup failed for %d: expected %v, got %v", i, tab1[i-1].x, gFp5.Mul(tab1[i-1].z, p2Affine.x))
+		if !gFp5.Equals(gFp5.Mul(&tab1[i-1].z, &p2Affine.x), tab1[i-1].x) {
+			t.Fatalf("Lookup failed for %d: expected %v, got %v", i, tab1[i-1].x, gFp5.Mul(&tab1[i-1].z, &p2Affine.x))
 		}
-		if !gFp5.Equals(gFp5.Mul(tab1[i-1].t, p2Affine.u), tab1[i-1].u) {
-			t.Fatalf("Lookup failed for %d: expected %v, got %v", i, tab1[i-1].u, gFp5.Mul(tab1[i-1].t, p2Affine.u))
+		if !gFp5.Equals(gFp5.Mul(&tab1[i-1].t, &p2Affine.u), tab1[i-1].u) {
+			t.Fatalf("Lookup failed for %d: expected %v, got %v", i, tab1[i-1].u, gFp5.Mul(&tab1[i-1].t, &p2Affine.u))
 		}
 
 		p3Affine := Lookup(win, int32(-i))
-		if !gFp5.Equals(gFp5.Mul(tab1[i-1].z, p3Affine.x), tab1[i-1].x) {
-			t.Fatalf("Lookup failed for -%d: expected %v, got %v", i, tab1[i-1].x, gFp5.Mul(tab1[i-1].z, p3Affine.x))
+		if !gFp5.Equals(gFp5.Mul(&tab1[i-1].z, &p3Affine.x), tab1[i-1].x) {
+			t.Fatalf("Lookup failed for -%d: expected %v, got %v", i, tab1[i-1].x, gFp5.Mul(&tab1[i-1].z, &p3Affine.x))
 		}
-		if !gFp5.Equals(gFp5.Mul(tab1[i-1].t, p3Affine.u), gFp5.Neg(tab1[i-1].u)) {
-			t.Fatalf("Lookup failed for -%d: expected %v, got %v", i, gFp5.Neg(tab1[i-1].u), gFp5.Mul(tab1[i-1].t, p3Affine.u))
+		if !gFp5.Equals(gFp5.Mul(&tab1[i-1].t, &p3Affine.u), gFp5.Neg(tab1[i-1].u)) {
+			t.Fatalf("Lookup failed for -%d: expected %v, got %v", i, gFp5.Neg(tab1[i-1].u), gFp5.Mul(&tab1[i-1].t, &p3Affine.u))
 		}
 	}
 }
@@ -658,9 +658,11 @@ func TestBasicOps(t *testing.T) {
 		}
 	}
 
+	p2z_inverse := gFp5.InverseOrZero(&p2.z)
+	p2t_inverse := gFp5.InverseOrZero(&p2.t)
 	p2Affine := AffinePoint{
-		x: gFp5.Mul(p2.x, gFp5.InverseOrZero(p2.z)),
-		u: gFp5.Mul(p2.u, gFp5.InverseOrZero(p2.t)),
+		x: gFp5.Mul(&p2.x, &p2z_inverse),
+		u: gFp5.Mul(&p2.u, &p2t_inverse),
 	}
 	if !p1.AddAffine(p2Affine).Equals(p1.Add(p2)) {
 		t.Fatalf("Affine addition check failed")

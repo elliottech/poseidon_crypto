@@ -58,7 +58,9 @@ func (p WeierstrassPoint) Equals(q WeierstrassPoint) bool {
 }
 
 func (p WeierstrassPoint) Encode() gFp5.Element {
-	return gFp5.Div(p.Y, gFp5.Sub(gFp5.Div(A_ECgFp5Point, gFp5.FromUint64(3)), p.X))
+	div := gFp5.Div(&A_ECgFp5Point, &THREE)
+	sub := gFp5.Sub(div, p.X)
+	return gFp5.Div(&p.Y, &sub)
 }
 
 func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
@@ -69,8 +71,11 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 		r = gFp5.FP5_ZERO
 	}
 
-	x1 := gFp5.Div(gFp5.Add(e, r), gFp5.FP5_TWO)
-	x2 := gFp5.Div(gFp5.Sub(e, r), gFp5.FP5_TWO)
+	add := gFp5.Add(e, r)
+	sub := gFp5.Sub(e, r)
+
+	x1 := gFp5.Div(&add, &gFp5.FP5_TWO)
+	x2 := gFp5.Div(&sub, &gFp5.FP5_TWO)
 
 	x := x1
 	x1Legendre := gFp5.Legendre(x1)
@@ -78,9 +83,9 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 		x = x2
 	}
 
-	y := gFp5.Neg(gFp5.Mul(w, x))
+	y := gFp5.Neg(gFp5.Mul(&w, &x))
 	if success {
-		x = gFp5.Add(x, gFp5.Div(A_ECgFp5Point, gFp5.FromUint64(3)))
+		x = gFp5.Add(x, gFp5.Div(&A_ECgFp5Point, &THREE))
 	} else {
 		x = gFp5.FP5_ZERO
 	}
@@ -88,7 +93,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	isInf := !success
 
 	// If w == 0 then this is in fact a success.
-	if success || gFp5.IsZero(w) {
+	if success || gFp5.IsZero(&w) {
 		return WeierstrassPoint{X: x, Y: y, IsInf: isInf}, true
 	}
 	return WeierstrassPoint{}, false
@@ -117,21 +122,22 @@ func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 		lambda0 = gFp5.Sub(y2, y1)
 		lambda1 = gFp5.Sub(x2, x1)
 	}
-	lambda := gFp5.Div(lambda0, lambda1)
+	lambda := gFp5.Div(&lambda0, &lambda1)
 
 	x3 := gFp5.Sub(gFp5.Sub(gFp5.Square(lambda), x1), x2)
-	y3 := gFp5.Sub(gFp5.Mul(lambda, gFp5.Sub(x1, x3)), y1)
+	sub := gFp5.Sub(x1, x3)
+	y3 := gFp5.Sub(gFp5.Mul(&lambda, &sub), y1)
 
 	return WeierstrassPoint{X: x3, Y: y3, IsInf: xSame && yDiff}
 }
 
-func (p WeierstrassPoint) Double() WeierstrassPoint {
+func (p *WeierstrassPoint) Double() WeierstrassPoint {
 	x := p.X
 	y := p.Y
 	is_inf := p.IsInf
 
 	if is_inf {
-		return p
+		return *p
 	}
 
 	lambda0 := gFp5.Square(x)
@@ -140,14 +146,14 @@ func (p WeierstrassPoint) Double() WeierstrassPoint {
 
 	lambda1 := gFp5.Double(y)
 
-	lambda := gFp5.Div(lambda0, lambda1)
+	lambda := gFp5.Div(&lambda0, &lambda1)
 
 	x2 := gFp5.Square(lambda)
 	two_x := gFp5.Double(x)
 	x2 = gFp5.Sub(x2, two_x)
 
 	y2 := gFp5.Sub(x, x2)
-	y2 = gFp5.Mul(lambda, y2)
+	y2 = gFp5.Mul(&lambda, &y2)
 	y2 = gFp5.Sub(y2, y)
 
 	return WeierstrassPoint{X: x2, Y: y2, IsInf: is_inf}

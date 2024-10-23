@@ -16,6 +16,8 @@ type ECgFp5Point struct {
 // Constants for ECgFp5Point
 var (
 	A_ECgFp5Point = gFp5.FromUint64Array([5]uint64{2, 0, 0, 0, 0})
+	THREE         = gFp5.FromUint64(3)
+	FOUR          = gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})
 
 	B1                  = uint64(263)
 	B_ECgFp5Point       = gFp5.FromUint64Array([5]uint64{0, B1, 0, 0, 0})
@@ -47,8 +49,8 @@ var (
 
 func (p ECgFp5Point) Equals(rhs ECgFp5Point) bool {
 	return gFp5.Equals(
-		gFp5.Mul(p.u, rhs.t),
-		gFp5.Mul(rhs.u, p.t),
+		gFp5.Mul(&p.u, &rhs.t),
+		gFp5.Mul(&rhs.u, &p.t),
 	)
 }
 
@@ -58,11 +60,12 @@ func CanBeDecodedIntoPoint(w gFp5.Element) bool {
 	e := gFp5.Sub(gFp5.Square(w), A_ECgFp5Point)
 	delta := gFp5.Sub(gFp5.Square(e), B_MUL4_ECgFp5Point)
 	deltaLegendre := gFp5.Legendre(delta)
-	return gFp5.IsZero(w) || deltaLegendre.IsOne()
+	return gFp5.IsZero(&w) || deltaLegendre.IsOne()
 }
 
 func (p ECgFp5Point) Encode() gFp5.Element {
-	return gFp5.Mul(p.t, gFp5.InverseOrZero(p.u))
+	inv := gFp5.InverseOrZero(&p.u)
+	return gFp5.Mul(&p.t, &inv)
 }
 
 // Attempt to decode a point from an gFp5 element
@@ -81,8 +84,11 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 		r = gFp5.FP5_ZERO
 	}
 
-	x1 := gFp5.Div(gFp5.Add(e, r), gFp5.FP5_TWO)
-	x2 := gFp5.Div(gFp5.Sub(e, r), gFp5.FP5_TWO)
+	add := gFp5.Add(e, r)
+	sub := gFp5.Sub(e, r)
+
+	x1 := gFp5.Div(&add, &gFp5.FP5_TWO)
+	x2 := gFp5.Div(&sub, &gFp5.FP5_TWO)
 	x := x2
 
 	x1Legendre := gFp5.Legendre(x1)
@@ -108,7 +114,7 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 	}
 
 	// If w == 0 then this is in fact a success.
-	if c || gFp5.IsZero(w) {
+	if c || gFp5.IsZero(&w) {
 		return ECgFp5Point{x: x, z: z, u: u, t: t}, true
 	}
 
@@ -116,7 +122,7 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 }
 
 func (p ECgFp5Point) IsNeutral() bool {
-	return gFp5.IsZero(p.u)
+	return gFp5.IsZero(&p.u)
 }
 
 // General point addition. formulas are complete (no special case).
@@ -134,41 +140,44 @@ func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
 	_t2 := rhs.t
 
 	// let t1 = x1 * x2;
-	t1 := gFp5.Mul(x1, x2)
+	t1 := gFp5.Mul(&x1, &x2)
 	// let t2 = z1 * z2;
-	t2 := gFp5.Mul(z1, z2)
+	t2 := gFp5.Mul(&z1, &z2)
 	// let t3 = u1 * u2;
-	t3 := gFp5.Mul(u1, u2)
+	t3 := gFp5.Mul(&u1, &u2)
 	// let t4 = _t1 * _t2;
-	t4 := gFp5.Mul(_t1, _t2)
+	t4 := gFp5.Mul(&_t1, &_t2)
 	// let t5 = (x1 + z1) * (x2 + z2) - t1 - t2;
+	x1_z1 := gFp5.Add(x1, z1)
+	x2_z2 := gFp5.Add(x2, z2)
 	t5 := gFp5.Sub(
-		gFp5.Mul(gFp5.Add(x1, z1), gFp5.Add(x2, z2)),
+		gFp5.Mul(&x1_z1, &x2_z2),
 		gFp5.Add(t1, t2),
 	)
 	// let t6 = (u1 + _t1) * (u2 + _t2) - t3 - t4;
+	u1_t1 := gFp5.Add(u1, _t1)
+	u2_t2 := gFp5.Add(u2, _t2)
 	t6 := gFp5.Sub(
-		gFp5.Mul(gFp5.Add(u1, _t1), gFp5.Add(u2, _t2)),
+		gFp5.Mul(&u1_t1, &u2_t2),
 		gFp5.Add(t3, t4),
 	)
 	// let t7 = t1 + t2 * Self::B;
-	t7 := gFp5.Add(t1, gFp5.Mul(t2, B_ECgFp5Point))
+	t7 := gFp5.Add(t1, gFp5.Mul(&t2, &B_ECgFp5Point))
 	// let t8 = t4 * t7;
-	t8 := gFp5.Mul(t4, t7)
+	t8 := gFp5.Mul(&t4, &t7)
 	// let t9 = t3 * (t5 * Self::B_MUL2 + t7.double());
-	t9 := gFp5.Mul(
-		t3,
-		gFp5.Add(gFp5.Mul(t5, B_MUL2_ECgFp5Point), gFp5.Double(t7)),
-	)
+	add := gFp5.Add(gFp5.Mul(&t5, &B_MUL2_ECgFp5Point), gFp5.Double(t7))
+	t9 := gFp5.Mul(&t3, &add)
 	// let t10 = (t4 + t3.double()) * (t5 + t7);
-	t10 := gFp5.Mul(
-		gFp5.Add(t4, gFp5.Double(t3)),
-		gFp5.Add(t5, t7),
-	)
+	t4_t3double := gFp5.Add(t4, gFp5.Double(t3))
+	t5_t7 := gFp5.Add(t5, t7)
+	t10 := gFp5.Mul(&t4_t3double, &t5_t7)
 
-	xNew := gFp5.Mul(gFp5.Sub(t10, t8), B_ECgFp5Point)
+	t10_t8 := gFp5.Sub(t10, t8)
+	xNew := gFp5.Mul(&t10_t8, &B_ECgFp5Point)
 	zNew := gFp5.Sub(t8, t9)
-	uNew := gFp5.Mul(t6, gFp5.Sub(gFp5.Mul(t2, B_ECgFp5Point), t1))
+	sub := gFp5.Sub(gFp5.Mul(&t2, &B_ECgFp5Point), t1)
+	uNew := gFp5.Mul(&t6, &sub)
 	tNew := gFp5.Add(t8, t9)
 
 	return ECgFp5Point{x: xNew, z: zNew, u: uNew, t: tNew}
@@ -187,21 +196,22 @@ func (p *ECgFp5Point) SetDouble() {
 	u := p.u
 	t := p.t
 
-	t1 := gFp5.Mul(z, t)
-	t2 := gFp5.Mul(t1, t)
+	t1 := gFp5.Mul(&z, &t)
+	t2 := gFp5.Mul(&t1, &t)
 	x1 := gFp5.Square(t2)
-	z1 := gFp5.Mul(t1, u)
+	z1 := gFp5.Mul(&t1, &u)
 	t3 := gFp5.Square(u)
+	double := gFp5.Double(gFp5.Add(x, z))
 	w1 := gFp5.Sub(
 		t2,
 		gFp5.Mul(
-			t3,
-			gFp5.Double(gFp5.Add(x, z)),
+			&t3,
+			&double,
 		),
 	)
 	t4 := gFp5.Square(z1)
 
-	xNew := gFp5.Mul(t4, B_MUL4_ECgFp5Point)
+	xNew := gFp5.Mul(&t4, &B_MUL4_ECgFp5Point)
 	zNew := gFp5.Square(w1)
 	uNew := gFp5.Sub(
 		gFp5.Square(gFp5.Add(w1, z1)),
@@ -210,7 +220,7 @@ func (p *ECgFp5Point) SetDouble() {
 	tNew := gFp5.Sub(
 		gFp5.Double(x1),
 		gFp5.Add(
-			gFp5.Mul(t4, gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})),
+			gFp5.Mul(&t4, &FOUR),
 			zNew,
 		),
 	)
@@ -242,25 +252,24 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 	u0 := p.u
 	t0 := p.t
 
-	t1 := gFp5.Mul(z0, t0)
-	t2 := gFp5.Mul(t1, t0)
+	t1 := gFp5.Mul(&z0, &t0)
+	t2 := gFp5.Mul(&t1, &t0)
 	x1 := gFp5.Square(t2)
-	z1 := gFp5.Mul(t1, u0)
+	z1 := gFp5.Mul(&t1, &u0)
 	t3 := gFp5.Square(u0)
+	x0_z0_double := gFp5.Double(gFp5.Add(x0, z0))
 	w1 := gFp5.Sub(
 		t2,
-		gFp5.Mul(
-			gFp5.Double(gFp5.Add(x0, z0)),
-			t3,
-		),
+		gFp5.Mul(&x0_z0_double, &t3),
 	)
 	t4 := gFp5.Square(w1)
 	t5 := gFp5.Square(z1)
-	x := gFp5.Mul(gFp5.Square(t5), B_MUL16_ECgFp5Point)
+	t5square := gFp5.Square(t5)
+	x := gFp5.Mul(&t5square, &B_MUL16_ECgFp5Point)
 	w := gFp5.Sub(
 		gFp5.Double(x1),
 		gFp5.Add(
-			gFp5.Mul(t5, gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})),
+			gFp5.Mul(&t5, &FOUR),
 			t4,
 		),
 	)
@@ -278,24 +287,18 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 			gFp5.Square(gFp5.Add(w, z)),
 			gFp5.Add(t1, t3),
 		)
-		z = gFp5.Mul(
-			t5,
-			gFp5.Sub(
-				gFp5.Double(gFp5.Add(x, t1)),
-				t3,
-			),
+		sub := gFp5.Sub(
+			gFp5.Double(gFp5.Add(x, t1)),
+			t3,
 		)
-		x = gFp5.Mul(gFp5.Mul(t2, t4), B_MUL16_ECgFp5Point)
+		z = gFp5.Mul(&t5, &sub)
+		t2t4 := gFp5.Mul(&t2, &t4)
+		x = gFp5.Mul(&t2t4, &B_MUL16_ECgFp5Point)
+		b_mul_4_four_sub := gFp5.Sub(B_MUL4_ECgFp5Point, FOUR)
 		w = gFp5.Neg(
 			gFp5.Add(
 				t4,
-				gFp5.Mul(
-					t2,
-					gFp5.Sub(
-						B_MUL4_ECgFp5Point,
-						gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0}),
-					),
-				),
+				gFp5.Mul(&t2, &b_mul_4_four_sub),
 			),
 		)
 	}
@@ -311,14 +314,14 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 		gFp5.Double(gFp5.Add(x, t2)),
 	)
 
-	p.x = gFp5.Mul(gFp5.Square(t3), B_ECgFp5Point)
+	t3square := gFp5.Square(t3)
+	p.x = gFp5.Mul(&t3square, &B_ECgFp5Point)
 	p.z = gFp5.Square(w1)
-	p.u = gFp5.Mul(t3, w1)
+	p.u = gFp5.Mul(&t3, &w1)
+	t1double := gFp5.Double(t1)
+	t1_t2double := gFp5.Sub(t1, gFp5.Double(t2))
 	p.t = gFp5.Sub(
-		gFp5.Mul(
-			gFp5.Double(t1),
-			gFp5.Sub(t1, gFp5.Double(t2)),
-		),
+		gFp5.Mul(&t1double, &t1_t2double),
 		p.z,
 	)
 }
@@ -329,20 +332,25 @@ func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
 	x1, z1, u1, _t1 := p.x, p.z, p.u, p.t
 	x2, u2 := rhs.x, rhs.u
 
-	t1 := gFp5.Mul(x1, x2)
+	t1 := gFp5.Mul(&x1, &x2)
 	t2 := z1
-	t3 := gFp5.Mul(u1, u2)
+	t3 := gFp5.Mul(&u1, &u2)
 	t4 := _t1
-	t5 := gFp5.Add(x1, gFp5.Mul(x2, z1))
-	t6 := gFp5.Add(u1, gFp5.Mul(u2, _t1))
-	t7 := gFp5.Add(t1, gFp5.Mul(t2, B_ECgFp5Point))
-	t8 := gFp5.Mul(t4, t7)
-	t9 := gFp5.Mul(t3, gFp5.Add(gFp5.Mul(t5, B_MUL2_ECgFp5Point), gFp5.Double(t7)))
-	t10 := gFp5.Mul(gFp5.Add(t4, gFp5.Double(t3)), gFp5.Add(t5, t7))
+	t5 := gFp5.Add(x1, gFp5.Mul(&x2, &z1))
+	t6 := gFp5.Add(u1, gFp5.Mul(&u2, &_t1))
+	t7 := gFp5.Add(t1, gFp5.Mul(&t2, &B_ECgFp5Point))
+	t8 := gFp5.Mul(&t4, &t7)
+	add := gFp5.Add(gFp5.Mul(&t5, &B_MUL2_ECgFp5Point), gFp5.Double(t7))
+	t9 := gFp5.Mul(&t3, &add)
+	t4_t3double := gFp5.Add(t4, gFp5.Double(t3))
+	t5_t7 := gFp5.Add(t5, t7)
+	t10 := gFp5.Mul(&t4_t3double, &t5_t7)
 
+	t10_t8_sub := gFp5.Sub(t10, t8)
+	t2_b_mul_t1_sub := gFp5.Sub(gFp5.Mul(&t2, &B_ECgFp5Point), t1)
 	return ECgFp5Point{
-		x: gFp5.Mul(gFp5.Sub(t10, t8), B_ECgFp5Point),
-		u: gFp5.Mul(t6, gFp5.Sub(gFp5.Mul(t2, B_ECgFp5Point), t1)),
+		x: gFp5.Mul(&t10_t8_sub, &B_ECgFp5Point),
+		u: gFp5.Mul(&t6, &t2_b_mul_t1_sub),
 		z: gFp5.Sub(t8, t9),
 		t: gFp5.Add(t8, t9),
 	}
@@ -367,11 +375,14 @@ func BatchToAffine(src []ECgFp5Point) []AffinePoint {
 	}
 	if n == 1 {
 		p := src[0]
-		m1 := gFp5.InverseOrZero(gFp5.Mul(p.z, p.t))
+		mul := gFp5.Mul(&p.z, &p.t)
+		m1 := gFp5.InverseOrZero(&mul)
+		x_t := gFp5.Mul(&p.x, &p.t)
+		u_z := gFp5.Mul(&p.u, &p.z)
 		return []AffinePoint{
 			{
-				x: gFp5.Mul(gFp5.Mul(p.x, p.t), m1),
-				u: gFp5.Mul(gFp5.Mul(p.u, p.z), m1),
+				x: gFp5.Mul(&x_t, &m1),
+				u: gFp5.Mul(&u_z, &m1),
 			},
 		}
 	}
@@ -380,28 +391,31 @@ func BatchToAffine(src []ECgFp5Point) []AffinePoint {
 	// Compute product of all values to invert, and invert it.
 	// We also use the x and u coordinates of the points in the
 	// destination slice to keep track of the partial products.
-	m := gFp5.Mul(src[0].z, src[0].t)
+	m := gFp5.Mul(&src[0].z, &src[0].t)
 	for i := 1; i < n; i++ {
 		x := m
-		m = gFp5.Mul(m, src[i].z)
+		m = gFp5.Mul(&m, &src[i].z)
 		u := m
-		m = gFp5.Mul(m, src[i].t)
+		m = gFp5.Mul(&m, &src[i].t)
 
 		res[i] = AffinePoint{x: x, u: u}
 	}
 
-	m = gFp5.InverseOrZero(m)
+	m = gFp5.InverseOrZero(&m)
 
 	// Propagate back inverses.
 	for i := n - 1; i > 0; i-- {
-		res[i].u = gFp5.Mul(gFp5.Mul(src[i].u, res[i].u), m)
-		m = gFp5.Mul(m, src[i].t)
-		res[i].x = gFp5.Mul(gFp5.Mul(src[i].x, res[i].x), m)
-		m = gFp5.Mul(m, src[i].z)
+		u_mul := gFp5.Mul(&src[i].u, &res[i].u)
+		res[i].u = gFp5.Mul(&u_mul, &m)
+		m = gFp5.Mul(&m, &src[i].t)
+		x_mul := gFp5.Mul(&src[i].x, &res[i].x)
+		res[i].x = gFp5.Mul(&x_mul, &m)
+		m = gFp5.Mul(&m, &src[i].z)
 	}
-	res[0].u = gFp5.Mul(gFp5.Mul(src[0].u, src[0].z), m)
-	m = gFp5.Mul(m, src[0].t)
-	res[0].x = gFp5.Mul(src[0].x, m)
+	u_z := gFp5.Mul(&src[0].u, &src[0].z)
+	res[0].u = gFp5.Mul(&u_z, &m)
+	m = gFp5.Mul(&m, &src[0].t)
+	res[0].x = gFp5.Mul(&src[0].x, &m)
 
 	return res
 }

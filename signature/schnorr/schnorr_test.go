@@ -168,7 +168,7 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 	}
 }
 
-func TestBytes(t *testing.T) {
+func BenchmarkBytes(t *testing.B) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
 	hashedMsg := p2.HashToQuinticExtension(msg)

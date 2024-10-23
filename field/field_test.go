@@ -74,7 +74,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		}
 	}
 
-	mul := gFp5.Mul(val1, val2)
+	mul := gFp5.Mul(&val1, &val2)
 	expectedMul := [5]uint64{12801331769143413385, 14031114708135177824, 4192851210753422088, 14031114723597060086, 4193451712464626164}
 	for i := 0; i < 5; i++ {
 		if mul[i] != g.FromUint64(expectedMul[i]) {
@@ -130,7 +130,7 @@ func TestTryInverse(t *testing.T) {
 		g.FromUint64(0x8877665544332211),
 		g.FromUint64(0xAABBCCDDEEFF0011),
 	}
-	result := gFp5.InverseOrZero(val)
+	result := gFp5.InverseOrZero(&val)
 
 	// Expected values
 	expected := [5]uint64{
@@ -248,7 +248,7 @@ func TestLegendre(t *testing.T) {
 
 	// Test zero again
 	x := gFp5.FP5_ZERO
-	square := gFp5.Mul(x, x)
+	square := gFp5.Mul(&x, &x)
 	legendreSym := gFp5.Legendre(square)
 	if !legendreSym.IsZero() {
 		t.Fatalf("Expected Legendre symbol of zero to be zero")

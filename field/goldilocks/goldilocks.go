@@ -174,8 +174,11 @@ func Sub(a, b *Element) Element {
 
 func Mul(elems ...*Element) Element {
 	res := G_ONE
-	for _, elem := range elems {
-		res.Mul(&res, elem)
+	// for _, elem := range elems {
+	// 	res.Mul(&res, elem)
+	// }
+	for i := 0; i < len(elems); i++ {
+		res.Mul(&res, elems[i])
 	}
 	return res
 }

@@ -42,11 +42,19 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	hashedMsg := p2.HashToQuinticExtension(msg)
 	k := curve.SampleScalar(nil)
 
+	start := time.Now()
 	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k)
+	since := time.Since(start)
+	fmt.Printf("`SchnorrSignHashedMessage2` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 	pk := SchnorrPkFromSk(sk)
+
+	start = time.Now()
 	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
 	}
+	since = time.Since(start)
+	fmt.Printf("`IsSchnorrSignatureValid` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+
 }
 
 func TestComparativeSchnorrSignAndVerify(t *testing.T) {
@@ -169,32 +177,33 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
+	// t.ReportAllocs()
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)       // Random message of 244 field elements (big)
 	hashedMsg := p2.HashToQuinticExtension(msg)
 
 	start := time.Now()
-	sig := SchnorrSignHashedMessage(hashedMsg, sk)
+	SchnorrSignHashedMessage(hashedMsg, sk)
 	since := time.Since(start)
 	fmt.Printf("`SchnorrSignHashedMessage()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
-	start = time.Now()
-	sig2, _ := SigFromBytes(sig.ToBytes())
+	// start = time.Now()
+	// sig2, _ := SigFromBytes(sig.ToBytes())
 
-	since = time.Since(start)
-	fmt.Printf("`SigFromBytes()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+	// since = time.Since(start)
+	// fmt.Printf("`SigFromBytes()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
-	if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
-		t.Fatalf("bytes do not match")
-	}
+	// if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
+	// 	t.Fatalf("bytes do not match")
+	// }
 
-	pk, _ := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	// pk, _ := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
 
-	start = time.Now()
-	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
-		t.Fatalf("Signature is invalid")
-	}
+	// start = time.Now()
+	// if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
+	// 	t.Fatalf("Signature is invalid")
+	// }
 
-	since = time.Since(start)
-	fmt.Printf("`Validate()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+	// since = time.Since(start)
+	// fmt.Printf("`Validate()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 }

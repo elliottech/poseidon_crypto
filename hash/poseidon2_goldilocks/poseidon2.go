@@ -4,9 +4,15 @@ import (
 	"fmt"
 	"hash"
 	"math/big"
+	"time"
 
+	"github.com/elliottech/poseidon_crypto/field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+)
+
+var (
+	D_BIG = big.NewInt(D)
 )
 
 type HashOut [4]g.Element
@@ -22,7 +28,10 @@ func (h HashOut) ToUint64Array() [4]uint64 {
 }
 
 func HashToQuinticExtension(m []g.Element) gFp5.Element {
+	start := time.Now()
 	res := HashNToMNoPad(m, 5)
+	since := time.Since(start)
+	fmt.Printf("`res := HashNToMNoPad(m, 5)` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 	return gFp5.Element(res[:])
 }
 
@@ -109,7 +118,7 @@ func fullRounds(state *[WIDTH]g.Element, start int) {
 
 func partialRounds(state *[WIDTH]g.Element) {
 	for r := 0; r < ROUNDS_P; r++ {
-		constant := g.FromUint64(INTERNAL_CONSTANTS[r])
+		constant := INTERNAL_CONSTANTS_G[r]
 		constant.Add(&state[0], &constant)
 		state[0] = sboxP(&constant)
 		internalLinearLayer(state)
@@ -159,8 +168,8 @@ func sbox(state *[WIDTH]g.Element) {
 }
 
 func sboxP(a *g.Element) g.Element {
-	res := g.FromUint64(0)
-	return *res.Exp(*a, big.NewInt(D))
+	res := g.Zero()
+	return *res.Exp(*a, D_BIG)
 }
 
 func applyMat4(x *[4]g.Element) {

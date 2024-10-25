@@ -1,5 +1,7 @@
 package poseidon2
 
+import g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+
 const (
 	WIDTH = 12
 	RATE  = 8
@@ -152,6 +154,32 @@ var (
 		9024840976168649958,
 		14047056970978379368,
 		838728605080212101,
+	}
+
+	// Generated randomly for ROUNDS_P
+	INTERNAL_CONSTANTS_G = [ROUNDS_P]g.Element{
+		g.FromUint64(11921381764981422944),
+		g.FromUint64(10318423381711320787),
+		g.FromUint64(8291411502347000766),
+		g.FromUint64(229948027109387563),
+		g.FromUint64(9152521390190983261),
+		g.FromUint64(7129306032690285515),
+		g.FromUint64(15395989607365232011),
+		g.FromUint64(8641397269074305925),
+		g.FromUint64(17256848792241043600),
+		g.FromUint64(6046475228902245682),
+		g.FromUint64(12041608676381094092),
+		g.FromUint64(12785542378683951657),
+		g.FromUint64(14546032085337914034),
+		g.FromUint64(3304199118235116851),
+		g.FromUint64(16499627707072547655),
+		g.FromUint64(10386478025625759321),
+		g.FromUint64(13475579315436919170),
+		g.FromUint64(16042710511297532028),
+		g.FromUint64(1411266850385657080),
+		g.FromUint64(9024840976168649958),
+		g.FromUint64(14047056970978379368),
+		g.FromUint64(838728605080212101),
 	}
 
 	// Taken from Plonk3 Poseidon2 implementation. https://github.com/Plonky3/Plonky3/blob/eeb4e37b20127c4daa871b2bad0df30a7c7380db/goldilocks/src/poseidon2.rs#L28

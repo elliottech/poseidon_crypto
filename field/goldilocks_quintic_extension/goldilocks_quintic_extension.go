@@ -263,12 +263,16 @@ func Square(a Element) Element {
 }
 
 func Triple(a Element) Element {
+	inner := make([]g.Element, 5)
+	for i := 0; i < 5; i++ {
+		inner[i] = *a[i].Mul(&a[i], &THREE)
+	}
 	return Element{
-		*a[0].Mul(&a[0], &THREE),
-		*a[1].Mul(&a[1], &THREE),
-		*a[2].Mul(&a[2], &THREE),
-		*a[3].Mul(&a[3], &THREE),
-		*a[4].Mul(&a[4], &THREE),
+		inner[0],
+		inner[1],
+		inner[2],
+		inner[3],
+		inner[4],
 	}
 }
 

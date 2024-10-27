@@ -159,6 +159,40 @@ func (p *WeierstrassPoint) Double() WeierstrassPoint {
 	return WeierstrassPoint{X: x2, Y: y2, IsInf: is_inf}
 }
 
+func (p *WeierstrassPoint) MultiDouble(n uint32) WeierstrassPoint {
+	if n == 0 {
+		return *p
+	}
+	if n == 1 {
+		return p.Double()
+	}
+
+	// Compute n doubles directly using optimized formulas
+	// This avoids computing intermediate points
+	x, y := p.X, p.Y
+	for i := uint32(0); i < n; i++ {
+		// Compute lambda = (3x²+ a)/(2y) once
+		xSquared := gFp5.Square(x)
+		lambda0 := gFp5.Triple(xSquared)
+		lambda0 = gFp5.Add(lambda0, A_WEIERSTRASS)
+		lambda1 := gFp5.Double(y)
+		lambda := gFp5.Div(&lambda0, &lambda1)
+
+		// Update x and y
+		lambdaSquared := gFp5.Square(lambda)
+		x2 := gFp5.Sub(lambdaSquared, gFp5.Double(x))
+		x_x2 := gFp5.Sub(x, x2)
+		y = gFp5.Sub(gFp5.Mul(&lambda, &x_x2), y)
+		x = x2
+	}
+
+	return WeierstrassPoint{
+		X:     x,
+		Y:     y,
+		IsInf: p.IsInf,
+	}
+}
+
 func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint {
 	if windowBits < 2 {
 		panic("windowBits in PrecomputeWindow for WeierstrassPoint must be at least 2")

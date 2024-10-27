@@ -201,8 +201,7 @@ func (s ECgFp5Scalar) Neg() ECgFp5Scalar {
 }
 
 func (s *ECgFp5Scalar) Mul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
-	res := s.MontyMul(&R2).MontyMul(rhs)
-	return res
+	return s.MontyMul(&R2).MontyMul(rhs)
 }
 
 func (s *ECgFp5Scalar) Square() *ECgFp5Scalar {

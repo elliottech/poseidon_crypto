@@ -183,27 +183,27 @@ func TestBytes(t *testing.T) {
 	hashedMsg := p2.HashToQuinticExtension(msg)
 
 	start := time.Now()
-	SchnorrSignHashedMessage(hashedMsg, sk)
+	sig := SchnorrSignHashedMessage(hashedMsg, sk)
 	since := time.Since(start)
 	fmt.Printf("`SchnorrSignHashedMessage()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
-	// start = time.Now()
-	// sig2, _ := SigFromBytes(sig.ToBytes())
+	start = time.Now()
+	sig2, _ := SigFromBytes(sig.ToBytes())
 
-	// since = time.Since(start)
-	// fmt.Printf("`SigFromBytes()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+	since = time.Since(start)
+	fmt.Printf("`SigFromBytes()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 
-	// if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
-	// 	t.Fatalf("bytes do not match")
-	// }
+	if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
+		t.Fatalf("bytes do not match")
+	}
 
-	// pk, _ := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	pk, _ := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
 
-	// start = time.Now()
-	// if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
-	// 	t.Fatalf("Signature is invalid")
-	// }
+	start = time.Now()
+	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
+		t.Fatalf("Signature is invalid")
+	}
 
-	// since = time.Since(start)
-	// fmt.Printf("`Validate()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
+	since = time.Since(start)
+	fmt.Printf("`Validate()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 }

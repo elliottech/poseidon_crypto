@@ -159,35 +159,29 @@ func RandArray(count int) []Element {
 }
 
 func Add(a, b Element) Element {
-	res := G_ZERO
-	res.Add(&a, &b)
-	return res
+	a.Add(&a, &b)
+	return a
 }
 
 func AddThree(a, b, c Element) Element {
-	res := G_ZERO
-	res.Add(&a, &b)
-	res.Add(&res, &c)
-	return res
+	a.Add(&a, &b)
+	a.Add(&a, &c)
+	return a
 }
 
 func AddFour(a, b, c, d Element) Element {
-	res1 := G_ZERO
-	res2 := G_ZERO
-	res1.Add(&a, &b)
-	res2.Add(&c, &d)
-	res1.Add(&res1, &res2)
-	return res1
+	a.Add(&a, &b)
+	c.Add(&c, &d)
+	a.Add(&a, &c)
+	return a
 }
 
 func AddFive(a, b, c, d, e Element) Element {
-	res1 := G_ZERO
-	res2 := G_ZERO
-	res1.Add(&a, &b)
-	res2.Add(&c, &d)
-	res1.Add(&res1, &res2)
-	res1.Add(&res1, &e)
-	return res1
+	a.Add(&a, &b)
+	c.Add(&c, &d)
+	a.Add(&a, &c)
+	a.Add(&a, &e)
+	return a
 }
 
 func Sub(a, b *Element) Element {

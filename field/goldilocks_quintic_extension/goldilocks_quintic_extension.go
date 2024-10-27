@@ -21,6 +21,7 @@ var (
 	FP5_TWO  = FromF(g.FromUint64(2))
 
 	FP5_W        = g.FromUint64(3)
+	DOUBLE_FP5_W = g.Add(FP5_W, FP5_W)
 	THREE        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 )
@@ -228,24 +229,23 @@ func ExpPowerOf2(x Element, power int) Element {
 }
 
 func Square(a Element) Element {
-	double_w := g.Add(FP5_W, FP5_W)
 
 	a0s := g.Mul(&a[0], &a[0])
 	a1a4 := g.Mul(&a[1], &a[4])
 	a2a3 := g.Mul(&a[2], &a[3])
 	added := g.Add(a1a4, a2a3)
-	muld := g.Mul(&double_w, &added)
+	muld := g.Mul(&DOUBLE_FP5_W, &added)
 	c0 := g.Add(a0s, muld)
 
 	a0Double := g.Add(a[0], a[0])
 	a0Doublea1 := g.Mul(&a0Double, &a[1])
-	a2a4DoubleW := g.MulThree(&a[2], &a[4], &double_w)
+	a2a4DoubleW := g.MulThree(&a[2], &a[4], &DOUBLE_FP5_W)
 	a3a3w := g.MulThree(&a[3], &a[3], &FP5_W)
 	c1 := g.AddThree(a0Doublea1, a2a4DoubleW, a3a3w)
 
 	a0Doublea2 := g.Mul(&a0Double, &a[2])
 	a1Square := g.Mul(&a[1], &a[1])
-	a4a3DoubleW := g.MulThree(&a[4], &a[3], &double_w)
+	a4a3DoubleW := g.MulThree(&a[4], &a[3], &DOUBLE_FP5_W)
 	c2 := g.AddThree(a0Doublea2, a1Square, a4a3DoubleW)
 
 	a1Double := g.Add(a[1], a[1])

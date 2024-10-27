@@ -21,6 +21,7 @@ var (
 	FP5_TWO  = FromF(g.FromUint64(2))
 
 	FP5_W        = g.FromUint64(3)
+	THREE        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 )
 
@@ -308,13 +309,12 @@ func Square(a Element) Element {
 }
 
 func Triple(a Element) Element {
-	three := g.FromUint64(3)
 	return Element{
-		g.Mul(&a[0], &three),
-		g.Mul(&a[1], &three),
-		g.Mul(&a[2], &three),
-		g.Mul(&a[3], &three),
-		g.Mul(&a[4], &three),
+		*a[0].Mul(&a[0], &THREE),
+		*a[1].Mul(&a[1], &THREE),
+		*a[2].Mul(&a[2], &THREE),
+		*a[3].Mul(&a[3], &THREE),
+		*a[4].Mul(&a[4], &THREE),
 	}
 }
 

@@ -186,26 +186,26 @@ func Mul(a, b *Element) Element {
 	a4b4 := g.Mul(&a[4], &b[4])
 
 	// c0 = a0b0 + w(a1b4 + a2b3 + a3b2 + a4b1)
-	sum1 := g.AddMultiple(a1b4, a2b3, a3b2, a4b1)
+	sum1 := g.AddFour(a1b4, a2b3, a3b2, a4b1)
 	wsum1 := g.Mul(&FP5_W, &sum1)
 	c0 := g.Add(a0b0, wsum1)
 
 	// c1 = a0b1 + a1b0 + w(a2b4 + a3b3 + a4b2)
-	sum2 := g.AddMultiple(a2b4, a3b3, a4b2)
+	sum2 := g.AddThree(a2b4, a3b3, a4b2)
 	wsum2 := g.Mul(&FP5_W, &sum2)
-	c1 := g.AddMultiple(a0b1, a1b0, wsum2)
+	c1 := g.AddThree(a0b1, a1b0, wsum2)
 
 	// c2 = a0b2 + a1b1 + a2b0 + w(a3b4 + a4b3)
 	sum3 := g.Add(a3b4, a4b3)
 	wsum3 := g.Mul(&FP5_W, &sum3)
-	c2 := g.AddMultiple(a0b2, a1b1, a2b0, wsum3)
+	c2 := g.AddFour(a0b2, a1b1, a2b0, wsum3)
 
 	// c3 = a0b3 + a1b2 + a2b1 + a3b0 + w*a4b4
 	wsum4 := g.Mul(&FP5_W, &a4b4)
-	c3 := g.AddMultiple(a0b3, a1b2, a2b1, a3b0, wsum4)
+	c3 := g.AddFive(a0b3, a1b2, a2b1, a3b0, wsum4)
 
 	// c4 = a0b4 + a1b3 + a2b2 + a3b1 + a4b0
-	c4 := g.AddMultiple(a0b4, a1b3, a2b2, a3b1, a4b0)
+	c4 := g.AddFive(a0b4, a1b3, a2b2, a3b1, a4b0)
 
 	return Element{c0, c1, c2, c3, c4}
 }
@@ -239,25 +239,25 @@ func Square(a Element) Element {
 
 	a0Double := g.Add(a[0], a[0])
 	a0Doublea1 := g.Mul(&a0Double, &a[1])
-	a2a4DoubleW := g.MulMultiple(&a[2], &a[4], &double_w)
-	a3a3w := g.MulMultiple(&a[3], &a[3], &FP5_W)
-	c1 := g.AddMultiple(a0Doublea1, a2a4DoubleW, a3a3w)
+	a2a4DoubleW := g.MulThree(&a[2], &a[4], &double_w)
+	a3a3w := g.MulThree(&a[3], &a[3], &FP5_W)
+	c1 := g.AddThree(a0Doublea1, a2a4DoubleW, a3a3w)
 
 	a0Doublea2 := g.Mul(&a0Double, &a[2])
 	a1Square := g.Mul(&a[1], &a[1])
-	a4a3DoubleW := g.MulMultiple(&a[4], &a[3], &double_w)
-	c2 := g.AddMultiple(a0Doublea2, a1Square, a4a3DoubleW)
+	a4a3DoubleW := g.MulThree(&a[4], &a[3], &double_w)
+	c2 := g.AddThree(a0Doublea2, a1Square, a4a3DoubleW)
 
 	a1Double := g.Add(a[1], a[1])
 	a0Doublea3 := g.Mul(&a0Double, &a[3])
 	a1Doublea2 := g.Mul(&a1Double, &a[2])
-	a4SquareW := g.MulMultiple(&a[4], &a[4], &FP5_W)
-	c3 := g.AddMultiple(a0Doublea3, a1Doublea2, a4SquareW)
+	a4SquareW := g.MulThree(&a[4], &a[4], &FP5_W)
+	c3 := g.AddThree(a0Doublea3, a1Doublea2, a4SquareW)
 
 	a0Doublea4 := g.Mul(&a0Double, &a[4])
 	a1Doublea3 := g.Mul(&a1Double, &a[3])
 	a2Square := g.Mul(&a[2], &a[2])
-	c4 := g.AddMultiple(a0Doublea4, a1Doublea3, a2Square)
+	c4 := g.AddThree(a0Doublea4, a1Doublea3, a2Square)
 
 	return Element{c0, c1, c2, c3, c4}
 }
@@ -286,7 +286,7 @@ func Sqrt(x Element) (Element, bool) {
 	x2f3 := g.Mul(&x[2], &_f[3])
 	x3f2 := g.Mul(&x[3], &_f[2])
 	x4f1 := g.Mul(&x[4], &_f[1])
-	added := g.AddMultiple(x1f4, x2f3, x3f2, x4f1)
+	added := g.AddFour(x1f4, x2f3, x3f2, x4f1)
 	three := g.FromUint64(3)
 	muld := g.Mul(&three, &added)
 	x0f0 := g.Mul(&x[0], &_f[0])
@@ -356,7 +356,7 @@ func InverseOrZero(a *Element) Element {
 	a2b3 := g.Mul(&a[2], &f[3])
 	a3b2 := g.Mul(&a[3], &f[2])
 	a4b1 := g.Mul(&a[4], &f[1])
-	added := g.AddMultiple(a1b4, a2b3, a3b2, a4b1)
+	added := g.AddFour(a1b4, a2b3, a3b2, a4b1)
 	muld := g.Mul(&FP5_W, &added)
 	g := g.Add(a0b0, muld)
 

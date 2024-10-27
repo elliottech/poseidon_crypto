@@ -158,18 +158,36 @@ func RandArray(count int) []Element {
 	return ret
 }
 
-func AddMultiple(elems ...Element) Element {
-	res := G_ZERO
-	for _, elem := range elems {
-		res.Add(&res, &elem)
-	}
-	return res
-}
-
 func Add(a, b Element) Element {
 	res := G_ZERO
 	res.Add(&a, &b)
 	return res
+}
+
+func AddThree(a, b, c Element) Element {
+	res := G_ZERO
+	res.Add(&a, &b)
+	res.Add(&res, &c)
+	return res
+}
+
+func AddFour(a, b, c, d Element) Element {
+	res1 := G_ZERO
+	res2 := G_ZERO
+	res1.Add(&a, &b)
+	res2.Add(&c, &d)
+	res1.Add(&res1, &res2)
+	return res1
+}
+
+func AddFive(a, b, c, d, e Element) Element {
+	res1 := G_ZERO
+	res2 := G_ZERO
+	res1.Add(&a, &b)
+	res2.Add(&c, &d)
+	res1.Add(&res1, &res2)
+	res1.Add(&res1, &e)
+	return res1
 }
 
 func Sub(a, b *Element) Element {
@@ -178,14 +196,10 @@ func Sub(a, b *Element) Element {
 	return res
 }
 
-func MulMultiple(elems ...*Element) Element {
+func MulThree(a, b, c *Element) Element {
 	res := G_ONE
-	// for _, elem := range elems {
-	// 	res.Mul(&res, elem)
-	// }
-	for i := 0; i < len(elems); i++ {
-		res.Mul(&res, elems[i])
-	}
+	res.Mul(a, b)
+	res.Mul(&res, c)
 	return res
 }
 

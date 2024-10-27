@@ -210,7 +210,7 @@ func Mul(a, b *Element) Element {
 }
 
 func Sqrt(elem *Element) *Element {
-	elemCopy := DeepCopy(elem)
+	elemCopy := *elem
 	return elemCopy.Sqrt(&elemCopy)
 }
 
@@ -222,8 +222,4 @@ func Powers(e *Element, count int) []Element {
 		ret[i].Mul(&ret[i-1], e)
 	}
 	return ret
-}
-
-func DeepCopy(source *Element) Element {
-	return Element{source[0]}
 }

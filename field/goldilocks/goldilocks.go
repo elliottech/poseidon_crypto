@@ -121,11 +121,11 @@ func Modulus() uint64 {
 }
 
 func Zero() Element {
-	return g.NewElement(0)
+	return Element{0}
 }
 
 func One() Element {
-	return g.NewElement(1)
+	return Element{4294967295}
 }
 
 func Neg(e Element) Element {

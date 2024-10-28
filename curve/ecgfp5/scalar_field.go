@@ -31,11 +31,12 @@ func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
 		panic("invalid length")
 	}
 
-	var value ECgFp5Scalar
+	var uintArr [5]uint64
 	for i := 0; i < 5; i++ {
-		value[i] = binary.LittleEndian.Uint64(data[i*8:])
+		uintArr[i] = binary.LittleEndian.Uint64(data[i*8:])
 	}
-	return value
+
+	return FromNonCanonicalBigInt(BigIntFromArray(uintArr))
 }
 
 func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {

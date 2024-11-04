@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"math/big"
 	"math/rand"
+	"sync"
 	"time"
 
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -269,17 +270,24 @@ func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
 	}))
 }
 
+// TODO: use sync.Pool for other places where redundant big.Int initializations are made.
+var bigIntPool = sync.Pool{
+	New: func() interface{} {
+		return new(big.Int)
+	},
+}
+
 func BigIntFromArray(arr [5]uint64) *big.Int {
 	result := new(big.Int)
 	for i := 4; i >= 0; i-- {
 		result.Lsh(result, 64)
-		result.Or(result, new(big.Int).SetUint64(arr[i]))
+		result.Or(result, bigIntPool.Get().(*big.Int).SetUint64(arr[i]))
 	}
 	return result
 }
 
 func FromNonCanonicalBigInt(val *big.Int) ECgFp5Scalar {
-	limbs := new(big.Int).Mod(val, ORDER).Bits()
+	limbs := val.Mod(val, ORDER).Bits()
 	if len(limbs) < 5 {
 		limbs = append(limbs, 0)
 	}

@@ -270,10 +270,9 @@ func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
 
 func BigIntFromArray(arr [5]uint64) *big.Int {
 	result := new(big.Int)
-	temp := new(big.Int)
 	for i := 4; i >= 0; i-- {
 		result.Lsh(result, 64)
-		result.Or(result, temp.SetUint64(arr[i]))
+		result.Or(result, new(big.Int).SetUint64(arr[i]))
 	}
 	return result
 }
@@ -281,7 +280,7 @@ func BigIntFromArray(arr [5]uint64) *big.Int {
 func FromNonCanonicalBigInt(val *big.Int) ECgFp5Scalar {
 	limbs := new(big.Int).Mod(val, ORDER).Bits()
 	if len(limbs) < 5 {
-		limbs = append(limbs, make([]big.Word, 5-len(limbs))...)
+		limbs = append(limbs, 0)
 	}
 	return ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])}
 }

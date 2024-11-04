@@ -26,7 +26,7 @@ func HashToQuinticExtension(msg []uint64) QuinticExtension {
 }
 
 func schnorr_sign_hashed_message(msgHash [5]uint64, sk curve.ECgFp5Scalar) Signature {
-	sig := make([]uint64, 10)
+	sig := [10]uint64{}
 
 	C.schnorr_sign_hashed_message(
 		(*C.uint64_t)(unsafe.Pointer(&msgHash[0])),

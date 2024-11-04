@@ -4,4 +4,4 @@
 #include <stdint.h>
 
 void schnorr_sign_hashed_message(uint64_t *m_hashed, uint64_t *sk, uint64_t *sig);
-void HashToQuinticExtension(uint64_t *input, size_t input_len, uint64_t *dst);
+void hash_to_quintic_extension(uint64_t *input, size_t input_len, uint64_t *dst);

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	"github.com/elliottech/poseidon_crypto/poseidon_bn254"
+	"github.com/elliottech/poseidon_crypto/hash/poseidon_bn254"
 	"github.com/stretchr/testify/assert"
 )
 

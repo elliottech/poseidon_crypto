@@ -1,7 +1,10 @@
 package poseidon2
 
 import (
+	"fmt"
+	"math/rand/v2"
 	"testing"
+	"time"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
@@ -152,9 +155,69 @@ func TestDigest(t *testing.T) {
 	}
 }
 
+func generateRandomInputs(numInputs, length int) [][]g.Element {
+	inputs := make([][]g.Element, numInputs)
+	for i := 0; i < numInputs; i++ {
+		input := make([]g.Element, length)
+		for j := 0; j < length; j++ {
+			input[j] = g.FromUint64(rand.Uint64())
+		}
+		inputs[i] = input
+	}
+	return inputs
+}
+
+func TestHashCorrectness(t *testing.T) {
+	numInputs := 1000
+	inputLength := 20
+
+	inputs := generateRandomInputs(numInputs, inputLength)
+
+	for _, input := range inputs {
+		goResult := HashNToHashNoPad(input)
+		rustResult := hash_no_pad(input)
+		for i := 0; i < 4; i++ {
+			if goResult[i] != rustResult[i] {
+				t.Fail()
+			}
+		}
+	}
+}
+
+func TestHashPerformance(t *testing.T) {
+	numInputs := 1000
+	inputLength := 20
+
+	inputs := generateRandomInputs(numInputs, inputLength)
+
+	start := time.Now()
+	for _, input := range inputs {
+		HashNToHashNoPad(input)
+	}
+	duration := time.Since(start)
+	fmt.Println("Total time for HashNToHashNoPad: ", duration)
+
+	start = time.Now()
+	for _, input := range inputs {
+		hash_no_pad(input)
+	}
+	duration = time.Since(start)
+	fmt.Println("Total time for hash_no_pad: ", duration)
+
+	for _, input := range inputs {
+		goResult := HashNToHashNoPad(input)
+		rustResult := hash_no_pad(input)
+		for i := 0; i < 4; i++ {
+			if goResult[i] != rustResult[i] {
+				t.Fail()
+			}
+		}
+	}
+}
+
 func TestHashNToHashNoPad(t *testing.T) {
 
-	res := HashNToHashNoPad([]g.Element{
+	ins := []g.Element{
 		g.FromUint64(11295517158488612626),
 		g.FromUint64(10669470463693797151),
 		g.FromUint64(17232114065640264171),
@@ -167,7 +230,9 @@ func TestHashNToHashNoPad(t *testing.T) {
 		g.FromUint64(12556655399058578835),
 		g.FromUint64(3097737892474696200),
 		g.FromUint64(7515335668060050861),
-	})
+	}
+
+	res := HashNToHashNoPad(ins)
 
 	expected := HashOut{
 		g.FromUint64(15396602476382546759),

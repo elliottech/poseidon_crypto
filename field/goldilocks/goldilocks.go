@@ -153,6 +153,22 @@ func RandArray(count int) []Element {
 	return ret
 }
 
+func ArrayFromUint64Array(arr []uint64) []Element {
+	ret := make([]Element, len(arr))
+	for i, elem := range arr {
+		ret[i] = FromUint64(elem)
+	}
+	return ret
+}
+
+func Uint64ArrayFromArray(arr []Element) []uint64 {
+	ret := make([]uint64, len(arr))
+	for i, elem := range arr {
+		ret[i] = elem.Uint64()
+	}
+	return ret
+}
+
 func Add(elems ...Element) Element {
 	res := g.NewElement(0)
 	for _, elem := range elems {

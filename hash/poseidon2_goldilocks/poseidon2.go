@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
-	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
 type HashOut [4]g.Element
@@ -19,11 +18,6 @@ func (h HashOut) ToLittleEndianBytes() []byte {
 
 func (h HashOut) ToUint64Array() [4]uint64 {
 	return [4]uint64{h[0].Uint64(), h[1].Uint64(), h[2].Uint64(), h[3].Uint64()}
-}
-
-func HashToQuinticExtension(m []g.Element) gFp5.Element {
-	res := HashNToMNoPad(m, 5)
-	return gFp5.Element(res[:])
 }
 
 func HashOutFromUint64Array(arr [4]uint64) HashOut {

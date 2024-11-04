@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
-	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
-	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 )
 
 type Signature struct {
@@ -15,6 +13,8 @@ type Signature struct {
 }
 
 type NumericalSignature [10]uint64
+
+type QuinticExtension [5]uint64
 
 func (s Signature) ToNumericalSignature() NumericalSignature {
 	return NumericalSignature{
@@ -59,17 +59,17 @@ var ZERO_SIG = Signature{
 var ONE_SK = curve.ONE
 
 // Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
-func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
+func SchnorrPkFromSk(sk curve.ECgFp5Scalar) QuinticExtension {
 	return curve.GENERATOR_ECgFp5Point.Mul(&sk).Encode()
 }
 
-func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
+func SchnorrSignHashedMessage(hashedMsg QuinticExtension, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
 	k := curve.SampleScalar(nil)
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
+	preImage := make([]uint64, 5+5)
 	for i, elem := range r.ToBasefieldArray() {
 		preImage[i] = elem
 	}
@@ -77,25 +77,7 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 		preImage[i+5] = elem
 	}
 
-	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
-	return Signature{
-		S: k.Sub(*e.Mul(&sk)),
-		E: e,
-	}
-}
-
-func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
-	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
-	for i, elem := range r.ToBasefieldArray() {
-		preImage[i] = elem
-	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
-		preImage[i+5] = elem
-	}
-
-	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
+	e := curve.FromGfp5(HashToQuinticExtension(preImage))
 	return Signature{
 		S: k.Sub(*e.Mul(&sk)),
 		E: e,
@@ -124,7 +106,7 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 	return nil
 }
 
-func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) bool {
+func IsSchnorrSignatureValid(pubKey, hashedMsg *QuinticExtension, sig Signature) bool {
 	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(*pubKey)
 	if !ok {
 		return false
@@ -132,14 +114,14 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 
 	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
 
-	preImage := make([]g.Element, 5+5)
+	preImage := make([]uint64, 5+5)
 	for i, elem := range rV.ToBasefieldArray() {
 		preImage[i] = elem
 	}
 	for i, elem := range hashedMsg.ToBasefieldArray() {
 		preImage[i+5] = elem
 	}
-	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
+	eV := curve.FromGfp5(HashToQuinticExtension(preImage))
 
 	return eV.Equals(&sig.E) // e_v == e
 }

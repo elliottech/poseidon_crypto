@@ -1,23 +1,24 @@
 package signature
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
-	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 )
 
 func TestHashToQuinticExtension(t *testing.T) {
-	result := p2.HashToQuinticExtension([]g.Element{
-		*new(g.Element).SetUint64(3451004116618606032),
-		*new(g.Element).SetUint64(11263134342958518251),
-		*new(g.Element).SetUint64(10957204882857370932),
-		*new(g.Element).SetUint64(5369763041201481933),
-		*new(g.Element).SetUint64(7695734348563036858),
-		*new(g.Element).SetUint64(1393419330378128434),
-		*new(g.Element).SetUint64(7387917082382606332),
+	result := HashToQuinticExtension([]uint64{
+		3451004116618606032,
+		11263134342958518251,
+		10957204882857370932,
+		5369763041201481933,
+		7695734348563036858,
+		1393419330378128434,
+		7387917082382606332,
 	})
 	expected := [5]uint64{
 		17992684813643984528,
@@ -27,7 +28,7 @@ func TestHashToQuinticExtension(t *testing.T) {
 		14449776097783372302,
 	}
 	for i := 0; i < 5; i++ {
-		if result[i] != g.FromUint64(expected[i]) {
+		if result[i] != expected[i] {
 			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 		}
 	}
@@ -35,15 +36,55 @@ func TestHashToQuinticExtension(t *testing.T) {
 
 func TestSchnorrSignAndVerify(t *testing.T) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
-	msg := g.RandArray(244)
-	hashedMsg := p2.HashToQuinticExtension(msg)
-	k := curve.SampleScalar(nil)
+	hashedMsg := HashToQuinticExtension(g.Uint64ArrayFromArray(g.RandArray(244)))
 
-	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k)
+	sig := SchnorrSignHashedMessage(hashedMsg, sk)
 	pk := SchnorrPkFromSk(sk)
 	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
 	}
+}
+
+func generateRandomMessages(n int, length int) []QuinticExtension {
+	messages := make([]QuinticExtension, n)
+	for i := 0; i < n; i++ {
+		messages[i] = HashToQuinticExtension(g.Uint64ArrayFromArray(g.RandArray(244)))
+	}
+	return messages
+}
+
+func TestSignatureCorrectness(t *testing.T) {
+	numInputs := 1000
+	inputLength := 20
+
+	hashedMessages := generateRandomMessages(numInputs, inputLength)
+	sig := schnorr_sign_hashed_message(hashedMessages[0], ONE_SK)
+
+	pk := SchnorrPkFromSk(ONE_SK)
+	if !IsSchnorrSignatureValid(&pk, &hashedMessages[0], sig) {
+		t.Fatalf("Signature is invalid")
+	}
+}
+
+func TestSignaturePerformance(t *testing.T) {
+	numInputs := 1
+	inputLength := 1
+
+	hashedMessages := generateRandomMessages(numInputs, inputLength)
+
+	start := time.Now()
+	for _, hashedMessage := range hashedMessages {
+		SchnorrSignHashedMessage(hashedMessage, ONE_SK)
+	}
+	duration := time.Since(start)
+	fmt.Println("Total time for SchnorrSignHashedMessage: ", duration)
+
+	start = time.Now()
+	for _, hashedMessage := range hashedMessages {
+		schnorr_sign_hashed_message(hashedMessage, ONE_SK)
+	}
+	duration = time.Since(start)
+	fmt.Println("Total time for schnorr_sign_hashed_message: ", duration)
 }
 
 func TestComparativeSchnorrSignAndVerify(t *testing.T) {
@@ -66,27 +107,27 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 			846395111423676945, 1354180063821346280, 5751371120309175011, 4898038106472090654, 1076345918732914302,
 		},
 	}
-	hashedMessages := []gFp5.Element{
-		gFp5.Element{
-			g.FromUint64(8398652514106806347),
-			g.FromUint64(11069112711939986896),
-			g.FromUint64(9732488227085561369),
-			g.FromUint64(18076754337204438535),
-			g.FromUint64(17155407358725346236),
+	hashedMessages := []QuinticExtension{
+		QuinticExtension{
+			8398652514106806347,
+			11069112711939986896,
+			9732488227085561369,
+			18076754337204438535,
+			17155407358725346236,
 		},
-		gFp5.Element{
-			g.FromUint64(14569490467507212064),
-			g.FromUint64(2707063505563578676),
-			g.FromUint64(7506743487465742335),
-			g.FromUint64(12569771346154554175),
-			g.FromUint64(4305083698940175790),
+		QuinticExtension{
+			14569490467507212064,
+			2707063505563578676,
+			7506743487465742335,
+			12569771346154554175,
+			4305083698940175790,
 		},
-		gFp5.Element{
-			g.FromUint64(17529153479246803593),
-			g.FromUint64(1743712677205511695),
-			g.FromUint64(4834285972617397460),
-			g.FromUint64(5486672566342530358),
-			g.FromUint64(7254989001695704129),
+		QuinticExtension{
+			17529153479246803593,
+			1743712677205511695,
+			4834285972617397460,
+			5486672566342530358,
+			7254989001695704129,
 		},
 	}
 	ks := []curve.ECgFp5Scalar{
@@ -166,9 +207,9 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	sk := curve.SampleScalar(nil) // Sample a secret key
-	msg := g.RandArray(244)       // Random message of 244 field elements (big)
-	hashedMsg := p2.HashToQuinticExtension(msg)
+	sk := curve.SampleScalar(nil)                   // Sample a secret key
+	msg := g.Uint64ArrayFromArray(g.RandArray(244)) // Random message of 244 field elements (big)
+	hashedMsg := HashToQuinticExtension(msg)
 
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)
 	sig2, _ := SigFromBytes(sig.ToBytes())

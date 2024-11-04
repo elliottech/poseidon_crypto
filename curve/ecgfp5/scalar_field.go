@@ -287,10 +287,8 @@ func BigIntFromArray(arr [5]uint64) *big.Int {
 }
 
 func FromNonCanonicalBigInt(val *big.Int) ECgFp5Scalar {
-	limbs := val.Mod(val, ORDER).Bits()
-	if len(limbs) < 5 {
-		limbs = append(limbs, 0)
-	}
+	limbs := new(big.Int).Mod(val, ORDER).Bits()
+	limbs = append(limbs, make([]big.Word, 5-len(limbs))...)
 	return ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])}
 }
 

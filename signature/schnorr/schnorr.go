@@ -17,9 +17,11 @@ type Signature struct {
 type NumericalSignature [10]uint64
 
 func (s Signature) ToNumericalSignature() NumericalSignature {
+	sS := s.S.Canonicalize()
+	sE := s.E.Canonicalize()
 	return NumericalSignature{
-		s.S[0], s.S[1], s.S[2], s.S[3], s.S[4],
-		s.E[0], s.E[1], s.E[2], s.E[3], s.E[4],
+		sS[0], sS[1], sS[2], sS[3], sS[4],
+		sE[0], sE[1], sE[2], sE[3], sE[4],
 	}
 }
 

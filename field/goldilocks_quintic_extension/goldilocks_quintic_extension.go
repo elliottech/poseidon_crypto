@@ -21,6 +21,8 @@ var (
 	FP5_TWO  = FromF(g.FromUint64(2))
 
 	FP5_W        = g.FromUint64(3)
+	DOUBLE_FP5_W = g.Add(FP5_W, FP5_W)
+	THREE        = g.FromUint64(3)
 	FP5_DTH_ROOT = g.FromUint64(1041288259238279555)
 )
 
@@ -98,7 +100,7 @@ func Equals(a, b Element) bool {
 	return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3] && a[4] == b[4]
 }
 
-func IsZero(e Element) bool {
+func IsZero(e *Element) bool {
 	return e[0].IsZero() && e[1].IsZero() && e[2].IsZero() && e[3].IsZero() && e[4].IsZero()
 }
 
@@ -126,82 +128,100 @@ func Neg(e Element) Element {
 
 func Add(a, b Element) Element {
 	return Element{
-		g.Add(a[0], b[0]),
-		g.Add(a[1], b[1]),
-		g.Add(a[2], b[2]),
-		g.Add(a[3], b[3]),
-		g.Add(a[4], b[4]),
+		*a[0].Add(&a[0], &b[0]),
+		*a[1].Add(&a[1], &b[1]),
+		*a[2].Add(&a[2], &b[2]),
+		*a[3].Add(&a[3], &b[3]),
+		*a[4].Add(&a[4], &b[4]),
 	}
 }
 
 func Sub(a, b Element) Element {
 	return Element{
-		g.Sub(&a[0], &b[0]),
-		g.Sub(&a[1], &b[1]),
-		g.Sub(&a[2], &b[2]),
-		g.Sub(&a[3], &b[3]),
-		g.Sub(&a[4], &b[4]),
+		*a[0].Sub(&a[0], &b[0]),
+		*a[1].Sub(&a[1], &b[1]),
+		*a[2].Sub(&a[2], &b[2]),
+		*a[3].Sub(&a[3], &b[3]),
+		*a[4].Sub(&a[4], &b[4]),
 	}
 }
 
-func Mul(a, b Element) Element {
-	w := FP5_W
+func Mul(a, b *Element) Element {
 
+	// Optimize for the pattern in current Mul:
+	// c0 = a0b0 + w(a1b4 + a2b3 + a3b2 + a4b1)
+	// c1 = a0b1 + a1b0 + w(a2b4 + a3b3 + a4b2)
+	// c2 = a0b2 + a1b1 + a2b0 + w(a3b4 + a4b3)
+	// c3 = a0b3 + a1b2 + a2b1 + a3b0 + w*a4b4
+	// c4 = a0b4 + a1b3 + a2b2 + a3b1 + a4b0
+
+	// Pre-compute repeated products
 	a0b0 := g.Mul(&a[0], &b[0])
-	a1b4 := g.Mul(&a[1], &b[4])
-	a2b3 := g.Mul(&a[2], &b[3])
-	a3b2 := g.Mul(&a[3], &b[2])
-	a4b1 := g.Mul(&a[4], &b[1])
-	added := g.Add(a1b4, a2b3, a3b2, a4b1)
-	muld := g.Mul(&w, &added)
-	c0 := g.Add(a0b0, muld)
-
 	a0b1 := g.Mul(&a[0], &b[1])
-	a1b0 := g.Mul(&a[1], &b[0])
-	a2b4 := g.Mul(&a[2], &b[4])
-	a3b3 := g.Mul(&a[3], &b[3])
-	a4b2 := g.Mul(&a[4], &b[2])
-	added = g.Add(a2b4, a3b3, a4b2)
-	muld = g.Mul(&w, &added)
-	c1 := g.Add(a0b1, a1b0, muld)
-
 	a0b2 := g.Mul(&a[0], &b[2])
-	a1b1 := g.Mul(&a[1], &b[1])
-	a2b0 := g.Mul(&a[2], &b[0])
-	a3b4 := g.Mul(&a[3], &b[4])
-	a4b3 := g.Mul(&a[4], &b[3])
-	added = g.Add(a3b4, a4b3)
-	muld = g.Mul(&w, &added)
-	c2 := g.Add(a0b2, a1b1, a2b0, muld)
-
 	a0b3 := g.Mul(&a[0], &b[3])
-	a1b2 := g.Mul(&a[1], &b[2])
-	a2b1 := g.Mul(&a[2], &b[1])
-	a3b0 := g.Mul(&a[3], &b[0])
-	a4b4 := g.Mul(&a[4], &b[4])
-	muld = g.Mul(&w, &a4b4)
-	c3 := g.Add(a0b3, a1b2, a2b1, a3b0, muld)
-
 	a0b4 := g.Mul(&a[0], &b[4])
+
+	a1b0 := g.Mul(&a[1], &b[0])
+	a1b1 := g.Mul(&a[1], &b[1])
+	a1b2 := g.Mul(&a[1], &b[2])
 	a1b3 := g.Mul(&a[1], &b[3])
+	a1b4 := g.Mul(&a[1], &b[4])
+
+	a2b0 := g.Mul(&a[2], &b[0])
+	a2b1 := g.Mul(&a[2], &b[1])
 	a2b2 := g.Mul(&a[2], &b[2])
+	a2b3 := g.Mul(&a[2], &b[3])
+	a2b4 := g.Mul(&a[2], &b[4])
+
+	a3b0 := g.Mul(&a[3], &b[0])
 	a3b1 := g.Mul(&a[3], &b[1])
+	a3b2 := g.Mul(&a[3], &b[2])
+	a3b3 := g.Mul(&a[3], &b[3])
+	a3b4 := g.Mul(&a[3], &b[4])
+
 	a4b0 := g.Mul(&a[4], &b[0])
-	c4 := g.Add(a0b4, a1b3, a2b2, a3b1, a4b0)
+	a4b1 := g.Mul(&a[4], &b[1])
+	a4b2 := g.Mul(&a[4], &b[2])
+	a4b3 := g.Mul(&a[4], &b[3])
+	a4b4 := g.Mul(&a[4], &b[4])
+
+	// c0 = a0b0 + w(a1b4 + a2b3 + a3b2 + a4b1)
+	sum1 := g.AddFour(a1b4, a2b3, a3b2, a4b1)
+	wsum1 := g.Mul(&FP5_W, &sum1)
+	c0 := g.Add(a0b0, wsum1)
+
+	// c1 = a0b1 + a1b0 + w(a2b4 + a3b3 + a4b2)
+	sum2 := g.AddThree(a2b4, a3b3, a4b2)
+	wsum2 := g.Mul(&FP5_W, &sum2)
+	c1 := g.AddThree(a0b1, a1b0, wsum2)
+
+	// c2 = a0b2 + a1b1 + a2b0 + w(a3b4 + a4b3)
+	sum3 := g.Add(a3b4, a4b3)
+	wsum3 := g.Mul(&FP5_W, &sum3)
+	c2 := g.AddFour(a0b2, a1b1, a2b0, wsum3)
+
+	// c3 = a0b3 + a1b2 + a2b1 + a3b0 + w*a4b4
+	wsum4 := g.Mul(&FP5_W, &a4b4)
+	c3 := g.AddFive(a0b3, a1b2, a2b1, a3b0, wsum4)
+
+	// c4 = a0b4 + a1b3 + a2b2 + a3b1 + a4b0
+	c4 := g.AddFive(a0b4, a1b3, a2b2, a3b1, a4b0)
 
 	return Element{c0, c1, c2, c3, c4}
 }
 
-func Div(a, b Element) Element {
+func Div(a, b *Element) Element {
 	bInv := InverseOrZero(b)
-	if IsZero(bInv) {
+	if IsZero(&bInv) {
 		panic("division by zero")
 	}
-	return Mul(a, bInv)
+	return Mul(a, &bInv)
 }
 
 func ExpPowerOf2(x Element, power int) Element {
-	res := Element{x[0], x[1], x[2], x[3], x[4]}
+	// res := Element{x[0], x[1], x[2], x[3], x[4]}
+	res := x
 	for i := 0; i < power; i++ {
 		res = Square(res)
 	}
@@ -209,63 +229,68 @@ func ExpPowerOf2(x Element, power int) Element {
 }
 
 func Square(a Element) Element {
-	w := FP5_W
-	double_w := g.Add(w, w)
 
 	a0s := g.Mul(&a[0], &a[0])
 	a1a4 := g.Mul(&a[1], &a[4])
 	a2a3 := g.Mul(&a[2], &a[3])
 	added := g.Add(a1a4, a2a3)
-	muld := g.Mul(&double_w, &added)
+	muld := g.Mul(&DOUBLE_FP5_W, &added)
 	c0 := g.Add(a0s, muld)
 
 	a0Double := g.Add(a[0], a[0])
 	a0Doublea1 := g.Mul(&a0Double, &a[1])
-	a2a4DoubleW := g.Mul(&a[2], &a[4], &double_w)
-	a3a3w := g.Mul(&a[3], &a[3], &w)
-	c1 := g.Add(a0Doublea1, a2a4DoubleW, a3a3w)
+	a2a4DoubleW := g.MulThree(&a[2], &a[4], &DOUBLE_FP5_W)
+	a3a3w := g.MulThree(&a[3], &a[3], &FP5_W)
+	c1 := g.AddThree(a0Doublea1, a2a4DoubleW, a3a3w)
 
 	a0Doublea2 := g.Mul(&a0Double, &a[2])
 	a1Square := g.Mul(&a[1], &a[1])
-	a4a3DoubleW := g.Mul(&a[4], &a[3], &double_w)
-	c2 := g.Add(a0Doublea2, a1Square, a4a3DoubleW)
+	a4a3DoubleW := g.MulThree(&a[4], &a[3], &DOUBLE_FP5_W)
+	c2 := g.AddThree(a0Doublea2, a1Square, a4a3DoubleW)
 
 	a1Double := g.Add(a[1], a[1])
 	a0Doublea3 := g.Mul(&a0Double, &a[3])
 	a1Doublea2 := g.Mul(&a1Double, &a[2])
-	a4SquareW := g.Mul(&a[4], &a[4], &w)
-	c3 := g.Add(a0Doublea3, a1Doublea2, a4SquareW)
+	a4SquareW := g.MulThree(&a[4], &a[4], &FP5_W)
+	c3 := g.AddThree(a0Doublea3, a1Doublea2, a4SquareW)
 
 	a0Doublea4 := g.Mul(&a0Double, &a[4])
 	a1Doublea3 := g.Mul(&a1Double, &a[3])
 	a2Square := g.Mul(&a[2], &a[2])
-	c4 := g.Add(a0Doublea4, a1Doublea3, a2Square)
+	c4 := g.AddThree(a0Doublea4, a1Doublea3, a2Square)
 
 	return Element{c0, c1, c2, c3, c4}
 }
 
 func Triple(a Element) Element {
-	three := g.FromUint64(3)
+	inner := make([]g.Element, 5)
+	for i := 0; i < 5; i++ {
+		inner[i] = *a[i].Mul(&a[i], &THREE)
+	}
 	return Element{
-		g.Mul(&a[0], &three),
-		g.Mul(&a[1], &three),
-		g.Mul(&a[2], &three),
-		g.Mul(&a[3], &three),
-		g.Mul(&a[4], &three),
+		inner[0],
+		inner[1],
+		inner[2],
+		inner[3],
+		inner[4],
 	}
 }
 
 func Sqrt(x Element) (Element, bool) {
 	v := ExpPowerOf2(x, 31)
-	d := Mul(Mul(x, ExpPowerOf2(v, 32)), InverseOrZero(v))
-	e := Frobenius(Mul(d, RepeatedFrobenius(d, 2)))
+	v_32 := ExpPowerOf2(v, 32)
+	xv_32 := Mul(&x, &v_32)
+	v_inv := InverseOrZero(&v)
+	d := Mul(&xv_32, &v_inv)
+	rf_d := RepeatedFrobenius(d, 2)
+	e := Frobenius(Mul(&d, &rf_d))
 	_f := Square(e)
 
 	x1f4 := g.Mul(&x[1], &_f[4])
 	x2f3 := g.Mul(&x[2], &_f[3])
 	x3f2 := g.Mul(&x[3], &_f[2])
 	x4f1 := g.Mul(&x[4], &_f[1])
-	added := g.Add(x1f4, x2f3, x3f2, x4f1)
+	added := g.AddFour(x1f4, x2f3, x3f2, x4f1)
 	three := g.FromUint64(3)
 	muld := g.Mul(&three, &added)
 	x0f0 := g.Mul(&x[0], &_f[0])
@@ -275,10 +300,10 @@ func Sqrt(x Element) (Element, bool) {
 		return Element{}, false
 	}
 
-	eInv := InverseOrZero(e)
+	eInv := InverseOrZero(&e)
 	sFp5 := FromF(*s)
 
-	return Mul(sFp5, eInv), true
+	return Mul(&sFp5, &eInv), true
 }
 
 func Sgn0(x Element) bool {
@@ -319,21 +344,23 @@ func Double(a Element) Element {
 	return Add(a, a)
 }
 
-func InverseOrZero(a Element) Element {
+func InverseOrZero(a *Element) Element {
 	if IsZero(a) {
 		return FP5_ZERO
 	}
 
-	d := Frobenius(a)
-	e := Mul(d, Frobenius(d))
-	f := Mul(e, RepeatedFrobenius(e, 2))
+	d := Frobenius(*a)
+	f_d := Frobenius(d)
+	e := Mul(&d, &f_d)
+	rf_e := RepeatedFrobenius(e, 2)
+	f := Mul(&e, &rf_e)
 
 	a0b0 := g.Mul(&a[0], &f[0])
 	a1b4 := g.Mul(&a[1], &f[4])
 	a2b3 := g.Mul(&a[2], &f[3])
 	a3b2 := g.Mul(&a[3], &f[2])
 	a4b1 := g.Mul(&a[4], &f[1])
-	added := g.Add(a1b4, a2b3, a3b2, a4b1)
+	added := g.AddFour(a1b4, a2b3, a3b2, a4b1)
 	muld := g.Mul(&FP5_W, &added)
 	g := g.Add(a0b0, muld)
 
@@ -367,10 +394,11 @@ func Legendre(x Element) g.Element {
 	frob1 := Frobenius(x)
 	frob2 := Frobenius(frob1)
 
-	frob1TimesFrob2 := Mul(frob1, frob2)
+	frob1TimesFrob2 := Mul(&frob1, &frob2)
 	frob2Frob1TimesFrob2 := RepeatedFrobenius(frob1TimesFrob2, 2)
 
-	xrExt := Mul(Mul(x, frob1TimesFrob2), frob2Frob1TimesFrob2)
+	xfrob1TimesFrob2 := Mul(&x, &frob1TimesFrob2)
+	xrExt := Mul(&xfrob1TimesFrob2, &frob2Frob1TimesFrob2)
 	xr := g.FromUint64(xrExt[0].Uint64())
 
 	xr31 := xr.Exp(xr, new(big.Int).SetUint64(1<<31))

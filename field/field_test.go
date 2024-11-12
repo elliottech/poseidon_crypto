@@ -2,7 +2,9 @@ package field
 
 import (
 	"encoding/binary"
+	"fmt"
 	"testing"
+	"time"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -72,7 +74,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		}
 	}
 
-	mul := gFp5.Mul(val1, val2)
+	mul := gFp5.Mul(&val1, &val2)
 	expectedMul := [5]uint64{12801331769143413385, 14031114708135177824, 4192851210753422088, 14031114723597060086, 4193451712464626164}
 	for i := 0; i < 5; i++ {
 		if mul[i] != g.FromUint64(expectedMul[i]) {
@@ -128,7 +130,7 @@ func TestTryInverse(t *testing.T) {
 		g.FromUint64(0x8877665544332211),
 		g.FromUint64(0xAABBCCDDEEFF0011),
 	}
-	result := gFp5.InverseOrZero(val)
+	result := gFp5.InverseOrZero(&val)
 
 	// Expected values
 	expected := [5]uint64{
@@ -246,9 +248,37 @@ func TestLegendre(t *testing.T) {
 
 	// Test zero again
 	x := gFp5.FP5_ZERO
-	square := gFp5.Mul(x, x)
+	square := gFp5.Mul(&x, &x)
 	legendreSym := gFp5.Legendre(square)
 	if !legendreSym.IsZero() {
 		t.Fatalf("Expected Legendre symbol of zero to be zero")
 	}
+}
+
+func TestPerformance(t *testing.T) {
+	n := 1_000_000
+	start := time.Now()
+	elements := g.RandArray(n)
+	since := time.Since(start)
+	fmt.Printf("`elements := g.RandArray(n)` took %s nanoseconds\n", FormatWithUnderscores(since.Nanoseconds()))
+
+	samples := g.RandArray(10)
+
+	start = time.Now()
+	for i := 0; i < n; i++ {
+		elements[i] = g.Add(elements[i], samples[0])
+		elements[i] = g.Add(elements[i], samples[1])
+		elements[i] = g.Add(elements[i], samples[2])
+
+		elements[i] = g.Neg(elements[i])
+		elements[i] = g.Add(elements[i], samples[3])
+
+		elements[i] = g.Mul(&elements[i], &samples[4])
+
+		elements[i] = g.Mul(&elements[i], &samples[5])
+
+		elements[i] = g.Mul(&elements[i], &samples[6])
+	}
+	since = time.Since(start)
+	fmt.Printf("`for loop` took %s nanosecond\n", FormatWithUnderscores(since.Nanoseconds()))
 }

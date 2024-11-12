@@ -2,8 +2,10 @@ package signature
 
 import (
 	"fmt"
+	"time"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
+	"github.com/elliottech/poseidon_crypto/field"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
@@ -116,7 +118,10 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 		return fmt.Errorf("failed to convert signature bytes to Schnorr signature: %w", err)
 	}
 
+	start := time.Now()
 	valid := IsSchnorrSignatureValid(&pk, &hashedMsgElem, s)
+	since := time.Since(start)
+	fmt.Printf("`IsSchnorrSignatureValid()` took %s nanosecond\n", field.FormatWithUnderscores(since.Nanoseconds()))
 	if !valid {
 		return fmt.Errorf("signature is invalid")
 	}
@@ -130,7 +135,9 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 		return false
 	}
 
-	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+	rvDecoded := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E) // r_v = s*G + e*pk
+
+	rV := rvDecoded.Encode() // r_v = s*G + e*pk
 
 	preImage := make([]g.Element, 5+5)
 	for i, elem := range rV.ToBasefieldArray() {
@@ -139,6 +146,7 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 	for i, elem := range hashedMsg.ToBasefieldArray() {
 		preImage[i+5] = elem
 	}
+
 	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 
 	return eV.Equals(&sig.E) // e_v == e

@@ -12,6 +12,11 @@ type Element = g.Element
 
 const Bytes = 8
 
+var (
+	G_ZERO = g.NewElement(0)
+	G_ONE  = g.NewElement(1)
+)
+
 func reverseBytes(b []byte) []byte {
 	res := make([]byte, len(b))
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
@@ -61,7 +66,7 @@ func ToLittleEndianBytes(e ...Element) []byte {
 }
 
 func FromCanonicalLittleEndianBytes(in []byte) (*Element, error) {
-	elem := g.NewElement(0)
+	elem := G_ZERO
 	err := elem.SetBytesCanonical(reverseBytes(in))
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert bytes to field element: %w", err)
@@ -97,13 +102,13 @@ func FromInt64Abs(value int64) Element {
 }
 
 func FromInt64(value int64) Element {
-	elem := g.NewElement(0)
+	elem := G_ZERO
 	elem.SetInt64(value)
 	return elem
 }
 
 func FromUint64(value uint64) Element {
-	elem := g.NewElement(0)
+	elem := G_ZERO
 	elem.SetUint64(value)
 	return elem
 }
@@ -129,7 +134,7 @@ func One() Element {
 }
 
 func Neg(e Element) Element {
-	res := g.NewElement(0)
+	res := G_ZERO
 	res.Neg(&e)
 	return res
 }
@@ -140,7 +145,7 @@ func NegOne() *Element {
 }
 
 func Sample() Element {
-	elem := g.NewElement(0)
+	elem := G_ZERO
 	elem.SetRandom()
 	return elem
 }
@@ -153,30 +158,53 @@ func RandArray(count int) []Element {
 	return ret
 }
 
-func Add(elems ...Element) Element {
-	res := g.NewElement(0)
-	for _, elem := range elems {
-		res.Add(&res, &elem)
-	}
-	return res
+func Add(a, b Element) Element {
+	a.Add(&a, &b)
+	return a
+}
+
+func AddThree(a, b, c Element) Element {
+	a.Add(&a, &b)
+	a.Add(&a, &c)
+	return a
+}
+
+func AddFour(a, b, c, d Element) Element {
+	a.Add(&a, &b)
+	c.Add(&c, &d)
+	a.Add(&a, &c)
+	return a
+}
+
+func AddFive(a, b, c, d, e Element) Element {
+	a.Add(&a, &b)
+	c.Add(&c, &d)
+	a.Add(&a, &c)
+	a.Add(&a, &e)
+	return a
 }
 
 func Sub(a, b *Element) Element {
-	res := g.NewElement(0)
+	res := G_ZERO
 	res.Sub(a, b)
 	return res
 }
 
-func Mul(elems ...*Element) Element {
-	res := g.NewElement(1)
-	for _, elem := range elems {
-		res.Mul(&res, elem)
-	}
+func MulThree(a, b, c *Element) Element {
+	res := G_ONE
+	res.Mul(a, b)
+	res.Mul(&res, c)
+	return res
+}
+
+func Mul(a, b *Element) Element {
+	res := G_ONE
+	res.Mul(a, b)
 	return res
 }
 
 func Sqrt(elem *Element) *Element {
-	elemCopy := DeepCopy(elem)
+	elemCopy := *elem
 	return elemCopy.Sqrt(&elemCopy)
 }
 
@@ -188,8 +216,4 @@ func Powers(e *Element, count int) []Element {
 		ret[i].Mul(&ret[i-1], e)
 	}
 	return ret
-}
-
-func DeepCopy(source *Element) Element {
-	return Element{source[0]}
 }

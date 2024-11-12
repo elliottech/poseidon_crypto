@@ -1,29 +1,28 @@
 package poseidon2
 
 import (
-	"fmt"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
-func TestGetNilTreeLevels(t *testing.T) {
-	res := []HashOut{EmptyHashOut()}
-	for i := 1; i < 128; i++ {
-		res = append(res, HashTwoToOne(res[i-1], res[i-1]))
-	}
+// func TestGetNilTreeLevels(t *testing.T) {
+// 	res := []HashOut{EmptyHashOut()}
+// 	for i := 1; i < 128; i++ {
+// 		res = append(res, HashTwoToOne(res[i-1], res[i-1]))
+// 	}
 
-	fmt.Println()
-	for i := 0; i < len(res); i++ {
-		fmt.Printf("Level %d: ", i)
-		leBytes := res[i].ToLittleEndianBytes()
-		for j := 0; j < len(leBytes); j++ {
-			fmt.Printf("%d ", leBytes[j])
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-}
+// 	fmt.Println()
+// 	for i := 0; i < len(res); i++ {
+// 		fmt.Printf("Level %d: ", i)
+// 		leBytes := res[i].ToLittleEndianBytes()
+// 		for j := 0; j < len(leBytes); j++ {
+// 			fmt.Printf("%d ", leBytes[j])
+// 		}
+// 		fmt.Println()
+// 	}
+// 	fmt.Println()
+// }
 
 func TestPermute(t *testing.T) {
 	inp := [WIDTH]g.Element{

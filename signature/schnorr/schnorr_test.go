@@ -57,6 +57,49 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 
 }
 
+func TestSchnorrSignAndVerify2(t *testing.T) {
+	sk := curve.ECgFp5Scalar{
+		123436789012345,
+		423456789012345,
+		623456789012345,
+		323456789012345,
+		987654321098765,
+	}
+	msg := []g.Element{
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(1234567890),
+		g.FromUint64(9876543210),
+	}
+	hashedMsg := p2.HashToQuinticExtension(msg)
+
+	sig := Signature{
+		S: curve.ECgFp5Scalar{
+			967731567622134384,
+			14773957602371314426,
+			5625157264196176680,
+			4777447573816832589,
+			2786434001343470261,
+		},
+		E: curve.ECgFp5Scalar{
+			4587639336484623223,
+			3617268809678375214,
+			7648030453022535951,
+			12524273874744280663,
+			5087864368241658443,
+		},
+	}
+	pk := SchnorrPkFromSk(sk)
+	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig) {
+		t.Fatalf("Signature is invalid")
+	}
+}
+
 func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 	sks := []curve.ECgFp5Scalar{
 		curve.ECgFp5Scalar{

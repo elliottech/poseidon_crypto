@@ -15,7 +15,6 @@ func TestGetNilTreeLevels(t *testing.T) {
 
 	fmt.Println()
 	for i := 0; i < len(res); i++ {
-		fmt.Printf("Level %d: ", i)
 		leBytes := res[i].ToLittleEndianBytes()
 		for j := 0; j < len(leBytes); j++ {
 			fmt.Printf("%d ", leBytes[j])
@@ -155,7 +154,7 @@ func TestDigest(t *testing.T) {
 
 func TestHashNToHashNoPad(t *testing.T) {
 
-	res := HashNToHashNoPad([]g.Element{
+	res := HashNToHashNoPadPureGo([]g.Element{
 		g.FromUint64(11295517158488612626),
 		g.FromUint64(10669470463693797151),
 		g.FromUint64(17232114065640264171),
@@ -217,7 +216,7 @@ func TestHashTwoToOne(t *testing.T) {
 
 func TestHashNToOne(t *testing.T) {
 
-	hashIns := []HashOut{HashNToHashNoPad([]g.Element{
+	hashIns := []HashOut{HashNToHashNoPadPureGo([]g.Element{
 		g.FromUint64(18231458557829081414),
 		g.FromUint64(16449039301999856654),
 		g.FromUint64(14758090268883299362),

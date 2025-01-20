@@ -3,7 +3,6 @@ package poseidon2
 import (
 	"fmt"
 	"hash"
-	"math/big"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -109,84 +108,79 @@ func fullRounds(state *[WIDTH]g.Element, start int) {
 
 func partialRounds(state *[WIDTH]g.Element) {
 	for r := 0; r < ROUNDS_P; r++ {
-		constant := g.FromUint64(INTERNAL_CONSTANTS[r])
-		constant.Add(&state[0], &constant)
-		state[0] = sboxP(&constant)
+		addRCI(state, r)
+		sboxP(0, state)
 		internalLinearLayer(state)
 	}
 }
 
-func externalLinearLayer(state *[WIDTH]g.Element) {
-	for i := 0; i < WIDTH; i += 4 {
-		window := [4]g.Element{state[i], state[i+1], state[i+2], state[i+3]}
-		applyMat4(&window)
-		copy(state[i:i+4], window[:])
+func externalLinearLayer(s *[WIDTH]g.Element) {
+	for i := 0; i < 3; i++ { // 4 size window
+		var t0, t1, t2, t3, t4, t5, t6 g.Element
+		t0.Add(&s[4*i], &s[4*i+1])   // s0+s1
+		t1.Add(&s[4*i+2], &s[4*i+3]) // s2+s3
+		t2.Add(&t0, &t1)             // t0+t1 = s0+s1+s2+s3
+		t3.Add(&t2, &s[4*i+1])       // t2+s1 = s0+2s1+s2+s3
+		t4.Add(&t2, &s[4*i+3])       // t2+s3 = s0+s1+s2+2s3
+		t5.Double(&s[4*i])           // 2s0
+		t6.Double(&s[4*i+2])         // 2s2
+		s[4*i].Add(&t3, &t0)
+		s[4*i+1].Add(&t6, &t3)
+		s[4*i+2].Add(&t1, &t4)
+		s[4*i+3].Add(&t5, &t4)
 	}
+
 	sums := [4]g.Element{}
 	for k := 0; k < 4; k++ {
 		for j := 0; j < WIDTH; j += 4 {
-			sums[k].Add(&sums[k], &state[j+k])
+			sums[k].Add(&sums[k], &s[j+k])
 		}
 	}
 	for i := 0; i < WIDTH; i++ {
-		state[i].Add(&state[i], &sums[i%4])
+		s[i].Add(&s[i], &sums[i%4])
 	}
 }
 
 func internalLinearLayer(state *[WIDTH]g.Element) {
-	sum := g.FromUint64(0)
-	for _, s := range state {
-		sum.Add(&sum, &s)
+	var sum g.Element
+	sum.Set(&state[0])
+	for i := 1; i < WIDTH; i++ {
+		sum.Add(&sum, &state[i])
 	}
 	for i := 0; i < WIDTH; i++ {
-		constant := g.FromUint64(MATRIX_DIAG_12_U64[i])
-		constant.Mul(&state[i], &constant)
-		state[i].Add(&constant, &sum)
+		state[i].Mul(&state[i], &MATRIX_DIAG_12_U64[i]).
+			Add(&state[i], &sum)
 	}
 }
 
 func addRC(state *[WIDTH]g.Element, externalRound int) {
 	for i := 0; i < WIDTH; i++ {
-		constant := g.FromUint64(EXTERNAL_CONSTANTS[externalRound][i])
-		state[i].Add(&state[i], &constant)
+		state[i].Add(&state[i], &EXTERNAL_CONSTANTS[externalRound][i])
 	}
+}
+
+func addRCI(state *[WIDTH]g.Element, round int) {
+	state[0].Add(&state[0], &INTERNAL_CONSTANTS[round])
 }
 
 func sbox(state *[WIDTH]g.Element) {
 	for i := range state {
-		state[i] = sboxP(&state[i])
+		sboxP(i, state)
 	}
 }
 
-func sboxP(a *g.Element) g.Element {
-	res := g.FromUint64(0)
-	return *res.Exp(*a, big.NewInt(D))
-}
+func sboxP(index int, state *[WIDTH]g.Element) {
+	var tmp g.Element
+	tmp.Set(&state[index])
 
-func applyMat4(x *[4]g.Element) {
-	t01 := g.FromUint64(0)
-	t01.Add(&x[0], &x[1])
+	var tmpSquare g.Element
+	tmpSquare.Square(&tmp)
 
-	t23 := g.FromUint64(0)
-	t23.Add(&x[2], &x[3])
+	var tmpSixth g.Element
+	tmpSixth.Mul(&tmpSquare, &tmp)
+	tmpSixth.Square(&tmpSixth)
 
-	t0123 := g.FromUint64(0)
-	t0123.Add(&t01, &t23)
-
-	t01123 := g.FromUint64(0)
-	t01123.Add(&t0123, &x[1])
-
-	t01233 := g.FromUint64(0)
-	t01233.Add(&t0123, &x[3])
-
-	x_0_sq := g.FromUint64(0)
-	x_0_sq.Double(&x[0])
-	x[3].Add(&t01233, &x_0_sq)
-	x_2_sq := g.FromUint64(0)
-	x_2_sq.Double(&x[2])
-	x[1].Add(&t01123, &x_2_sq)
-	x[0].Add(&t01123, &t01)
-	x[2].Add(&t01233, &t23)
+	state[index].Mul(&tmpSixth, &tmp)
 }
 
 const BlockSize = g.Bytes // BlockSize size that poseidon consumes

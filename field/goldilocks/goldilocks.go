@@ -12,6 +12,10 @@ type Element = g.Element
 
 const Bytes = 8
 
+func NewElement(value uint64) Element {
+	return g.NewElement(value)
+}
+
 func reverseBytes(b []byte) []byte {
 	res := make([]byte, len(b))
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {

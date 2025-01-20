@@ -2,7 +2,8 @@ package link
 
 /*
 #cgo darwin LDFLAGS: ./link/osx.a -ldl
-#cgo linux LDFLAGS: ./link/linux.a -ldl
+#cgo linux,amd64 LDFLAGS: ./link/linux_amd64.a -ldl
+#cgo linux,arm64 LDFLAGS: ./link/linux_arm64.a -ldl
 #include "./lib.h"
 */
 import "C"

@@ -14,32 +14,8 @@ void schnorr_pk_from_sk(const uint64_t *input, uint64_t *dst);
 */
 import "C"
 import (
-	"embed"
-	"os"
-	"path/filepath"
 	"unsafe"
 )
-
-//go:embed osx.a linux_amd64.a
-var embeddedFiles embed.FS
-
-func init() {
-	writeEmbeddedFiles()
-}
-
-func writeEmbeddedFiles() {
-	files := []string{"osx.a", "linux_amd64.a"}
-	for _, file := range files {
-		data, err := embeddedFiles.ReadFile(file)
-		if err != nil {
-			panic(err)
-		}
-		err = os.WriteFile(filepath.Join(os.TempDir(), file), data, 0644)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
 
 func HashNToHashNoPad(input []uint64) [4]uint64 {
 	inputLen := len(input)

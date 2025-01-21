@@ -59,6 +59,7 @@ func TestPermute(t *testing.T) {
 
 	for i := 0; i < WIDTH; i++ {
 		if inp[i] != expected[i] {
+			t.Logf("Expected: %d, got: %d\n", expected[i], inp[i])
 			t.Fail()
 		}
 	}

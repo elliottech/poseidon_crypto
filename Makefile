@@ -1,8 +1,7 @@
-# Run on osx
-.PHONY: static-link-osx
-static-link-osx:
+.PHONY: static-link
+static-link:
 	@cd link/bindgen; cargo build --release;
-	@cp link/bindgen/target/release/libbindgen.a link/osx.a
+	@cp link/bindgen/target/release/libbindgen.a link/lib.a
 	@rm -rf link/bindgen/target
 
 # Run on osx

@@ -69,11 +69,11 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
-	for i, elem := range r.ToBasefieldArray() {
+	preImage := make([]g.GoldilocksField, 5+5)
+	for i, elem := range r {
 		preImage[i] = elem
 	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
+	for i, elem := range hashedMsg {
 		preImage[i+5] = elem
 	}
 
@@ -87,11 +87,11 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
-	for i, elem := range r.ToBasefieldArray() {
+	preImage := make([]g.GoldilocksField, 5+5)
+	for i, elem := range r {
 		preImage[i] = elem
 	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
+	for i, elem := range hashedMsg {
 		preImage[i+5] = elem
 	}
 
@@ -132,11 +132,11 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 
 	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
 
-	preImage := make([]g.Element, 5+5)
-	for i, elem := range rV.ToBasefieldArray() {
+	preImage := make([]g.GoldilocksField, 5+5)
+	for i, elem := range rV {
 		preImage[i] = elem
 	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
+	for i, elem := range hashedMsg {
 		preImage[i+5] = elem
 	}
 	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))

@@ -15,7 +15,7 @@ const (
 
 var (
 	// Generated randomly for ROUNDS_F
-	EXTERNAL_CONSTANTS = [ROUNDS_F][WIDTH]g.Element{
+	EXTERNAL_CONSTANTS = [ROUNDS_F][WIDTH]g.GoldilocksField{
 		{
 			g.NewElement(15492826721047263190),
 			g.NewElement(11728330187201910315),
@@ -131,7 +131,7 @@ var (
 	}
 
 	// Generated randomly for ROUNDS_P
-	INTERNAL_CONSTANTS = [ROUNDS_P]g.Element{
+	INTERNAL_CONSTANTS = [ROUNDS_P]g.GoldilocksField{
 		g.NewElement(11921381764981422944),
 		g.NewElement(10318423381711320787),
 		g.NewElement(8291411502347000766),
@@ -157,7 +157,7 @@ var (
 	}
 
 	// Taken from Plonk3 Poseidon2 implementation. https://github.com/Plonky3/Plonky3/blob/eeb4e37b20127c4daa871b2bad0df30a7c7380db/goldilocks/src/poseidon2.rs#L28
-	MATRIX_DIAG_12_U64 = [WIDTH]g.Element{
+	MATRIX_DIAG_12_U64 = [WIDTH]g.GoldilocksField{
 		g.NewElement(0xc3b6c08e23ba9300),
 		g.NewElement(0xd84b5de94a324fb6),
 		g.NewElement(0x0d0c371c5b35b84f),

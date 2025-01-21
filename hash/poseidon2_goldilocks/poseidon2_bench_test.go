@@ -34,13 +34,46 @@ func TestPoseidon2Bench(t *testing.T) {
 	time.Sleep(sleepTime)
 	start = time.Now()
 	for _, input := range inputs {
-		HashNToHashNoPad(input)
+		HashNToHashNoPadFFI(input)
 	}
 	duration = time.Since(start)
 	t.Logf("HashNToHashNoPad took %s for %d inputs", duration, totalInputs)
 }
 
-func readBenchInputs(filename string) ([][]g.Element, error) {
+func BenchmarkPoseidon2(b *testing.B) {
+	inputs, err := readBenchInputs("bench_vector")
+	// totalInputs := len(inputs)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	input := inputs[0]
+
+	b.Run(fmt.Sprintf("HashNToHashNoPadPureGo"), func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = HashNToHashNoPadPureGo(input)
+		}
+	})
+	// duration := time.Since(start)
+	// t.Logf("HashNToHashNoPadPureGo took %s for %d inputs", duration, totalInputs)
+
+	b.Run(fmt.Sprintf("HashNToHashNoPad"), func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = HashNToHashNoPadFFI(input)
+		}
+	})
+	// // Rust link with uint64<->goldilocks conversion included
+	// time.Sleep(sleepTime)
+	// start = time.Now()
+	// for _, input := range inputs {
+	// 	HashNToHashNoPad(input)
+	// }
+	// duration = time.Since(start)
+	// t.Logf("HashNToHashNoPad took %s for %d inputs", duration, totalInputs)
+}
+
+func readBenchInputs(filename string) ([][]g.GoldilocksField, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %v", err)
@@ -48,18 +81,18 @@ func readBenchInputs(filename string) ([][]g.Element, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	var inputs [][]g.Element
+	var inputs [][]g.GoldilocksField
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		strVals := strings.Split(line, ",")
-		var input []g.Element
+		var input []g.GoldilocksField
 		for _, strVal := range strVals {
 			val, err := strconv.ParseUint(strVal, 10, 64)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse uint64: %v", err)
 			}
-			input = append(input, g.FromUint64(val))
+			input = append(input, g.NewElement(val))
 		}
 		inputs = append(inputs, input)
 	}

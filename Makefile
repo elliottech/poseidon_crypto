@@ -23,7 +23,7 @@ static-link-linux-amd64:
 .PHONY: dynamic-link-linux-amd64
 dynamic-link-linux-amd64:
 	@cd link/bindgen; cargo build --release;
-	@cp link/bindgen/target/release/libbindgen.a link/linux_amd64.a
+	@cp link/bindgen/target/release/libbindgen.so link/linux_amd64.so
 	@rm -rf link/bindgen/target
 
 .PHONY: test

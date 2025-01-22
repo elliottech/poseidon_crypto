@@ -1,6 +1,9 @@
 package poseidon2rust
 
 import (
+	"fmt"
+	"hash"
+
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
@@ -54,4 +57,49 @@ func HashTwoToOneRust(input1, input2 p2.HashOut) p2.HashOut {
 		input1[0], input1[1], input1[2], input1[3],
 		input2[0], input2[1], input2[2], input2[3],
 	})
+}
+
+const BlockSize = g.Bytes // BlockSize size that poseidon consumes
+
+type digest struct {
+	data []g.Element
+}
+
+func NewPoseidon2() hash.Hash {
+	d := new(digest)
+	d.Reset()
+	return d
+}
+
+// Reset resets the Hash to its initial state.
+func (d *digest) Reset() {
+	d.data = nil
+}
+
+// Get element by element.
+func (d *digest) Write(p []byte) (n int, err error) {
+	gArr, err := g.ArrayFromCanonicalLittleEndianBytes(p)
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", p, err)
+	}
+
+	d.data = append(d.data, gArr...)
+	return len(p), nil
+}
+
+func (d *digest) Size() int {
+	return BlockSize
+}
+
+// BlockSize returns the number of bytes Sum will return.
+func (d *digest) BlockSize() int {
+	return BlockSize
+}
+
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
+func (d *digest) Sum(b []byte) []byte {
+	b = append(b, HashNToHashNoPadRust(d.data).ToLittleEndianBytes()...)
+	d.data = nil
+	return b
 }

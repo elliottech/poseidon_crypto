@@ -10,35 +10,6 @@ import (
 	link "github.com/elliottech/poseidon_crypto/link"
 )
 
-type HashOut [4]g.Element
-
-type NumericalHashOut [4]uint64
-
-func (h HashOut) ToLittleEndianBytes() []byte {
-	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
-}
-
-func (h HashOut) ToUint64Array() [4]uint64 {
-	return [4]uint64{h[0].Uint64(), h[1].Uint64(), h[2].Uint64(), h[3].Uint64()}
-}
-
-func HashOutFromUint64Array(arr [4]uint64) HashOut {
-	return HashOut{g.FromUint64(arr[0]), g.FromUint64(arr[1]), g.FromUint64(arr[2]), g.FromUint64(arr[3])}
-}
-
-func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
-	gArr, err := g.ArrayFromCanonicalLittleEndianBytes(b)
-	if err != nil {
-		return HashOut{}, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", b, err)
-	}
-
-	return HashOut{gArr[0], gArr[1], gArr[2], gArr[3]}, nil
-}
-
-func EmptyHashOut() HashOut {
-	return HashOut{g.Zero(), g.Zero(), g.Zero(), g.Zero()}
-}
-
 func HashNToHashNoPad(input []g.Element) p2.HashOut {
 	in := make([]uint64, 0, len(input))
 	for _, elem := range input {

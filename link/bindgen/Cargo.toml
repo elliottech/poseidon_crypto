@@ -1,0 +1,24 @@
+cargo-features = ["edition2024"]
+
+[package]
+edition = "2024"
+name = "bindgen"
+version = "0.0.1"
+authors = ["Ahmet Yasin Alp <ahmetyasinalp@lighter.xyz>"]
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/elliottech/zklighter-perps-circuits-plonky"
+repository = "https://github.com/elliottech/zklighter-perps-circuits-plonky"
+keywords = ["zkLighter"]
+categories = ["zkLighter"]
+
+[lib]
+# If you only wanted dynamic library, you'd use only "cdylib".
+# If you only wanted static library, you'd use only "staticlib".
+# This demo shows both. See https://doc.rust-lang.org/reference/linkage.html
+# for more information.
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+plonky2 = { git = "https://github.com/0xPolygonZero/plonky2.git", rev = "2488cdacd49ede15737bc1172546d82e9521b79b" }
+circuit = { git = "https://github.com/elliottech/zklighter-perps-circuits-plonky.git", rev = "195c1423f0f88bf64e4bf4856e4364591b987700", default-features = true }
+

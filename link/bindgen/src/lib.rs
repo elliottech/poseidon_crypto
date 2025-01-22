@@ -81,11 +81,6 @@ pub extern "C" fn schnorr_sign_hashed_message(m_hashed: *const u64, sk: *const u
         sig_slice[i] = schnorr_sig.s.0[i];
         sig_slice[i + 5] = schnorr_sig.e.0[i];
     }
-
-    // Foreign libraries often hand off ownership of resources to the calling code.
-    // When this occurs, we must use Rust's destructors to provide safety and guarantee
-    // the release of these resources (especially in the case of panic).
-    drop(schnorr_sig);
 }
 
 #[no_mangle]

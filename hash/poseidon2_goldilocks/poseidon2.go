@@ -6,21 +6,7 @@ import (
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
-	link "github.com/elliottech/poseidon_crypto/link"
 )
-
-type HashOut [4]g.Element
-
-type NumericalHashOut [4]uint64
-
-func HashNToHashNoPad(input []g.Element) HashOut {
-	in := make([]uint64, 0, len(input))
-	for _, elem := range input {
-		in = append(in, elem.Uint64())
-	}
-
-	return HashOutFromUint64Array(link.HashNToHashNoPad(in))
-}
 
 func (h HashOut) ToLittleEndianBytes() []byte {
 	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
@@ -35,27 +21,10 @@ func HashToQuinticExtension(m []g.Element) gFp5.Element {
 	return gFp5.Element(res[:])
 }
 
-func HashOutFromUint64Array(arr [4]uint64) HashOut {
-	return HashOut{g.FromUint64(arr[0]), g.FromUint64(arr[1]), g.FromUint64(arr[2]), g.FromUint64(arr[3])}
-}
-
-func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
-	gArr, err := g.ArrayFromCanonicalLittleEndianBytes(b)
-	if err != nil {
-		return HashOut{}, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", b, err)
-	}
-
-	return HashOut{gArr[0], gArr[1], gArr[2], gArr[3]}, nil
-}
-
-func EmptyHashOut() HashOut {
-	return HashOut{g.Zero(), g.Zero(), g.Zero(), g.Zero()}
-}
-
 type Poseidon2 struct{}
 
 func HashNoPad(input []g.Element) HashOut {
-	return HashNToHashNoPadPureGo(input)
+	return HashNToHashNoPad(input)
 }
 
 func HashNToOne(input []HashOut) HashOut {
@@ -72,10 +41,10 @@ func HashNToOne(input []HashOut) HashOut {
 }
 
 func HashTwoToOne(input1, input2 HashOut) HashOut {
-	return HashNToHashNoPadPureGo([]g.Element{input1[0], input1[1], input1[2], input1[3], input2[0], input2[1], input2[2], input2[3]})
+	return HashNToHashNoPad([]g.Element{input1[0], input1[1], input1[2], input1[3], input2[0], input2[1], input2[2], input2[3]})
 }
 
-func HashNToHashNoPadPureGo(input []g.Element) HashOut {
+func HashNToHashNoPad(input []g.Element) HashOut {
 	res := HashNToMNoPad(input, 4)
 	return HashOut{res[0], res[1], res[2], res[3]}
 }
@@ -233,7 +202,7 @@ func (d *digest) BlockSize() int {
 // Sum appends the current hash to b and returns the resulting slice.
 // It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
-	b = append(b, HashNToHashNoPadPureGo(d.data).ToLittleEndianBytes()...)
+	b = append(b, HashNToHashNoPad(d.data).ToLittleEndianBytes()...)
 	d.data = nil
 	return b
 }

@@ -3,6 +3,7 @@ package link
 /*
 #cgo darwin LDFLAGS: ${SRCDIR}/osx.a -ldl
 #cgo linux,amd64 LDFLAGS: ${SRCDIR}/linux_amd64.a -ldl
+#cgo linux,arm64 LDFLAGS: ${SRCDIR}/linux_arm64.a -ldl
 
 #include <stdint.h>
 #include <stddef.h>
@@ -36,5 +37,28 @@ func HashNToHashNoPad(input []uint64) [4]uint64 {
 		uint64(outputC[1]),
 		uint64(outputC[2]),
 		uint64(outputC[3]),
+	}
+}
+
+func HashToQuinticExtension(input []uint64) [5]uint64 {
+	inputLen := len(input)
+	inputC := make([]C.uint64_t, inputLen)
+	for i, elem := range input {
+		inputC[i] = C.uint64_t(elem)
+	}
+
+	var outputC [5]C.uint64_t
+	C.hash_to_quintic_extension(
+		(*C.uint64_t)(unsafe.Pointer(&inputC[0])),
+		C.size_t(inputLen),
+		(*C.uint64_t)(unsafe.Pointer(&outputC[0])),
+	)
+
+	return [5]uint64{
+		uint64(outputC[0]),
+		uint64(outputC[1]),
+		uint64(outputC[2]),
+		uint64(outputC[3]),
+		uint64(outputC[4]),
 	}
 }

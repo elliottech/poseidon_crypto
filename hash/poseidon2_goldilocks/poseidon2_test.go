@@ -155,7 +155,7 @@ func TestDigest(t *testing.T) {
 
 func TestHashNToHashNoPad(t *testing.T) {
 
-	res := HashNToHashNoPadPureGo([]g.Element{
+	res := HashNToHashNoPad([]g.Element{
 		g.FromUint64(11295517158488612626),
 		g.FromUint64(10669470463693797151),
 		g.FromUint64(17232114065640264171),
@@ -217,7 +217,7 @@ func TestHashTwoToOne(t *testing.T) {
 
 func TestHashNToOne(t *testing.T) {
 
-	hashIns := []HashOut{HashNToHashNoPadPureGo([]g.Element{
+	hashIns := []HashOut{HashNToHashNoPad([]g.Element{
 		g.FromUint64(18231458557829081414),
 		g.FromUint64(16449039301999856654),
 		g.FromUint64(14758090268883299362),

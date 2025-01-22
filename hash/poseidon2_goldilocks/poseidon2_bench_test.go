@@ -25,7 +25,7 @@ func TestPoseidon2Bench(t *testing.T) {
 	time.Sleep(sleepTime)
 	start := time.Now()
 	for _, input := range inputs {
-		HashNToHashNoPadPureGo(input)
+		HashNToHashNoPad(input)
 	}
 	duration := time.Since(start)
 	t.Logf("HashNToHashNoPadPureGo took %s for %d inputs", duration, totalInputs)
@@ -34,7 +34,7 @@ func TestPoseidon2Bench(t *testing.T) {
 	time.Sleep(sleepTime)
 	start = time.Now()
 	for _, input := range inputs {
-		HashNToHashNoPad(input)
+		HashNToHashNoPadRust(input)
 	}
 	duration = time.Since(start)
 	t.Logf("HashNToHashNoPad took %s for %d inputs", duration, totalInputs)

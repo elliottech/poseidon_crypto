@@ -5,7 +5,7 @@ static-link:
 	@rm -rf link/bindgen/target
 
 # Run on osx
-.PHONY: dynamic-link-osx
+.PHONY: dynamic-link
 dynamic-link-osx:
 	@cd link/bindgen; cargo build --release;
 	@cp link/bindgen/target/release/libbindgen.dylib link/osx.dylib

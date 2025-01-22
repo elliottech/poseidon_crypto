@@ -1,4 +1,4 @@
-package poseidon2
+package poseidon2rust
 
 import (
 	"bufio"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 )
 
 func TestPoseidon2Bench(t *testing.T) {
@@ -25,7 +26,7 @@ func TestPoseidon2Bench(t *testing.T) {
 	time.Sleep(sleepTime)
 	start := time.Now()
 	for _, input := range inputs {
-		HashNToHashNoPad(input)
+		p2.HashNToHashNoPad(input)
 	}
 	duration := time.Since(start)
 	t.Logf("HashNToHashNoPadPureGo took %s for %d inputs", duration, totalInputs)

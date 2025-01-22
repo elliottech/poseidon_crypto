@@ -8,6 +8,10 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
+type HashOut [4]g.Element
+
+type NumericalHashOut [4]uint64
+
 func (h HashOut) ToLittleEndianBytes() []byte {
 	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
 }
@@ -19,6 +23,23 @@ func (h HashOut) ToUint64Array() [4]uint64 {
 func HashToQuinticExtension(m []g.Element) gFp5.Element {
 	res := HashNToMNoPad(m, 5)
 	return gFp5.Element(res[:])
+}
+
+func HashOutFromUint64Array(arr [4]uint64) HashOut {
+	return HashOut{g.FromUint64(arr[0]), g.FromUint64(arr[1]), g.FromUint64(arr[2]), g.FromUint64(arr[3])}
+}
+
+func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
+	gArr, err := g.ArrayFromCanonicalLittleEndianBytes(b)
+	if err != nil {
+		return HashOut{}, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", b, err)
+	}
+
+	return HashOut{gArr[0], gArr[1], gArr[2], gArr[3]}, nil
+}
+
+func EmptyHashOut() HashOut {
+	return HashOut{g.Zero(), g.Zero(), g.Zero(), g.Zero()}
 }
 
 type Poseidon2 struct{}

@@ -1,21 +1,22 @@
-package poseidon2
+package poseidon2rust
 
 import (
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 	link "github.com/elliottech/poseidon_crypto/link"
 )
 
-func HashNToHashNoPadRust(input []g.Element) HashOut {
+func HashNToHashNoPadRust(input []g.Element) p2.HashOut {
 	in := make([]uint64, 0, len(input))
 	for _, elem := range input {
 		in = append(in, elem.Uint64())
 	}
 
-	return HashOutFromUint64Array(link.HashNToHashNoPad(in))
+	return p2.HashOutFromUint64Array(link.HashNToHashNoPad(in))
 }
 
-func HashNoPadRust(input []g.Element) HashOut {
+func HashNoPadRust(input []g.Element) p2.HashOut {
 	return HashNToHashNoPadRust(input)
 }
 
@@ -35,7 +36,7 @@ func HashToQuinticExtensionRust(input []g.Element) gFp5.Element {
 	})
 }
 
-func HashNToOneRust(input []HashOut) HashOut {
+func HashNToOneRust(input []p2.HashOut) p2.HashOut {
 	if len(input) == 1 {
 		return input[0]
 	}
@@ -48,6 +49,9 @@ func HashNToOneRust(input []HashOut) HashOut {
 	return res
 }
 
-func HashTwoToOneRust(input1, input2 HashOut) HashOut {
-	return HashNToHashNoPadRust([]g.Element{input1[0], input1[1], input1[2], input1[3], input2[0], input2[1], input2[2], input2[3]})
+func HashTwoToOneRust(input1, input2 p2.HashOut) p2.HashOut {
+	return HashNToHashNoPadRust([]g.Element{
+		input1[0], input1[1], input1[2], input1[3],
+		input2[0], input2[1], input2[2], input2[3],
+	})
 }

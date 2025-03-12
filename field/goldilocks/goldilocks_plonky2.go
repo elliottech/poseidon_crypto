@@ -40,16 +40,15 @@ func (z GoldilocksField) ToCanonicalUint64() uint64 {
 }
 
 //go:noescape
-func AddFF(lhs, rhs GoldilocksField) GoldilocksField
+func AddF(lhs, rhs GoldilocksField) GoldilocksField
 
-func AddF(lhs, rhs GoldilocksField) GoldilocksField {
+func AddFF(lhs, rhs GoldilocksField) GoldilocksField {
 	sum, over := bits.Add64(uint64(lhs), uint64(rhs), 0)
 	sum, over = bits.Add64(sum, over*EPSILON, 0)
 	if over == 1 {
 		branchHint()
 		sum += EPSILON // this can't overflow
 	}
-
 	return GoldilocksField(sum)
 }
 

@@ -42,7 +42,7 @@ func TestBytes(t *testing.T) {
 	}
 }
 
-func TestBenchAddF(t *testing.T) {
+func TestBenchAddFAsm(t *testing.T) {
 	const numTests = 10000
 	const maxVal = 0xffffffff00000001
 
@@ -53,7 +53,7 @@ func TestBenchAddF(t *testing.T) {
 
 	start := time.Now()
 	for i := 0; i < numTests; i += 2 {
-		_ = g.AddF(numbers[i], numbers[i+1])
+		_ = g.AddFAsm(numbers[i], numbers[i+1])
 	}
 	duration := time.Since(start)
 

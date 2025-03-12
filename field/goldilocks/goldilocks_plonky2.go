@@ -3,12 +3,9 @@ package goldilocks
 import (
 	"encoding/binary"
 	"math/bits"
-	"math/rand/v2"
 )
 
-type GoldilocksField struct {
-	x uint64
-}
+type GoldilocksField uint64
 
 const EPSILON = uint64((1 << 32) - 1)
 const ORDER = uint64(0xffffffff00000001)
@@ -16,31 +13,8 @@ const ORDER = uint64(0xffffffff00000001)
 //go:noescape
 func branchHint()
 
-func FromCanonicalUint64(value uint64) GoldilocksField {
-	return GoldilocksField{x: value}
-}
-
-func (z *GoldilocksField) Set(x *GoldilocksField) *GoldilocksField {
-	z.x = x.x
-	return z
-}
-
-func (z *GoldilocksField) SetZero() *GoldilocksField {
-	z.x = 0
-	return z
-}
-
-func (z *GoldilocksField) SetOne() *GoldilocksField {
-	z.x = 1
-	return z
-}
-
-func (z *GoldilocksField) Uint64() uint64 {
-	return z.x
-}
-
-func (z *GoldilocksField) ToCanonicalUint64() uint64 {
-	x := z.x
+func (z GoldilocksField) ToCanonicalUint64() uint64 {
+	x := uint64(z)
 	if x >= ORDER {
 		x -= ORDER
 	}
@@ -49,15 +23,15 @@ func (z *GoldilocksField) ToCanonicalUint64() uint64 {
 }
 
 func ZeroF() GoldilocksField {
-	return GoldilocksField{x: 0}
+	return 0
 }
 
 func OneF() GoldilocksField {
-	return GoldilocksField{x: 1}
+	return 1
 }
 
 func NegOneF() GoldilocksField {
-	return GoldilocksField{x: ORDER - 1}
+	return GoldilocksField(ORDER - 1)
 }
 
 func OverflowAdd(x, y uint64) (uint64, uint64) {
@@ -76,36 +50,34 @@ func OverflowSub(x, y uint64) (uint64, uint64) {
 	return diff, borrowOut
 }
 
-func (z *GoldilocksField) Add(lhs, rhs *GoldilocksField) *GoldilocksField {
-	sum, over := OverflowAdd(lhs.x, rhs.x)
+func AddF(lhs, rhs GoldilocksField) GoldilocksField {
+	sum, over := OverflowAdd(uint64(lhs), uint64(rhs))
 	sum, over = OverflowAdd(sum, over*EPSILON)
 	if over == 1 {
 		branchHint()
 		sum += EPSILON // this can't overflow
 	}
 
-	z.x = sum
-	return lhs
+	return GoldilocksField(sum)
 }
 
-func (z *GoldilocksField) Double(lhs *GoldilocksField) *GoldilocksField {
-	return z.Add(lhs, lhs)
+func DoubleF(lhs GoldilocksField) GoldilocksField {
+	return AddF(lhs, lhs)
 }
 
-func (z *GoldilocksField) Sub(lhs, rhs *GoldilocksField) *GoldilocksField {
-	diff, borrow := OverflowSub(lhs.x, rhs.x)
+func SubF(lhs, rhs GoldilocksField) GoldilocksField {
+	diff, borrow := OverflowSub(uint64(lhs), uint64(rhs))
 	diff, borrow = OverflowSub(diff, borrow*EPSILON)
 	if borrow == 1 {
 		branchHint()
 		diff -= EPSILON // this can't underflow
 	}
 
-	z.x = diff
-	return lhs
+	return GoldilocksField(diff)
 }
 
-func (z *GoldilocksField) Mul(lhs, rhs *GoldilocksField) *GoldilocksField {
-	x_hi, x_lo := bits.Mul64(lhs.x, rhs.x)
+func MulF(lhs, rhs GoldilocksField) GoldilocksField {
+	x_hi, x_lo := bits.Mul64(uint64(lhs), uint64(rhs))
 
 	x_hi_hi := x_hi >> 32
 	x_hi_lo := x_hi & EPSILON
@@ -119,75 +91,67 @@ func (z *GoldilocksField) Mul(lhs, rhs *GoldilocksField) *GoldilocksField {
 
 	sum, over := OverflowAdd(t0, t1)
 	t2 := sum + EPSILON*over
-
-	z.x = t2
-	return lhs
+	return GoldilocksField(t2)
 }
 
-func (z *GoldilocksField) Square(x *GoldilocksField) *GoldilocksField {
-	return z.Mul(x, x)
+func SquareF(x GoldilocksField) GoldilocksField {
+	return MulF(x, x)
 }
 
-func (z *GoldilocksField) ExpPowerOf2(x *GoldilocksField, n uint) *GoldilocksField {
-	z.Set(x)
+func ExpPowerOf2(x GoldilocksField, n uint) GoldilocksField {
+	z := x
 	for i := uint(0); i < n; i++ {
-		z.Square(z)
+		z = SquareF(z)
 	}
 
 	return z
 }
 
-func (z *GoldilocksField) ToLittleEndianBytes() []byte {
+func ToLittleEndianBytesF(z GoldilocksField) []byte {
 	res := make([]byte, Bytes)
 	binary.LittleEndian.PutUint64(res, z.ToCanonicalUint64())
 	return res
 }
 
-func (z *GoldilocksField) FromCanonicalLittleEndianBytes(b []byte) {
-	z.x = binary.LittleEndian.Uint64(b)
+func FromCanonicalLittleEndianBytesF(b []byte) GoldilocksField {
+	return GoldilocksField(binary.LittleEndian.Uint64(b))
 }
 
-func (z *GoldilocksField) Sample() *GoldilocksField {
-	z.x = rand.Uint64N(ORDER)
-	return z
+func (z GoldilocksField) IsZero() bool {
+	return z == 0
 }
 
-func (z *GoldilocksField) IsZero() bool {
-	return z.x == 0
+func (z GoldilocksField) IsOne() bool {
+	return z == 1
 }
 
-func (z *GoldilocksField) IsOne() bool {
-	return z.x == 1
-}
-
-func (z *GoldilocksField) Neg(x *GoldilocksField) *GoldilocksField {
-	if x.IsZero() {
-		z.x = 0
-	} else {
-		z.x = ORDER - x.x
+func NegF(x GoldilocksField) GoldilocksField {
+	z := GoldilocksField(0)
+	if !x.IsZero() {
+		z = GoldilocksField(ORDER - uint64(x))
 	}
 
 	return z
 }
 
-func (z *GoldilocksField) Inverse(x *GoldilocksField) *GoldilocksField {
-	if x.IsZero() {
-		z.SetZero()
-		return z
-	}
+// func (z *GoldilocksField) Inverse(x *GoldilocksField) *GoldilocksField {
+// 	if x.IsZero() {
+// 		z.SetZero()
+// 		return z
+// 	}
 
-	var tmp *GoldilocksField
+// 	var tmp *GoldilocksField
 
-	t2 := *tmp.Square(x).Mul(tmp, x)
-	t3 := *tmp.Square(&t2).Mul(tmp, x)
-	t6 := *tmp.ExpPowerOf2(&t3, 3).Mul(tmp, &t3)
-	t12 := *tmp.ExpPowerOf2(&t6, 6).Mul(tmp, &t6)
-	t24 := *tmp.ExpPowerOf2(&t12, 12).Mul(tmp, &t12)
-	t30 := *tmp.ExpPowerOf2(&t24, 6).Mul(tmp, &t6)
-	t31 := *tmp.Square(&t30).Mul(tmp, x)
-	t63 := *tmp.ExpPowerOf2(&t31, 32).Mul(tmp, &t31)
+// 	t2 := *tmp.Square(x).Mul(tmp, x)
+// 	t3 := *tmp.Square(&t2).Mul(tmp, x)
+// 	t6 := *tmp.ExpPowerOf2(&t3, 3).Mul(tmp, &t3)
+// 	t12 := *tmp.ExpPowerOf2(&t6, 6).Mul(tmp, &t6)
+// 	t24 := *tmp.ExpPowerOf2(&t12, 12).Mul(tmp, &t12)
+// 	t30 := *tmp.ExpPowerOf2(&t24, 6).Mul(tmp, &t6)
+// 	t31 := *tmp.Square(&t30).Mul(tmp, x)
+// 	t63 := *tmp.ExpPowerOf2(&t31, 32).Mul(tmp, &t31)
 
-	z.Square(&t63).Mul(z, x)
+// 	z.Square(&t63).Mul(z, x)
 
-	return z
-}
+// 	return z
+// }

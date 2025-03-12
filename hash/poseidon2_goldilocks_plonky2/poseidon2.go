@@ -18,7 +18,7 @@ func EmptyHashOut() HashOut {
 func (h HashOut) ToLittleEndianBytes() []byte {
 	res := make([]byte, 0, 4*g.Bytes)
 	for _, elem := range h {
-		res = append(res, elem.ToLittleEndianBytes()...)
+		res = append(res, g.ToLittleEndianBytesF(elem)...)
 	}
 	return res
 }
@@ -29,18 +29,18 @@ func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
 	}
 	var res HashOut
 	for i := 0; i < 4; i++ {
-		res[i].FromCanonicalLittleEndianBytes(b[i*g.Bytes : (i+1)*g.Bytes])
+		res[i] = g.FromCanonicalLittleEndianBytesF(b[i*g.Bytes : (i+1)*g.Bytes])
 	}
 
 	return res, nil
 }
 
-func (h *HashOut) ToUint64Array() [4]uint64 {
-	return [4]uint64{h[0].Uint64(), h[1].Uint64(), h[2].Uint64(), h[3].Uint64()}
+func (h HashOut) ToUint64Array() [4]uint64 {
+	return [4]uint64{uint64(h[0]), uint64(h[1]), uint64(h[2]), uint64(h[3])}
 }
 
 func HashOutFromUint64Array(arr [4]uint64) HashOut {
-	return HashOut{g.FromCanonicalUint64(arr[0]), g.FromCanonicalUint64(arr[1]), g.FromCanonicalUint64(arr[2]), g.FromCanonicalUint64(arr[3])}
+	return HashOut{g.GoldilocksField(arr[0]), g.GoldilocksField(arr[1]), g.GoldilocksField(arr[2]), g.GoldilocksField(arr[3])}
 }
 
 func HashToQuinticExtension(m []g.GoldilocksField) gFp5.Element {
@@ -80,7 +80,7 @@ func HashNToMNoPad(input []g.GoldilocksField, numOutputs int) []g.GoldilocksFiel
 	var perm [WIDTH]g.GoldilocksField
 	for i := 0; i < len(input); i += RATE {
 		for j := 0; j < RATE && i+j < len(input); j++ {
-			perm[j].Set(&input[i+j])
+			perm[j] = input[i+j]
 		}
 		Permute(&perm)
 	}
@@ -123,50 +123,49 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
 	for i := 0; i < 3; i++ { // 4 size window
 		var t0, t1, t2, t3, t4, t5, t6 g.GoldilocksField
-		t0.Add(&s[4*i], &s[4*i+1])   // s0+s1
-		t1.Add(&s[4*i+2], &s[4*i+3]) // s2+s3
-		t2.Add(&t0, &t1)             // t0+t1 = s0+s1+s2+s3
-		t3.Add(&t2, &s[4*i+1])       // t2+s1 = s0+2s1+s2+s3
-		t4.Add(&t2, &s[4*i+3])       // t2+s3 = s0+s1+s2+2s3
-		t5.Double(&s[4*i])           // 2s0
-		t6.Double(&s[4*i+2])         // 2s2
-		s[4*i].Add(&t3, &t0)
-		s[4*i+1].Add(&t6, &t3)
-		s[4*i+2].Add(&t1, &t4)
-		s[4*i+3].Add(&t5, &t4)
+		t0 = g.AddF(s[4*i], s[4*i+1])   // s0+s1
+		t1 = g.AddF(s[4*i+2], s[4*i+3]) // s2+s3
+		t2 = g.AddF(t0, t1)             // t0+t1 = s0+s1+s2+s3
+		t3 = g.AddF(t2, s[4*i+1])       // t2+s1 = s0+2s1+s2+s3
+		t4 = g.AddF(t2, s[4*i+3])       // t2+s3 = s0+s1+s2+2s3
+		t5 = g.DoubleF(s[4*i])          // 2s0
+		t6 = g.DoubleF(s[4*i+2])        // 2s2
+		s[4*i] = g.AddF(t3, t0)
+		s[4*i+1] = g.AddF(t6, t3)
+		s[4*i+2] = g.AddF(t1, t4)
+		s[4*i+3] = g.AddF(t5, t4)
 	}
 
 	sums := [4]g.GoldilocksField{}
 	for k := 0; k < 4; k++ {
 		for j := 0; j < WIDTH; j += 4 {
-			sums[k].Add(&sums[k], &s[j+k])
+			sums[k] = g.AddF(sums[k], s[j+k])
 		}
 	}
 	for i := 0; i < WIDTH; i++ {
-		s[i].Add(&s[i], &sums[i%4])
+		s[i] = g.AddF(s[i], sums[i%4])
 	}
 }
 
 func internalLinearLayer(state *[WIDTH]g.GoldilocksField) {
-	var sum g.GoldilocksField
-	sum.Set(&state[0])
+	sum := state[0]
 	for i := 1; i < WIDTH; i++ {
-		sum.Add(&sum, &state[i])
+		sum = g.AddF(sum, state[i])
 	}
 	for i := 0; i < WIDTH; i++ {
-		state[i].Mul(&state[i], &MATRIX_DIAG_12_U64[i]).
-			Add(&state[i], &sum)
+		state[i] = g.MulF(state[i], MATRIX_DIAG_12_U64[i])
+		state[i] = g.AddF(state[i], sum)
 	}
 }
 
 func addRC(state *[WIDTH]g.GoldilocksField, externalRound int) {
 	for i := 0; i < WIDTH; i++ {
-		state[i].Add(&state[i], &EXTERNAL_CONSTANTS[externalRound][i])
+		state[i] = g.AddF(state[i], EXTERNAL_CONSTANTS[externalRound][i])
 	}
 }
 
 func addRCI(state *[WIDTH]g.GoldilocksField, round int) {
-	state[0].Add(&state[0], &INTERNAL_CONSTANTS[round])
+	state[0] = g.AddF(state[0], INTERNAL_CONSTANTS[round])
 }
 
 func sbox(state *[WIDTH]g.GoldilocksField) {
@@ -176,17 +175,14 @@ func sbox(state *[WIDTH]g.GoldilocksField) {
 }
 
 func sboxP(index int, state *[WIDTH]g.GoldilocksField) {
-	var tmp g.GoldilocksField
-	tmp.Set(&state[index])
-
-	var tmpSquare g.GoldilocksField
-	tmpSquare.Square(&tmp)
+	tmp := state[index]
+	tmpSquare := g.SquareF(tmp)
 
 	var tmpSixth g.GoldilocksField
-	tmpSixth.Mul(&tmpSquare, &tmp)
-	tmpSixth.Square(&tmpSixth)
+	tmpSixth = g.MulF(tmpSquare, tmp)
+	tmpSixth = g.SquareF(tmpSixth)
 
-	state[index].Mul(&tmpSixth, &tmp)
+	state[index] = g.MulF(tmpSixth, tmp)
 }
 
 const BlockSize = g.Bytes // BlockSize size that poseidon consumes
@@ -214,7 +210,7 @@ func (d *digest) Write(p []byte) (n int, err error) {
 
 	gArr := make([]g.GoldilocksField, len(p)/g.Bytes)
 	for i := 0; i < len(p); i += g.Bytes {
-		gArr[i/g.Bytes].FromCanonicalLittleEndianBytes(p[i : i+g.Bytes])
+		gArr[i/g.Bytes] = g.FromCanonicalLittleEndianBytesF(p[i : i+g.Bytes])
 	}
 	d.data = append(d.data, gArr...)
 	return len(p), nil

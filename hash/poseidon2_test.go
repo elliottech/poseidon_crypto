@@ -65,7 +65,7 @@ func readBenchInputs(filename string) ([][]g.GoldilocksField, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse uint64: %v", err)
 			}
-			input = append(input, g.FromCanonicalUint64(val))
+			input = append(input, g.GoldilocksField(val))
 		}
 		inputs = append(inputs, input)
 	}

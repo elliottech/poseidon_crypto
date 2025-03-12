@@ -384,10 +384,10 @@ func Legendre(x Element) g.Element {
 
 func FromPlonky2GoldilocksField(f []g.GoldilocksField) Element {
 	return Element{
-		g.NewElement(f[0].Uint64()),
-		g.NewElement(f[1].Uint64()),
-		g.NewElement(f[2].Uint64()),
-		g.NewElement(f[3].Uint64()),
-		g.NewElement(f[4].Uint64()),
+		g.NewElement(uint64(f[0])),
+		g.NewElement(uint64(f[1])),
+		g.NewElement(uint64(f[2])),
+		g.NewElement(uint64(f[3])),
+		g.NewElement(uint64(f[4])),
 	}
 }

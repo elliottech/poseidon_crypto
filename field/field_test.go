@@ -57,26 +57,26 @@ func TestBenchAddFAsm(t *testing.T) {
 	}
 	duration := time.Since(start)
 
-	fmt.Printf("Total time spent during additions: %v", duration)
+	fmt.Printf("Total time spent during additions: %v\n", duration)
 }
 
-// func TestBenchAddFF(t *testing.T) {
-// 	const numTests = 10000
-// 	const maxVal = 0xffffffff00000001
+func TestBenchAddF(t *testing.T) {
+	const numTests = 10000
+	const maxVal = 0xffffffff00000001
 
-// 	numbers := make([]g.GoldilocksField, numTests)
-// 	for i := 0; i < numTests; i++ {
-// 		numbers[i] = g.GoldilocksField(rand.Uint64() % maxVal)
-// 	}
+	numbers := make([]g.GoldilocksField, numTests)
+	for i := 0; i < numTests; i++ {
+		numbers[i] = g.GoldilocksField(rand.Uint64() % maxVal)
+	}
 
-// 	start := time.Now()
-// 	for i := 0; i < numTests; i += 2 {
-// 		_ = g.AddFF(numbers[i], numbers[i+1])
-// 	}
-// 	duration := time.Since(start)
+	start := time.Now()
+	for i := 0; i < numTests; i += 2 {
+		_ = g.AddF(numbers[i], numbers[i+1])
+	}
+	duration := time.Since(start)
 
-// 	fmt.Printf("Total time spent during additions: %v", duration)
-// }
+	fmt.Printf("Total time spent during additions: %v\n", duration)
+}
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	val1 := gFp5.Element{

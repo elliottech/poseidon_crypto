@@ -10,6 +10,14 @@ type GoldilocksField uint64
 const EPSILON = uint64((1 << 32) - 1)
 const ORDER = uint64(0xffffffff00000001)
 
+func NonCannonicalGoldilocksField(x int64) GoldilocksField {
+	if x < 0 {
+		return NegF(GoldilocksField(-x))
+	}
+
+	return GoldilocksField(x)
+}
+
 func ZeroF() GoldilocksField {
 	return 0
 }

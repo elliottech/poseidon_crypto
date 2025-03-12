@@ -1,29 +1,10 @@
 package poseidon2
 
 import (
-	"fmt"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
-
-func TestGetNilTreeLevels(t *testing.T) {
-	res := []HashOut{EmptyHashOut()}
-	for i := 1; i < 128; i++ {
-		res = append(res, HashTwoToOne(res[i-1], res[i-1]))
-	}
-
-	fmt.Println()
-	for i := 0; i < len(res); i++ {
-		fmt.Printf("Level %d: ", i)
-		leBytes := res[i].ToLittleEndianBytes()
-		for j := 0; j < len(leBytes); j++ {
-			fmt.Printf("%d ", leBytes[j])
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-}
 
 func TestPermute(t *testing.T) {
 	inp := [WIDTH]g.Element{
@@ -155,7 +136,6 @@ func TestDigest(t *testing.T) {
 }
 
 func TestHashNToHashNoPad(t *testing.T) {
-
 	res := HashNToHashNoPad([]g.Element{
 		g.FromUint64(11295517158488612626),
 		g.FromUint64(10669470463693797151),
@@ -186,7 +166,6 @@ func TestHashNToHashNoPad(t *testing.T) {
 }
 
 func TestHashTwoToOne(t *testing.T) {
-
 	input1 := HashOut{
 		g.FromUint64(3777312593917610528),
 		g.FromUint64(6858608920877200812),
@@ -217,7 +196,6 @@ func TestHashTwoToOne(t *testing.T) {
 }
 
 func TestHashNToOne(t *testing.T) {
-
 	hashIns := []HashOut{HashNToHashNoPad([]g.Element{
 		g.FromUint64(18231458557829081414),
 		g.FromUint64(16449039301999856654),
@@ -245,6 +223,31 @@ func TestHashNToOne(t *testing.T) {
 	}
 	for i := 0; i < 4; i++ {
 		if res[i] != expected[i] {
+			t.Fail()
+		}
+	}
+}
+
+func TestHashToQuinticExtension(t *testing.T) {
+	result := HashToQuinticExtension([]g.Element{
+		g.FromUint64(3451004116618606032),
+		g.FromUint64(11263134342958518251),
+		g.FromUint64(10957204882857370932),
+		g.FromUint64(5369763041201481933),
+		g.FromUint64(7695734348563036858),
+		g.FromUint64(1393419330378128434),
+		g.FromUint64(7387917082382606332),
+	})
+	expected := [5]uint64{
+		17992684813643984528,
+		5243896189906434327,
+		7705560276311184368,
+		2785244775876017560,
+		14449776097783372302,
+	}
+	for i := 0; i < 5; i++ {
+		if result[i] != g.FromUint64(expected[i]) {
+			t.Logf("Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 			t.Fail()
 		}
 	}

@@ -30,6 +30,10 @@ func HashOutFromUint64Array(arr [4]uint64) HashOut {
 }
 
 func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
+	if len(b) != 4*g.Bytes {
+		return HashOut{}, fmt.Errorf("input bytes len should be 32 but is %d", len(b))
+	}
+
 	gArr, err := g.ArrayFromCanonicalLittleEndianBytes(b)
 	if err != nil {
 		return HashOut{}, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", b, err)
@@ -202,6 +206,10 @@ func (d *digest) Reset() {
 
 // Get element by element.
 func (d *digest) Write(p []byte) (n int, err error) {
+	if len(p)%g.Bytes != 0 {
+		return 0, fmt.Errorf("input bytes len should be multiple of 8 but is %d", len(p))
+	}
+
 	gArr, err := g.ArrayFromCanonicalLittleEndianBytes(p)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert bytes to field element. bytes: %v, error: %w", p, err)

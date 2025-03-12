@@ -381,3 +381,13 @@ func Legendre(x Element) g.Element {
 
 	return g.Mul(xr63, &xr31InvOrZero)
 }
+
+func FromPlonky2GoldilocksField(f []g.GoldilocksField) Element {
+	return Element{
+		g.NewElement(f[0].Uint64()),
+		g.NewElement(f[1].Uint64()),
+		g.NewElement(f[2].Uint64()),
+		g.NewElement(f[3].Uint64()),
+		g.NewElement(f[4].Uint64()),
+	}
+}

@@ -9,30 +9,6 @@ import (
 	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 )
 
-func TestHashToQuinticExtension(t *testing.T) {
-	result := p2.HashToQuinticExtension([]g.Element{
-		*new(g.Element).SetUint64(3451004116618606032),
-		*new(g.Element).SetUint64(11263134342958518251),
-		*new(g.Element).SetUint64(10957204882857370932),
-		*new(g.Element).SetUint64(5369763041201481933),
-		*new(g.Element).SetUint64(7695734348563036858),
-		*new(g.Element).SetUint64(1393419330378128434),
-		*new(g.Element).SetUint64(7387917082382606332),
-	})
-	expected := [5]uint64{
-		17992684813643984528,
-		5243896189906434327,
-		7705560276311184368,
-		2785244775876017560,
-		14449776097783372302,
-	}
-	for i := 0; i < 5; i++ {
-		if result[i] != g.FromUint64(expected[i]) {
-			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expected[i], result[i])
-		}
-	}
-}
-
 func TestSchnorrSignAndVerify(t *testing.T) {
 	sk := curve.SampleScalar(nil) // Sample a secret key
 	msg := g.RandArray(244)

@@ -3,6 +3,7 @@ package field
 import (
 	"encoding/binary"
 	"testing"
+	"time"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -38,6 +39,42 @@ func TestBytes(t *testing.T) {
 			t.Fatalf("Little-endian bytes do not match at index %d: expected %x, got %x", i, leBytesUint64[i], leBytesElem[i])
 		}
 	}
+}
+
+func TestBenchAddF(t *testing.T) {
+	const numTests = 10000
+	const maxVal = 0xffffffff00000001
+
+	numbers := make([]g.GoldilocksField, numTests)
+	for i := 0; i < numTests; i++ {
+		numbers[i] = g.GoldilocksField(rand.Uint64() % maxVal)
+	}
+
+	start := time.Now()
+	for i := 0; i < numTests; i += 2 {
+		_ = g.AddF(numbers[i], numbers[i+1])
+	}
+	duration := time.Since(start)
+
+	t.Logf("Total time spent during additions: %v", duration)
+}
+
+func TestBenchAddFF(t *testing.T) {
+	const numTests = 10000
+	const maxVal = 0xffffffff00000001
+
+	numbers := make([]g.GoldilocksField, numTests)
+	for i := 0; i < numTests; i++ {
+		numbers[i] = g.GoldilocksField(rand.Uint64() % maxVal)
+	}
+
+	start := time.Now()
+	for i := 0; i < numTests; i += 2 {
+		_ = g.AddFF(numbers[i], numbers[i+1])
+	}
+	duration := time.Since(start)
+
+	t.Logf("Total time spent during additions: %v", duration)
 }
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {

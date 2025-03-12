@@ -2,6 +2,7 @@ package hash
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"strconv"
@@ -22,12 +23,21 @@ func TestPoseidon2Bench(t *testing.T) {
 		t.FailNow()
 	}
 
+	results := make([]g.GoldilocksField, 0, 4*len(inputs))
 	start := time.Now()
 	for _, input := range inputs {
-		poseidon2_plonky2.HashNToHashNoPad(input)
+		res := poseidon2_plonky2.HashNToHashNoPad(input)
+		results = append(results, res[:]...)
 	}
 	duration := time.Since(start)
 	t.Logf("HashNToHashNoPad plonky2 took %s for %d inputs", duration, totalInputs)
+
+	sha2 := sha256.New()
+	for _, res := range results {
+		sha2.Write(g.ToLittleEndianBytesF(res))
+	}
+	hash := sha2.Sum(nil)
+	t.Logf("Hash: %x\n", hash)
 }
 
 func TestPoseidon2BenchOld(t *testing.T) {
@@ -38,12 +48,21 @@ func TestPoseidon2BenchOld(t *testing.T) {
 		t.FailNow()
 	}
 
+	results := make([]g.Element, 0, 4*len(inputs))
 	start := time.Now()
 	for _, input := range inputs {
-		poseidon2_gnark.HashNToHashNoPad(input)
+		res := poseidon2_gnark.HashNToHashNoPad(input)
+		results = append(results, res[:]...)
 	}
 	duration := time.Since(start)
 	t.Logf("HashNToHashNoPadPure gnark took %s for %d inputs", duration, totalInputs)
+
+	sha2 := sha256.New()
+	for _, res := range results {
+		sha2.Write(g.ToLittleEndianBytes(res))
+	}
+	hash := sha2.Sum(nil)
+	t.Logf("Hash: %x\n", hash)
 }
 
 func readBenchInputs(filename string) ([][]g.GoldilocksField, error) {

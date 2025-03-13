@@ -32,11 +32,7 @@ func NegOneF() GoldilocksField {
 }
 
 func (z GoldilocksField) IsZero() bool {
-	return z == 0
-}
-
-func (z GoldilocksField) IsOne() bool {
-	return z == 1
+	return z.ToCanonicalUint64() == 0
 }
 
 func (z GoldilocksField) ToCanonicalUint64() uint64 {
@@ -108,7 +104,7 @@ func ExpPowerOf2(x GoldilocksField, n uint) GoldilocksField {
 func NegF(x GoldilocksField) GoldilocksField {
 	z := GoldilocksField(0)
 	if !x.IsZero() {
-		z = GoldilocksField(ORDER - uint64(x))
+		z = GoldilocksField(ORDER - x.ToCanonicalUint64())
 	}
 
 	return z

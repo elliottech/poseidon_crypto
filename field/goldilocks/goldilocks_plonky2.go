@@ -3,6 +3,7 @@ package goldilocks
 import (
 	"encoding/binary"
 	"math/bits"
+	"math/rand/v2"
 )
 
 type GoldilocksField uint64
@@ -111,6 +112,10 @@ func NegF(x GoldilocksField) GoldilocksField {
 	}
 
 	return z
+}
+
+func SampleF() GoldilocksField {
+	return GoldilocksField(rand.Uint64N(ORDER))
 }
 
 func ToLittleEndianBytesF(z GoldilocksField) []byte {

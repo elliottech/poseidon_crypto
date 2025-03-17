@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"strconv"
 	"strings"
@@ -14,6 +15,76 @@ import (
 	poseidon2_gnark "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
 	poseidon2_plonky2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks_plonky2"
 )
+
+func TestLongRunningCompare(t *testing.T) {
+	run := os.Getenv("LONG_RUNNING_TESTS")
+	if run != "true" {
+		t.Skip("Skipping long running test")
+	}
+
+	file := os.Getenv("LONG_RUNNING_TESTS_FILE")
+
+	// Generate random 12 inputs
+	for j := 0; j < 1_000_000_000; j++ {
+		inputs := make([]uint64, 12)
+		for i := 0; i < 12; i++ {
+			inputs[i] = rand.Uint64N(g.ORDER)
+		}
+
+		// Convert to GoldilocksField
+		gInputs := make([]g.GoldilocksField, 0, 12)
+		for _, input := range inputs {
+			gInputs = append(gInputs, g.GoldilocksField(input))
+		}
+		gOutputs := poseidon2_plonky2.HashNToMNoPad(gInputs, 12)
+
+		// Convert to Element
+		eInputs := make([]g.Element, 0, 12)
+		for _, input := range inputs {
+			eInputs = append(eInputs, g.NewElement(input))
+		}
+		eOutputs := poseidon2_gnark.HashNToMNoPad(eInputs, 12)
+
+		// Compare
+		for i := 0; i < 12; i++ {
+			if gOutputs[i].ToCanonicalUint64() != eOutputs[i].Uint64() {
+				if file != "" {
+					f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+					if err != nil {
+						t.Logf("Error: %v\n", err)
+						t.FailNow()
+					}
+					defer f.Close()
+
+					_, err = f.WriteString("<--- Mismatch --->\n")
+					if err != nil {
+						t.Logf("Error: %v\n", err)
+						t.FailNow()
+					}
+					_, err = f.WriteString(fmt.Sprintf("Inputs: %v; %v; [%v]\n", inputs, gInputs, g.ToString(eInputs...)))
+					if err != nil {
+						t.Logf("Error: %v\n", err)
+						t.FailNow()
+					}
+					_, err = f.WriteString(fmt.Sprintf("Outputs: %v; [%v]\n\n", gOutputs, g.ToString(eOutputs...)))
+					if err != nil {
+						t.Logf("Error: %v\n", err)
+						t.FailNow()
+					}
+					f.Close()
+				} else {
+					t.Log("<--- Mismatch --->")
+					t.Logf("Inputs: %v; %v; [%v]", inputs, gInputs, g.ToString(eInputs...))
+					t.Logf("Outputs: %v; [%v]", gOutputs, g.ToString(eOutputs...))
+					t.FailNow()
+				}
+				break
+			}
+		}
+	}
+
+	t.Log("Completed long-running comparison.")
+}
 
 func TestPoseidon2Bench(t *testing.T) {
 	inputs, err := readBenchInputs("bench_vector")

@@ -2,6 +2,7 @@ package poseidon2_plonky2
 
 import (
 	"bytes"
+	"math"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -167,6 +168,30 @@ func TestHashNToHashNoPad(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		if res[i] != expected[i] {
 			t.Fail()
+		}
+	}
+}
+
+func TestHashNToHashNoPadLarge(t *testing.T) {
+	res := HashNToHashNoPad([]g.GoldilocksField{
+		g.GoldilocksField(g.ORDER + 1),
+		g.GoldilocksField(g.ORDER + 2),
+		g.GoldilocksField(g.ORDER + 3),
+		g.GoldilocksField(math.MaxUint64),
+		g.GoldilocksField(math.MaxUint64 - 1),
+	})
+
+	expected := HashOut{
+		14216040864787980138,
+		17275303675000904868,
+		11831395338463193314,
+		281267649235863375,
+	}
+
+	for i := 0; i < 4; i++ {
+		if res[i] != expected[i] {
+			t.Logf("Expected: %v, got: %v\n", expected, res)
+			t.FailNow()
 		}
 	}
 }

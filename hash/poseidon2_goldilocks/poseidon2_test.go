@@ -1,6 +1,7 @@
 package poseidon2
 
 import (
+	"math"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -161,6 +162,30 @@ func TestHashNToHashNoPad(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		if res[i] != expected[i] {
 			t.Fail()
+		}
+	}
+}
+
+func TestHashNToHashNoPadLarge(t *testing.T) {
+	res := HashNToHashNoPad([]g.Element{
+		g.FromUint64(g.ORDER + 1),
+		g.FromUint64(g.ORDER + 2),
+		g.FromUint64(g.ORDER + 3),
+		g.FromUint64(math.MaxUint64),
+		g.FromUint64(math.MaxUint64 - 1),
+	})
+
+	expected := HashOut{
+		g.FromUint64(14216040864787980138),
+		g.FromUint64(17275303675000904868),
+		g.FromUint64(11831395338463193314),
+		g.FromUint64(281267649235863375),
+	}
+
+	for i := 0; i < 4; i++ {
+		if res[i] != expected[i] {
+			t.Logf("Expected: [%v], got: [%v]\n", g.ToString(expected[:]...), g.ToString(res[:]...))
+			t.FailNow()
 		}
 	}
 }

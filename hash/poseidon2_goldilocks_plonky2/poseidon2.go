@@ -97,6 +97,34 @@ func HashNToMNoPad(input []g.GoldilocksField, numOutputs int) []g.GoldilocksFiel
 	}
 }
 
+func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
+	if len(input)%g.Bytes != 0 {
+		panic("input length should be multiple of 8")
+	}
+
+	inputLen := len(input) / g.Bytes
+
+	var perm [WIDTH]g.GoldilocksField
+	for i := 0; i < inputLen; i += RATE {
+		for j := 0; j < RATE && i+j < inputLen; j++ {
+			index := (i + j) * g.Bytes
+			perm[j] = g.FromCanonicalLittleEndianBytesF(input[index : index+g.Bytes])
+		}
+		Permute(&perm)
+	}
+
+	outputs := make([]g.GoldilocksField, 0, numOutputs)
+	for {
+		for i := 0; i < RATE; i++ {
+			outputs = append(outputs, perm[i])
+			if len(outputs) == numOutputs {
+				return outputs
+			}
+		}
+		Permute(&perm)
+	}
+}
+
 func Permute(input *[WIDTH]g.GoldilocksField) {
 	externalLinearLayer(input)
 	fullRounds(input, 0)
@@ -185,35 +213,43 @@ func sboxP(index int, state *[WIDTH]g.GoldilocksField) {
 	state[index] = g.MulF(tmpSixth, tmp)
 }
 
-const BlockSize = g.Bytes // BlockSize size that poseidon consumes
+const BlockSize = g.Bytes * WIDTH // BlockSize size that poseidon consumes
 
 type digest struct {
-	data []g.GoldilocksField
+	data []byte
+	len  int
 }
 
 func NewPoseidon2() hash.Hash {
 	d := new(digest)
-	d.Reset()
 	return d
 }
 
 // Reset resets the Hash to its initial state.
 func (d *digest) Reset() {
-	d.data = nil
+	d.data = d.data[:0]
+	d.len = 0
 }
 
 // Get element by element.
 func (d *digest) Write(p []byte) (n int, err error) {
-	if len(p)%g.Bytes != 0 {
-		return 0, fmt.Errorf("input bytes len should be multiple of 8 but is %d", len(p))
+	d.data = append(d.data, p...)
+	d.len += len(p)
+
+	return len(p), nil
+}
+
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
+func (d *digest) Sum(b []byte) []byte {
+	h := HashNToMNoPadBytes(d.data, 4)
+	d.Reset()
+
+	for _, elem := range h {
+		b = append(b, g.ToLittleEndianBytesF(elem)...)
 	}
 
-	gArr := make([]g.GoldilocksField, len(p)/g.Bytes)
-	for i := 0; i < len(p); i += g.Bytes {
-		gArr[i/g.Bytes] = g.FromCanonicalLittleEndianBytesF(p[i : i+g.Bytes])
-	}
-	d.data = append(d.data, gArr...)
-	return len(p), nil
+	return b
 }
 
 func (d *digest) Size() int {
@@ -223,12 +259,4 @@ func (d *digest) Size() int {
 // BlockSize returns the number of bytes Sum will return.
 func (d *digest) BlockSize() int {
 	return BlockSize
-}
-
-// Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
-func (d *digest) Sum(b []byte) []byte {
-	b = append(b, HashNToHashNoPad(d.data).ToLittleEndianBytes()...)
-	d.data = nil
-	return b
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -94,21 +95,63 @@ func TestPoseidon2Bench(t *testing.T) {
 		t.FailNow()
 	}
 
-	results := make([]g.GoldilocksField, 0, 4*len(inputs))
-	start := time.Now()
-	for _, input := range inputs {
-		res := poseidon2_plonky2.HashNToHashNoPad(input)
-		results = append(results, res[:]...)
-	}
-	duration := time.Since(start)
-	t.Logf("HashNToHashNoPad plonky2 took %s for %d inputs", duration, totalInputs)
+	for i := 0; i < 10; i++ {
+		PrintMemUsage()
 
-	sha2 := sha256.New()
-	for _, res := range results {
-		sha2.Write(g.ToLittleEndianBytesF(res))
+		results := make([]g.GoldilocksField, 0, 4*len(inputs))
+		start := time.Now()
+		for _, input := range inputs {
+			res := poseidon2_plonky2.HashNToHashNoPad(input)
+			results = append(results, res[:]...)
+		}
+		duration := time.Since(start)
+		t.Logf("HashNToHashNoPad plonky2 took %s for %d inputs", duration, totalInputs)
+
+		sha2 := sha256.New()
+		for _, res := range results {
+			sha2.Write(g.ToLittleEndianBytesF(res))
+		}
+		t.Logf("Hash: %x\n", sha2.Sum(nil))
 	}
-	hash := sha2.Sum(nil)
-	t.Logf("Hash: %x\n", hash)
+}
+
+func TestPoseidon2HasherBench(t *testing.T) {
+	inputs, err := readBenchInputsBytes("bench_vector")
+	totalInputs := len(inputs)
+	if err != nil {
+		t.Logf("Error: %v\n", err)
+		t.FailNow()
+	}
+
+	hasher := poseidon2_plonky2.NewPoseidon2()
+	start1 := time.Now()
+
+	for i := 0; i < 10; i++ {
+		PrintMemUsage()
+
+		results := make([]g.GoldilocksField, 0, 4*len(inputs))
+		start := time.Now()
+		for _, input := range inputs {
+			for _, b := range input {
+				hasher.Write(b)
+			}
+			res := hasher.Sum(nil)
+			hasher.Reset()
+			x, _ := poseidon2_plonky2.HashOutFromLittleEndianBytes(res[:])
+			results = append(results, x[:]...)
+		}
+		duration := time.Since(start)
+		t.Logf("Hasher plonky2 took %s for %d inputs", duration, totalInputs)
+
+		sha2 := sha256.New()
+		for _, res := range results {
+			sha2.Write(g.ToLittleEndianBytesF(res))
+		}
+		t.Logf("Hash: %x\n", sha2.Sum(nil))
+	}
+
+	duration := time.Since(start1)
+	t.Logf("===> Hasher plonky2 took %s", duration)
 }
 
 func TestPoseidon2BenchOld(t *testing.T) {
@@ -167,6 +210,37 @@ func readBenchInputs(filename string) ([][]g.GoldilocksField, error) {
 	return inputs, nil
 }
 
+func readBenchInputsBytes(filename string) ([][][]byte, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var inputs [][][]byte
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		strVals := strings.Split(line, ",")
+		var input [][]byte
+		for _, strVal := range strVals {
+			val, err := strconv.ParseUint(strVal, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse uint64: %v", err)
+			}
+			input = append(input, g.ToLittleEndianBytesF(g.GoldilocksField(val)))
+		}
+		inputs = append(inputs, input)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read file: %v", err)
+	}
+
+	return inputs, nil
+}
+
 func readBenchInputsOld(filename string) ([][]g.Element, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -196,4 +270,14 @@ func readBenchInputsOld(filename string) ([][]g.Element, error) {
 	}
 
 	return inputs, nil
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v Bytes", m.Alloc)
+	fmt.Printf("\tTotalAlloc = %v Bytes", m.TotalAlloc)
+	fmt.Printf("\tSys = %v Bytes", m.Sys)
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
 }

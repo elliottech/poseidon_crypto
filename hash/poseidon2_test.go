@@ -129,7 +129,7 @@ func TestPoseidon2HasherBench(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		PrintMemUsage()
 
-		results := make([]g.GoldilocksField, 0, 4*len(inputs))
+		results := make([]byte, 0, 4*8*len(inputs))
 		start := time.Now()
 		for _, input := range inputs {
 			for _, b := range input {
@@ -137,16 +137,13 @@ func TestPoseidon2HasherBench(t *testing.T) {
 			}
 			res := hasher.Sum(nil)
 			hasher.Reset()
-			x, _ := poseidon2_plonky2.HashOutFromLittleEndianBytes(res[:])
-			results = append(results, x[:]...)
+			results = append(results, res...)
 		}
 		duration := time.Since(start)
 		t.Logf("Hasher plonky2 took %s for %d inputs", duration, totalInputs)
 
 		sha2 := sha256.New()
-		for _, res := range results {
-			sha2.Write(g.ToLittleEndianBytesF(res))
-		}
+		sha2.Write(results)
 		t.Logf("Hash: %x\n", sha2.Sum(nil))
 	}
 

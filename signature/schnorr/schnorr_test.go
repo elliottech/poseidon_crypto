@@ -10,10 +10,10 @@ import (
 )
 
 func TestSchnorrSignAndVerify(t *testing.T) {
-	sk := curve.SampleScalar(nil) // Sample a secret key
+	sk := curve.SampleScalar() // Sample a secret key
 	msg := g.RandArray(244)
 	hashedMsg := p2.HashToQuinticExtension(msg)
-	k := curve.SampleScalar(nil)
+	k := curve.SampleScalar()
 
 	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k)
 	pk := SchnorrPkFromSk(sk)
@@ -142,8 +142,8 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	sk := curve.SampleScalar(nil) // Sample a secret key
-	msg := g.RandArray(244)       // Random message of 244 field elements (big)
+	sk := curve.SampleScalar() // Sample a secret key
+	msg := g.RandArray(244)    // Random message of 244 field elements (big)
 	hashedMsg := p2.HashToQuinticExtension(msg)
 
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)

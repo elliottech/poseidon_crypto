@@ -48,15 +48,15 @@ func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
 	return result
 }
 
-func SampleScalar(seed *string) ECgFp5Scalar {
-	var rng *big.Int
-	if seed == nil {
-		rng, _ = rand.Int(rand.Reader, ORDER)
-	} else {
-		hash := sha256.Sum256([]byte(*seed))
-		rng = new(big.Int).SetBytes(hash[:])
-		rng.Mod(rng, ORDER)
-	}
+func SampleScalarWithSeed(seed string) ECgFp5Scalar {
+	hash := sha256.Sum256([]byte(seed))
+	rng := new(big.Int).SetBytes(hash[:])
+	rng.Mod(rng, ORDER)
+	return FromNonCanonicalBigInt(rng)
+}
+
+func SampleScalar() ECgFp5Scalar {
+	rng, _ := rand.Int(rand.Reader, ORDER)
 	return FromNonCanonicalBigInt(rng)
 }
 

@@ -65,7 +65,7 @@ func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
-	k := curve.SampleScalar(nil)
+	k := curve.SampleScalar()
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point

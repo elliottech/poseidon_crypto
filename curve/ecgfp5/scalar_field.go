@@ -1,11 +1,10 @@
 package ecgfp5
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
-	"math/rand"
-	"time"
 
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
@@ -50,20 +49,15 @@ func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
 }
 
 func SampleScalar(seed *string) ECgFp5Scalar {
-	var rng *rand.Rand
+	var rng *big.Int
 	if seed == nil {
-		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng, _ = rand.Int(rand.Reader, ORDER)
 	} else {
-		seedBytes := []byte(*seed)
-		hash := sha256.Sum256(seedBytes)
-		var intSeed int64
-		for _, b := range hash[:8] {
-			intSeed = (intSeed << 8) | int64(b)
-		}
-		rng = rand.New(rand.NewSource(intSeed))
+		hash := sha256.Sum256([]byte(*seed))
+		rng = new(big.Int).SetBytes(hash[:])
+		rng.Mod(rng, ORDER)
 	}
-
-	return FromNonCanonicalBigInt(new(big.Int).Rand(rng, ORDER))
+	return FromNonCanonicalBigInt(rng)
 }
 
 var (

@@ -114,7 +114,10 @@ func NegF(x GoldilocksField) GoldilocksField {
 }
 
 func SampleF() GoldilocksField {
-	rng, _ := rand.Int(rand.Reader, ORDER_BIG)
+	rng, err := rand.Int(rand.Reader, ORDER_BIG)
+	if err != nil {
+		panic("failed to read random bytes into buffer")
+	}
 	return GoldilocksField(rng.Uint64())
 }
 

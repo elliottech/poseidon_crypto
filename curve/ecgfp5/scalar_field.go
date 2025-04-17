@@ -50,7 +50,10 @@ func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
 }
 
 func SampleScalarCrypto() ECgFp5Scalar {
-	rng, _ := cryptorand.Int(cryptorand.Reader, ORDER)
+	rng, err := cryptorand.Int(cryptorand.Reader, ORDER)
+	if err != nil {
+		panic("failed to read random bytes into buffer")
+	}
 	return FromNonCanonicalBigInt(rng)
 }
 

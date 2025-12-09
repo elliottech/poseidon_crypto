@@ -105,7 +105,7 @@ func TestPoseidon2Bench(t *testing.T) {
 			results = append(results, res[:]...)
 		}
 		duration := time.Since(start)
-		t.Logf("HashNToHashNoPad plonky2 took %d for %d inputs", duration.Milliseconds(), totalInputs)
+		t.Logf("HashNToHashNoPad plonky2 took %s for %d inputs", duration, totalInputs)
 
 		sha2 := sha256.New()
 		for _, res := range results {

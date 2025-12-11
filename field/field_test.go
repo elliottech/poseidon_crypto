@@ -187,6 +187,80 @@ func TestSquareF(t *testing.T) {
 	}
 }
 
+func TestMulAccF(t *testing.T) {
+	for _, x := range inputs {
+		for _, y := range inputs {
+			for _, z := range inputs {
+				fX := g.GoldilocksField(x)
+				fY := g.GoldilocksField(y)
+				fZ := g.GoldilocksField(z)
+				mulAcc := g.MulAccF(fX, fY, fZ).ToCanonicalUint64()
+				expected := SumMod(x, MulMod(y, z))
+				if mulAcc != expected {
+					t.Fatalf("Expected %d + %d * %d = %d, but got %d", x, y, z, expected, mulAcc)
+				}
+			}
+		}
+	}
+}
+
+func TestReduce128Bit(t *testing.T) {
+	testValues := []g.UInt128{
+		{0, 0},
+		{1, 0},
+		{math.MaxUint64, math.MaxUint64},
+		{0, g.ORDER + 1},
+		{0, g.ORDER - 1},
+		{0, 1},
+		{0, math.MaxUint64},
+		{math.MaxUint64, 0},
+	}
+
+	for _, val := range testValues {
+		reduced := g.Reduce128Bit(val)
+		bigVal := new(big.Int).SetUint64(val.Hi)
+		bigVal.Lsh(bigVal, 64)
+		bigVal.Add(bigVal, new(big.Int).SetUint64(val.Lo))
+		bigOrder := new(big.Int).SetUint64(g.ORDER)
+		bigVal.Mod(bigVal, bigOrder)
+		expected := bigVal.Uint64()
+		if reduced.ToCanonicalUint64() != expected {
+			t.Fatalf("Expected reduction of %v to be %d, but got %d", val, expected, reduced.ToCanonicalUint64())
+		}
+	}
+}
+
+func TestReduce96Bit(t *testing.T) {
+	testValues := []g.UInt128{
+		{0, 0},
+		{1, 0},
+		{math.MaxUint32, math.MaxUint64},
+		{0, g.ORDER + 1},
+		{0, g.ORDER - 1},
+		{0, 1},
+		{0, math.MaxUint64},
+		{math.MaxUint32, 0},
+	}
+
+	for _, val := range testValues {
+		reduced := g.Reduce96Bit(val)
+		bigVal := new(big.Int).SetUint64(val.Hi)
+		bigVal.Lsh(bigVal, 64)
+		bigVal.Add(bigVal, new(big.Int).SetUint64(val.Lo))
+
+		if bigVal.BitLen() > 96 {
+			t.Fatalf("Input %v exceeds 96 bits", val)
+		}
+
+		bigOrder := new(big.Int).SetUint64(g.ORDER)
+		bigVal.Mod(bigVal, bigOrder)
+		expected := bigVal.Uint64()
+		if reduced.ToCanonicalUint64() != expected {
+			t.Fatalf("Expected reduction of %v to be %d, but got %d", val, expected, reduced.ToCanonicalUint64())
+		}
+	}
+}
+
 func TestSubFDoubleWraparound(t *testing.T) {
 	/*
 		let (a, b) = (F::from_canonical_u64((F::ORDER + 1u64) / 2u64), F::TWO);

@@ -149,51 +149,80 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 }
 
 func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
-	for i := 0; i < 3; i++ { // 4 size window
-		var t0, t1, t2, t3, t4, t5, t6 g.GoldilocksField
-		t0 = g.AddF(s[4*i], s[4*i+1])   // s0+s1
-		t1 = g.AddF(s[4*i+2], s[4*i+3]) // s2+s3
-		t2 = g.AddF(t0, t1)             // t0+t1 = s0+s1+s2+s3
-		t3 = g.AddF(t2, s[4*i+1])       // t2+s1 = s0+2s1+s2+s3
-		t4 = g.AddF(t2, s[4*i+3])       // t2+s3 = s0+s1+s2+2s3
-		t5 = g.DoubleF(s[4*i])          // 2s0
-		t6 = g.DoubleF(s[4*i+2])        // 2s2
-		s[4*i] = g.AddF(t3, t0)
-		s[4*i+1] = g.AddF(t6, t3)
-		s[4*i+2] = g.AddF(t1, t4)
-		s[4*i+3] = g.AddF(t5, t4)
+	s128 := [WIDTH]g.UInt128{}
+	for i := 0; i < WIDTH; i++ {
+		s128[i] = g.AsUInt128(s[i])
 	}
 
-	sums := [4]g.GoldilocksField{}
-	for k := 0; k < 4; k++ {
-		for j := 0; j < WIDTH; j += 4 {
-			sums[k] = g.AddF(sums[k], s[j+k])
-		}
-	}
+	externalLinearLayer128(&s128)
+
 	for i := 0; i < WIDTH; i++ {
-		s[i] = g.AddF(s[i], sums[i%4])
+		s[i] = g.Reduce96Bit(s128[i])
+	}
+}
+
+func externalLinearLayer128(s *[WIDTH]g.UInt128) {
+	for i := 0; i < WIDTH; i += 4 {
+		t01 := g.AddUInt128(s[i], s[i+1])
+		t23 := g.AddUInt128(s[i+2], s[i+3])
+		t0123 := g.AddUInt128(t01, t23)
+
+		x0 := s[i]
+		x2 := s[i+2]
+
+		s[i] = g.AddUInt128(g.AddUInt128(t0123, t01), s[i+1])
+		s[i+1] = g.AddUInt128(g.AddUInt128(g.AddUInt128(t0123, s[i+1]), x2), x2)
+		s[i+2] = g.AddUInt128(g.AddUInt128(t0123, t23), s[i+3])
+		s[i+3] = g.AddUInt128(g.AddUInt128(g.AddUInt128(t0123, s[i+3]), x0), x0)
+	}
+
+	sums := [4]g.UInt128{}
+	for i := 0; i < 4; i++ {
+		sums[i] = g.AddUInt128(g.AddUInt128(s[i], s[i+4]), s[i+8])
+	}
+
+	for i := 0; i < WIDTH; i++ {
+		s[i] = g.AddUInt128(s[i], sums[i%4])
 	}
 }
 
 func internalLinearLayer(state *[WIDTH]g.GoldilocksField) {
-	sum := state[0]
-	for i := 1; i < WIDTH; i++ {
-		sum = g.AddF(sum, state[i])
-	}
-	for i := 0; i < WIDTH; i++ {
-		state[i] = g.MulF(state[i], MATRIX_DIAG_12_U64[i])
-		state[i] = g.AddF(state[i], sum)
-	}
+	sum := g.AsUInt128(state[0])
+	sum = g.AddUInt128(sum, g.AsUInt128(state[1]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[2]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[3]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[4]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[5]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[6]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[7]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[8]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[9]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[10]))
+	sum = g.AddUInt128(sum, g.AsUInt128(state[11]))
+	sumF := g.Reduce96Bit(sum)
+
+	state[0] = g.MulAccF(sumF, state[0], MATRIX_DIAG_12_U64[0])
+	state[1] = g.MulAccF(sumF, state[1], MATRIX_DIAG_12_U64[1])
+	state[2] = g.MulAccF(sumF, state[2], MATRIX_DIAG_12_U64[2])
+	state[3] = g.MulAccF(sumF, state[3], MATRIX_DIAG_12_U64[3])
+	state[4] = g.MulAccF(sumF, state[4], MATRIX_DIAG_12_U64[4])
+	state[5] = g.MulAccF(sumF, state[5], MATRIX_DIAG_12_U64[5])
+	state[6] = g.MulAccF(sumF, state[6], MATRIX_DIAG_12_U64[6])
+	state[7] = g.MulAccF(sumF, state[7], MATRIX_DIAG_12_U64[7])
+	state[8] = g.MulAccF(sumF, state[8], MATRIX_DIAG_12_U64[8])
+	state[9] = g.MulAccF(sumF, state[9], MATRIX_DIAG_12_U64[9])
+	state[10] = g.MulAccF(sumF, state[10], MATRIX_DIAG_12_U64[10])
+	state[11] = g.MulAccF(sumF, state[11], MATRIX_DIAG_12_U64[11])
 }
 
 func addRC(state *[WIDTH]g.GoldilocksField, externalRound int) {
 	for i := 0; i < WIDTH; i++ {
-		state[i] = g.AddF(state[i], EXTERNAL_CONSTANTS[externalRound][i])
+		state[i] = g.AddCanonicalUint64(state[i], uint64(EXTERNAL_CONSTANTS[externalRound][i]))
 	}
 }
 
 func addRCI(state *[WIDTH]g.GoldilocksField, round int) {
-	state[0] = g.AddF(state[0], INTERNAL_CONSTANTS[round])
+	state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[round]))
 }
 
 func sbox(state *[WIDTH]g.GoldilocksField) {

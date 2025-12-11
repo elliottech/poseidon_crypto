@@ -217,12 +217,12 @@ func internalLinearLayer(state *[WIDTH]g.GoldilocksField) {
 
 func addRC(state *[WIDTH]g.GoldilocksField, externalRound int) {
 	for i := 0; i < WIDTH; i++ {
-		state[i] = g.AddF(state[i], EXTERNAL_CONSTANTS[externalRound][i])
+		state[i] = g.AddCanonicalUint64(state[i], uint64(EXTERNAL_CONSTANTS[externalRound][i]))
 	}
 }
 
 func addRCI(state *[WIDTH]g.GoldilocksField, round int) {
-	state[0] = g.AddF(state[0], INTERNAL_CONSTANTS[round])
+	state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[round]))
 }
 
 func sbox(state *[WIDTH]g.GoldilocksField) {

@@ -47,6 +47,7 @@ func (z GoldilocksField) ToCanonicalUint64() uint64 {
 	return x
 }
 
+// lhs, rhs in non-canonical form
 func AddF(lhs, rhs GoldilocksField) GoldilocksField {
 	sum, over := bits.Add64(uint64(lhs), uint64(rhs), 0)
 	sum, over = bits.Add64(sum, over*EPSILON, 0)
@@ -58,10 +59,18 @@ func AddF(lhs, rhs GoldilocksField) GoldilocksField {
 	return GoldilocksField(sum)
 }
 
+// Assuming lhs or rhs is in the field, i.e. x < ORDER and other in non-canonical form(u64). This assumption can be used to remove second overflow check.
+func AddCanonicalUint64(lhs GoldilocksField, rhs uint64) GoldilocksField {
+	sum, over := bits.Add64(uint64(lhs), uint64(rhs), 0)
+	// if overflowed, sum := lhs + rhs - 2^64 => sum + EPSILON = lhs + rhs - 2^64 + 2^32 -1 = lhs + rhs - ORDER < ORDER + 2^64 - ORDER = 2^64, so there is no overflow in this case.
+	return GoldilocksField(sum + over*EPSILON)
+}
+
 func DoubleF(lhs GoldilocksField) GoldilocksField {
 	return AddF(lhs, lhs)
 }
 
+// lhs, rhs in non-canonical form
 func SubF(lhs, rhs GoldilocksField) GoldilocksField {
 	diff, borrow := bits.Sub64(uint64(lhs), uint64(rhs), 0)
 	diff, borrow = bits.Sub64(diff, borrow*EPSILON, 0)
@@ -73,6 +82,7 @@ func SubF(lhs, rhs GoldilocksField) GoldilocksField {
 	return GoldilocksField(diff)
 }
 
+// lhs, rhs in non-canonical form
 func MulF(lhs, rhs GoldilocksField) GoldilocksField {
 	x_hi, x_lo := bits.Mul64(uint64(lhs), uint64(rhs))
 
@@ -127,6 +137,7 @@ func SampleF() GoldilocksField {
 	return GoldilocksField(rng.Uint64())
 }
 
+// Canonical representation
 func ToLittleEndianBytesF(z GoldilocksField) []byte {
 	res := make([]byte, Bytes)
 	binary.LittleEndian.PutUint64(res, z.ToCanonicalUint64())
@@ -141,6 +152,7 @@ type UInt128 struct {
 	Hi, Lo uint64
 }
 
+// NonCanonical conversion
 func AsUInt128(f GoldilocksField) UInt128 {
 	u := uint64(f)
 	return UInt128{0, u}

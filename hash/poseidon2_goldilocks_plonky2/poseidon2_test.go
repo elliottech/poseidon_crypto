@@ -283,3 +283,21 @@ func TestHashToQuinticExtension(t *testing.T) {
 		}
 	}
 }
+
+func TestConstantsAreInTheField(t *testing.T) {
+	for r := 0; r < ROUNDS_F; r++ {
+		for i := 0; i < WIDTH; i++ {
+			if uint64(EXTERNAL_CONSTANTS[r][i]) >= g.ORDER {
+				t.Logf("External constant at round %d, index %d is not in the field: %d", r, i, EXTERNAL_CONSTANTS[r][i])
+				t.Fail()
+			}
+		}
+	}
+
+	for r := 0; r < ROUNDS_P; r++ {
+		if uint64(INTERNAL_CONSTANTS[r]) >= g.ORDER {
+			t.Logf("Internal constant at round %d is not in the field: %d", r, INTERNAL_CONSTANTS[r])
+			t.Fail()
+		}
+	}
+}

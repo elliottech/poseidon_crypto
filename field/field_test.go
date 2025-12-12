@@ -302,6 +302,103 @@ func TestAddFDoubleWraparound(t *testing.T) {
 	}
 }
 
+func FuzzTestF(f *testing.F) {
+	f.Add(uint64(0), uint64(0))
+	f.Add(uint64(1), uint64(1))
+	f.Add(uint64(math.MaxUint64), uint64(math.MaxUint64))
+	f.Add(uint64(math.MaxUint32), uint64(math.MaxUint64))
+	f.Add(uint64(g.ORDER-1), uint64(g.ORDER-1))
+	f.Add(uint64(g.ORDER), uint64(g.ORDER))
+
+	f.Fuzz(func(t *testing.T, lhs, rhs uint64) {
+		// AddF
+		{
+			addF := g.AddF(g.GoldilocksField(lhs), g.GoldilocksField(rhs)).ToCanonicalUint64()
+			expected := SumMod(lhs, rhs)
+			if addF != expected {
+				t.Fatalf("AddF: Expected %d + %d = %d, but got %d", lhs, rhs, expected, addF)
+			}
+		}
+
+		// SubF
+		{
+			subF := g.SubF(g.GoldilocksField(lhs), g.GoldilocksField(rhs)).ToCanonicalUint64()
+			expected := SubMod(lhs, rhs)
+			if subF != expected {
+				t.Fatalf("SubF: Expected %d - %d = %d, but got %d", lhs, rhs, expected, subF)
+			}
+		}
+
+		// MulF
+		{
+			mulF := g.MulF(g.GoldilocksField(lhs), g.GoldilocksField(rhs)).ToCanonicalUint64()
+			expected := MulMod(lhs, rhs)
+			if mulF != expected {
+				t.Fatalf("MulF: Expected %d * %d = %d, but got %d", lhs, rhs, expected, mulF)
+			}
+		}
+
+		// NegF
+		{
+			negF := g.NegF(g.GoldilocksField(lhs)).ToCanonicalUint64()
+			expected := NegMod(lhs)
+			if negF != expected {
+				t.Fatalf("NegF: Expected Neg(%d) = %d, but got %d", lhs, expected, negF)
+			}
+		}
+
+		// SquareF
+		{
+			sqrF := g.SquareF(g.GoldilocksField(lhs)).ToCanonicalUint64()
+			expected := SquareMod(lhs)
+			if sqrF != expected {
+				t.Fatalf("SquareF: Expected (%d)^2 = %d, but got %d", lhs, expected, sqrF)
+			}
+		}
+
+		// AddCanonicalUint64
+		{
+			lhs := lhs & (g.ORDER - 1) // make sure lhs is in the field
+			addCanonical := g.AddCanonicalUint64(g.GoldilocksField(lhs), rhs).ToCanonicalUint64()
+			expected := SumMod(lhs, rhs)
+			if addCanonical != expected {
+				t.Fatalf("AddCanonicalUint64: Expected %d + %d = %d, but got %d", lhs, rhs, expected, addCanonical)
+			}
+
+		}
+
+		// Reduce128Bit
+		{
+			val := g.UInt128{Hi: lhs, Lo: rhs}
+			reduced := g.Reduce128Bit(val)
+			bigVal := new(big.Int).SetUint64(val.Hi)
+			bigVal.Lsh(bigVal, 64)
+			bigVal.Add(bigVal, new(big.Int).SetUint64(val.Lo))
+			bigOrder := new(big.Int).SetUint64(g.ORDER)
+			bigVal.Mod(bigVal, bigOrder)
+			expected := bigVal.Uint64()
+			if reduced.ToCanonicalUint64() != expected {
+				t.Fatalf("Reduce128Bit: Expected reduction of %v to be %d, but got %d", val, expected, reduced.ToCanonicalUint64())
+			}
+		}
+
+		// Reduce96Bit
+		{
+			val := g.UInt128{Hi: uint64(uint32(lhs)), Lo: rhs}
+			reduced := g.Reduce96Bit(val)
+			bigVal := new(big.Int).SetUint64(val.Hi)
+			bigVal.Lsh(bigVal, 64)
+			bigVal.Add(bigVal, new(big.Int).SetUint64(val.Lo))
+			bigOrder := new(big.Int).SetUint64(g.ORDER)
+			bigVal.Mod(bigVal, bigOrder)
+			expected := bigVal.Uint64()
+			if reduced.ToCanonicalUint64() != expected {
+				t.Fatalf("Reduce96Bit: Expected reduction of %v to be %d, but got %d", val, expected, reduced.ToCanonicalUint64())
+			}
+		}
+	})
+}
+
 // Quintic extension tests
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {

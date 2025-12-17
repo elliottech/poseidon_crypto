@@ -1,7 +1,6 @@
 package ecgfp5
 
 import (
-	"fmt"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -641,8 +640,6 @@ func TestBasicOps(t *testing.T) {
 	}
 
 	if !gFp5.Equals(p1.Add(p2).Encode(), vectors[3]) {
-		fmt.Printf("lhs: %+v \n", p1.Add(p2).Encode())
-		fmt.Printf("rhs: %+v \n", vectors[3])
 		t.Fatalf("Addition and doubling checks failed")
 	}
 

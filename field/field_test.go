@@ -2,7 +2,6 @@ package field
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
 	"testing"
 
@@ -644,9 +643,6 @@ func TestSqrtFunctions(t *testing.T) {
 	if !gFp5.Equals(result2, expected) {
 		t.Fatalf("Expected sqrt to be %v, but got %v", expected, result2)
 	}
-
-	fmt.Printf("result: %+v \n", result)
-	fmt.Printf("result2: %+v", result2)
 }
 
 func TestSqrtNonExistent(t *testing.T) {

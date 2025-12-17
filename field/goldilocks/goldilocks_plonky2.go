@@ -11,8 +11,10 @@ type GoldilocksField uint64
 
 const EPSILON = uint64((1 << 32) - 1)
 const ORDER = uint64(0xffffffff00000001)
+const TWO_ADICITY = 32
+const POWER_OF_TWO_GENERATOR = GoldilocksField(7277203076849721926)
 
-var ORDER_BIG, _ = new(big.Int).SetString("0xffffffff00000001", 16)
+var ORDER_BIG = new(big.Int).SetUint64(ORDER)
 
 func NonCannonicalGoldilocksField(x int64) GoldilocksField {
 	if x < 0 {
@@ -120,6 +122,21 @@ func ExpPowerOf2(x GoldilocksField, n uint) GoldilocksField {
 	return z
 }
 
+func ExpF(x GoldilocksField, exponent uint64) GoldilocksField {
+	current := x
+	product := OneF()
+
+	for exponent > 0 {
+		if exponent&1 == 1 {
+			product = MulF(product, current)
+		}
+		current = SquareF(current)
+		exponent >>= 1
+	}
+
+	return product
+}
+
 func NegF(x GoldilocksField) GoldilocksField {
 	z := GoldilocksField(0)
 	if !x.IsZero() {
@@ -195,24 +212,91 @@ func Reduce128Bit(x UInt128) GoldilocksField {
 	return GoldilocksField(t2)
 }
 
-// func (z *GoldilocksField) Inverse(x *GoldilocksField) *GoldilocksField {
-// 	if x.IsZero() {
-// 		z.SetZero()
-// 		return z
-// 	}
+func SqrtF(self GoldilocksField) *GoldilocksField {
+	if self.IsZero() {
+		z := GoldilocksField(0)
+		return &z
+	}
+	if IsQuadraticResidueF(self) {
+		// reduce first
+		self := GoldilocksField(self.ToCanonicalUint64())
 
-// 	var tmp *GoldilocksField
+		t := (ORDER - 1) / (1 << TWO_ADICITY)
+		z := POWER_OF_TWO_GENERATOR
+		w := ExpF(self, (t-1)/2)
+		x := MulF(self, w)
+		b := MulF(x, w)
 
-// 	t2 := *tmp.Square(x).Mul(tmp, x)
-// 	t3 := *tmp.Square(&t2).Mul(tmp, x)
-// 	t6 := *tmp.ExpPowerOf2(&t3, 3).Mul(tmp, &t3)
-// 	t12 := *tmp.ExpPowerOf2(&t6, 6).Mul(tmp, &t6)
-// 	t24 := *tmp.ExpPowerOf2(&t12, 12).Mul(tmp, &t12)
-// 	t30 := *tmp.ExpPowerOf2(&t24, 6).Mul(tmp, &t6)
-// 	t31 := *tmp.Square(&t30).Mul(tmp, x)
-// 	t63 := *tmp.ExpPowerOf2(&t31, 32).Mul(tmp, &t31)
+		v := TWO_ADICITY
 
-// 	z.Square(&t63).Mul(z, x)
+		for b.ToCanonicalUint64() != 1 {
+			k := 0
+			b2k := b
+			for b2k.ToCanonicalUint64() != 1 {
+				b2k = SquareF(b2k)
+				k++
+			}
 
-// 	return z
-// }
+			j := v - k - 1
+			w = z
+			for n := int(0); n < j; n++ {
+				w = SquareF(w)
+			}
+
+			z = SquareF(w)
+			b = MulF(b, z)
+			x = MulF(x, w)
+			v = k
+		}
+
+		return &x
+	}
+
+	return nil
+}
+
+func IsQuadraticResidueF(x GoldilocksField) bool {
+	if x.IsZero() {
+		return true
+	}
+
+	power := NegF(1).ToCanonicalUint64() >> 1
+	exp := ExpF(x, power)
+	switch exp.ToCanonicalUint64() {
+	case 1:
+		return true
+	case ORDER - 1:
+		return false
+	default:
+		panic("unreachable")
+	}
+}
+
+func (self GoldilocksField) InverseOrZero() GoldilocksField {
+	if self.IsZero() {
+		return ZeroF()
+	}
+
+	// base.exp_power_of_2(N) * tail
+	t2 := MulF(SquareF(self), self)
+	t3 := MulF(SquareF(t2), self)
+	t6 := MulF(ExpPowerOf2(t3, 3), t3)
+	t12 := MulF(ExpPowerOf2(t6, 6), t6)
+	t24 := MulF(ExpPowerOf2(t12, 12), t12)
+	t30 := MulF(ExpPowerOf2(t24, 6), t6)
+	t31 := MulF(SquareF(t30), self)
+
+	t63 := MulF(ExpPowerOf2(t31, 32), t31)
+
+	return MulF(SquareF(t63), self)
+}
+
+// Powers starting from 1
+func PowersF(e GoldilocksField, count int) []GoldilocksField {
+	ret := make([]GoldilocksField, count)
+	ret[0] = OneF()
+	for i := 1; i < int(count); i++ {
+		ret[i] = MulF(ret[i-1], e)
+	}
+	return ret
+}

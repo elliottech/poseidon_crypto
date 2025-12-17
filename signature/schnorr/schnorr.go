@@ -6,7 +6,7 @@ import (
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
-	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
+	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks_plonky2"
 )
 
 type Signature struct {
@@ -69,7 +69,7 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
+	preImage := make([]g.GoldilocksField, 5+5)
 	for i, elem := range r.ToBasefieldArray() {
 		preImage[i] = elem
 	}
@@ -87,7 +87,7 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
 	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
 	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.Element, 5+5)
+	preImage := make([]g.GoldilocksField, 5+5)
 	for i, elem := range r.ToBasefieldArray() {
 		preImage[i] = elem
 	}
@@ -132,7 +132,7 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 
 	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
 
-	preImage := make([]g.Element, 5+5)
+	preImage := make([]g.GoldilocksField, 5+5)
 	for i, elem := range rV.ToBasefieldArray() {
 		preImage[i] = elem
 	}

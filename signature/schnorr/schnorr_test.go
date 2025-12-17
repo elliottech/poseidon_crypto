@@ -44,25 +44,25 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 	}
 	hashedMessages := []gFp5.Element{
 		gFp5.Element{
-			g.FromUint64(8398652514106806347),
-			g.FromUint64(11069112711939986896),
-			g.FromUint64(9732488227085561369),
-			g.FromUint64(18076754337204438535),
-			g.FromUint64(17155407358725346236),
+			g.GoldilocksField(8398652514106806347),
+			g.GoldilocksField(11069112711939986896),
+			g.GoldilocksField(9732488227085561369),
+			g.GoldilocksField(18076754337204438535),
+			g.GoldilocksField(17155407358725346236),
 		},
 		gFp5.Element{
-			g.FromUint64(14569490467507212064),
-			g.FromUint64(2707063505563578676),
-			g.FromUint64(7506743487465742335),
-			g.FromUint64(12569771346154554175),
-			g.FromUint64(4305083698940175790),
+			g.GoldilocksField(14569490467507212064),
+			g.GoldilocksField(2707063505563578676),
+			g.GoldilocksField(7506743487465742335),
+			g.GoldilocksField(12569771346154554175),
+			g.GoldilocksField(4305083698940175790),
 		},
 		gFp5.Element{
-			g.FromUint64(17529153479246803593),
-			g.FromUint64(1743712677205511695),
-			g.FromUint64(4834285972617397460),
-			g.FromUint64(5486672566342530358),
-			g.FromUint64(7254989001695704129),
+			g.GoldilocksField(17529153479246803593),
+			g.GoldilocksField(1743712677205511695),
+			g.GoldilocksField(4834285972617397460),
+			g.GoldilocksField(5486672566342530358),
+			g.GoldilocksField(7254989001695704129),
 		},
 	}
 	ks := []curve.ECgFp5Scalar{
@@ -156,5 +156,24 @@ func TestBytes(t *testing.T) {
 
 	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
+	}
+}
+
+func BenchmarkSignatureVerify(b *testing.B) {
+	sk := curve.SampleScalarCrypto() // Sample a secret key
+	msg := g.RandArray(244)
+	hashedMsg := p2.HashToQuinticExtension(msg)
+	hashedMsgBytes := hashedMsg.ToLittleEndianBytes()
+	k := curve.SampleScalarCrypto()
+
+	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k).ToBytes()
+	pk := SchnorrPkFromSk(sk).ToLittleEndianBytes()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := Validate(pk, hashedMsgBytes, sig)
+		if err != nil {
+			b.Fatalf("Signature is invalid")
+		}
 	}
 }

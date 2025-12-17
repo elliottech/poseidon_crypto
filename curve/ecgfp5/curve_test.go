@@ -1,6 +1,7 @@
 package ecgfp5
 
 import (
+	"fmt"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -49,7 +50,7 @@ func TestEncode(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		if encoded[i] != g.FromUint64(expected[i]) {
+		if encoded[i].ToCanonicalUint64() != expected[i] {
 			t.Fatalf("Encode: Expected limb %d to be %x, but got %x", i, expected[i], encoded[i])
 		}
 	}
@@ -148,16 +149,16 @@ func TestAdd(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		if c.x[i] != g.FromUint64(expectedX[i]) {
+		if c.x[i].ToCanonicalUint64() != expectedX[i] {
 			t.Fatalf("Add: Expected c.x[%d] to be %x, but got %x", i, expectedX[i], c.x[i])
 		}
-		if c.z[i] != g.FromUint64(expectedZ[i]) {
+		if c.z[i].ToCanonicalUint64() != expectedZ[i] {
 			t.Fatalf("Add: Expected c.z[%d] to be %x, but got %x", i, expectedZ[i], c.z[i])
 		}
-		if c.u[i] != g.FromUint64(expectedU[i]) {
+		if c.u[i].ToCanonicalUint64() != expectedU[i] {
 			t.Fatalf("Add: Expected c.u[%d] to be %x, but got %x", i, expectedU[i], c.u[i])
 		}
-		if c.t[i] != g.FromUint64(expectedT[i]) {
+		if c.t[i].ToCanonicalUint64() != expectedT[i] {
 			t.Fatalf("Add: Expected c.t[%d] to be %x, but got %x", i, expectedT[i], c.t[i])
 		}
 	}
@@ -478,53 +479,53 @@ func testVectors() [8]gFp5.Element {
 
 	w0 := gFp5.FP5_ZERO
 	w1 := gFp5.Element{
-		g.FromUint64(12539254003028696409),
-		g.FromUint64(15524144070600887654),
-		g.FromUint64(15092036948424041984),
-		g.FromUint64(11398871370327264211),
-		g.FromUint64(10958391180505708567),
+		g.GoldilocksField(12539254003028696409),
+		g.GoldilocksField(15524144070600887654),
+		g.GoldilocksField(15092036948424041984),
+		g.GoldilocksField(11398871370327264211),
+		g.GoldilocksField(10958391180505708567),
 	}
 	w2 := gFp5.Element{
-		g.FromUint64(11001943240060308920),
-		g.FromUint64(17075173755187928434),
-		g.FromUint64(3940989555384655766),
-		g.FromUint64(15017795574860011099),
-		g.FromUint64(5548543797011402287),
+		g.GoldilocksField(11001943240060308920),
+		g.GoldilocksField(17075173755187928434),
+		g.GoldilocksField(3940989555384655766),
+		g.GoldilocksField(15017795574860011099),
+		g.GoldilocksField(5548543797011402287),
 	}
 	w3 := gFp5.Element{
-		g.FromUint64(246872606398642312),
-		g.FromUint64(4900963247917836450),
-		g.FromUint64(7327006728177203977),
-		g.FromUint64(13945036888436667069),
-		g.FromUint64(3062018119121328861),
+		g.GoldilocksField(246872606398642312),
+		g.GoldilocksField(4900963247917836450),
+		g.GoldilocksField(7327006728177203977),
+		g.GoldilocksField(13945036888436667069),
+		g.GoldilocksField(3062018119121328861),
 	}
 	w4 := gFp5.Element{
-		g.FromUint64(8058035104653144162),
-		g.FromUint64(16041715455419993830),
-		g.FromUint64(7448530016070824199),
-		g.FromUint64(11253639182222911208),
-		g.FromUint64(6228757819849640866),
+		g.GoldilocksField(8058035104653144162),
+		g.GoldilocksField(16041715455419993830),
+		g.GoldilocksField(7448530016070824199),
+		g.GoldilocksField(11253639182222911208),
+		g.GoldilocksField(6228757819849640866),
 	}
 	w5 := gFp5.Element{
-		g.FromUint64(10523134687509281194),
-		g.FromUint64(11148711503117769087),
-		g.FromUint64(9056499921957594891),
-		g.FromUint64(13016664454465495026),
-		g.FromUint64(16494247923890248266),
+		g.GoldilocksField(10523134687509281194),
+		g.GoldilocksField(11148711503117769087),
+		g.GoldilocksField(9056499921957594891),
+		g.GoldilocksField(13016664454465495026),
+		g.GoldilocksField(16494247923890248266),
 	}
 	w6 := gFp5.Element{
-		g.FromUint64(12173306542237620),
-		g.FromUint64(6587231965341539782),
-		g.FromUint64(17027985748515888117),
-		g.FromUint64(17194831817613584995),
-		g.FromUint64(10056734072351459010),
+		g.GoldilocksField(12173306542237620),
+		g.GoldilocksField(6587231965341539782),
+		g.GoldilocksField(17027985748515888117),
+		g.GoldilocksField(17194831817613584995),
+		g.GoldilocksField(10056734072351459010),
 	}
 	w7 := gFp5.Element{
-		g.FromUint64(9420857400785992333),
-		g.FromUint64(4695934009314206363),
-		g.FromUint64(14471922162341187302),
-		g.FromUint64(13395190104221781928),
-		g.FromUint64(16359223219913018041),
+		g.GoldilocksField(9420857400785992333),
+		g.GoldilocksField(4695934009314206363),
+		g.GoldilocksField(14471922162341187302),
+		g.GoldilocksField(13395190104221781928),
+		g.GoldilocksField(16359223219913018041),
 	}
 
 	return [8]gFp5.Element{w0, w1, w2, w3, w4, w5, w6, w7}
@@ -534,46 +535,46 @@ func TestBasicOps(t *testing.T) {
 	// Values that should not decode succeslly.
 	bww := [6]gFp5.Element{
 		{
-			g.FromUint64(13557832913345268708),
-			g.FromUint64(15669280705791538619),
-			g.FromUint64(8534654657267986396),
-			g.FromUint64(12533218303838131749),
-			g.FromUint64(5058070698878426028),
+			g.GoldilocksField(13557832913345268708),
+			g.GoldilocksField(15669280705791538619),
+			g.GoldilocksField(8534654657267986396),
+			g.GoldilocksField(12533218303838131749),
+			g.GoldilocksField(5058070698878426028),
 		},
 		{
-			g.FromUint64(135036726621282077),
-			g.FromUint64(17283229938160287622),
-			g.FromUint64(13113167081889323961),
-			g.FromUint64(1653240450380825271),
-			g.FromUint64(520025869628727862),
+			g.GoldilocksField(135036726621282077),
+			g.GoldilocksField(17283229938160287622),
+			g.GoldilocksField(13113167081889323961),
+			g.GoldilocksField(1653240450380825271),
+			g.GoldilocksField(520025869628727862),
 		},
 		{
-			g.FromUint64(6727960962624180771),
-			g.FromUint64(17240764188796091916),
-			g.FromUint64(3954717247028503753),
-			g.FromUint64(1002781561619501488),
-			g.FromUint64(4295357288570643789),
+			g.GoldilocksField(6727960962624180771),
+			g.GoldilocksField(17240764188796091916),
+			g.GoldilocksField(3954717247028503753),
+			g.GoldilocksField(1002781561619501488),
+			g.GoldilocksField(4295357288570643789),
 		},
 		{
-			g.FromUint64(4578929270179684956),
-			g.FromUint64(3866930513245945042),
-			g.FromUint64(7662265318638150701),
-			g.FromUint64(9503686272550423634),
-			g.FromUint64(12241691520798116285),
+			g.GoldilocksField(4578929270179684956),
+			g.GoldilocksField(3866930513245945042),
+			g.GoldilocksField(7662265318638150701),
+			g.GoldilocksField(9503686272550423634),
+			g.GoldilocksField(12241691520798116285),
 		},
 		{
-			g.FromUint64(16890297404904119082),
-			g.FromUint64(6169724643582733633),
-			g.FromUint64(9725973298012340311),
-			g.FromUint64(5977049210035183790),
-			g.FromUint64(11379332130141664883),
+			g.GoldilocksField(16890297404904119082),
+			g.GoldilocksField(6169724643582733633),
+			g.GoldilocksField(9725973298012340311),
+			g.GoldilocksField(5977049210035183790),
+			g.GoldilocksField(11379332130141664883),
 		},
 		{
-			g.FromUint64(13777379982711219130),
-			g.FromUint64(14715168412651470168),
-			g.FromUint64(17942199593791635585),
-			g.FromUint64(6188824164976547520),
-			g.FromUint64(15461469634034461986),
+			g.GoldilocksField(13777379982711219130),
+			g.GoldilocksField(14715168412651470168),
+			g.GoldilocksField(17942199593791635585),
+			g.GoldilocksField(6188824164976547520),
+			g.GoldilocksField(15461469634034461986),
 		},
 	}
 	for _, w := range bww {
@@ -639,7 +640,24 @@ func TestBasicOps(t *testing.T) {
 		t.Fatalf("Encoding checks failed")
 	}
 
-	if !gFp5.Equals(p1.Add(p2).Encode(), vectors[3]) || !gFp5.Equals(p1.Add(p1).Encode(), vectors[4]) || !gFp5.Equals(p2.Double().Encode(), vectors[5]) || !gFp5.Equals(p1.Double().Add(p2).Encode(), vectors[6]) || !gFp5.Equals(p1.Add(p2).Add(p2).Encode(), vectors[7]) {
+	if !gFp5.Equals(p1.Add(p2).Encode(), vectors[3]) {
+		fmt.Printf("lhs: %+v \n", p1.Add(p2).Encode())
+		fmt.Printf("rhs: %+v \n", vectors[3])
+		t.Fatalf("Addition and doubling checks failed")
+	}
+
+	if !gFp5.Equals(p1.Add(p1).Encode(), vectors[4]) {
+		t.Fatalf("Addition and doubling checks failed")
+	}
+
+	if !gFp5.Equals(p2.Double().Encode(), vectors[5]) {
+		t.Fatalf("Addition and doubling checks failed")
+	}
+	if !gFp5.Equals(p1.Double().Add(p2).Encode(), vectors[6]) {
+		t.Fatalf("Addition and doubling checks failed")
+	}
+
+	if !gFp5.Equals(p1.Add(p2).Add(p2).Encode(), vectors[7]) {
 		t.Fatalf("Addition and doubling checks failed")
 	}
 
@@ -672,11 +690,11 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p0Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(6148914689804861440),
-			g.FromUint64(0),
-			g.FromUint64(0),
-			g.FromUint64(0),
-			g.FromUint64(0),
+			g.GoldilocksField(6148914689804861440),
+			g.GoldilocksField(0),
+			g.GoldilocksField(0),
+			g.GoldilocksField(0),
+			g.GoldilocksField(0),
 		},
 		Y:     gFp5.FP5_ZERO,
 		IsInf: true,
@@ -691,18 +709,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p1Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(7887569478949190020),
-			g.FromUint64(11586418388990522938),
-			g.FromUint64(13676447623055915878),
-			g.FromUint64(5945168854809921881),
-			g.FromUint64(16291886980725359814),
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7556511254681645335),
-			g.FromUint64(17611929280367064763),
-			g.FromUint64(9410908488141053806),
-			g.FromUint64(11351540010214108766),
-			g.FromUint64(4846226015431423207),
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
 		},
 		IsInf: false,
 	}
@@ -716,18 +734,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p2Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(11231216549003316587),
-			g.FromUint64(17312878720767554617),
-			g.FromUint64(5614299211412933260),
-			g.FromUint64(2256199868722187419),
-			g.FromUint64(14229722163821261464),
+			g.GoldilocksField(11231216549003316587),
+			g.GoldilocksField(17312878720767554617),
+			g.GoldilocksField(5614299211412933260),
+			g.GoldilocksField(2256199868722187419),
+			g.GoldilocksField(14229722163821261464),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(11740132275098847128),
-			g.FromUint64(18250632754932612452),
-			g.FromUint64(6988589976052950880),
-			g.FromUint64(13612651576898186637),
-			g.FromUint64(16040252831112129154),
+			g.GoldilocksField(11740132275098847128),
+			g.GoldilocksField(18250632754932612452),
+			g.GoldilocksField(6988589976052950880),
+			g.GoldilocksField(13612651576898186637),
+			g.GoldilocksField(16040252831112129154),
 		},
 		IsInf: false,
 	}
@@ -741,18 +759,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p3Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(567456832026211571),
-			g.FromUint64(6401615614732569674),
-			g.FromUint64(7303004494044972219),
-			g.FromUint64(4332356015409706768),
-			g.FromUint64(4663512734739523713),
+			g.GoldilocksField(567456832026211571),
+			g.GoldilocksField(6401615614732569674),
+			g.GoldilocksField(7303004494044972219),
+			g.GoldilocksField(4332356015409706768),
+			g.GoldilocksField(4663512734739523713),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(13838792670272995877),
-			g.FromUint64(11742686110311813089),
-			g.FromUint64(17972799251722850796),
-			g.FromUint64(8534723577625674697),
-			g.FromUint64(3138422718990519265),
+			g.GoldilocksField(13838792670272995877),
+			g.GoldilocksField(11742686110311813089),
+			g.GoldilocksField(17972799251722850796),
+			g.GoldilocksField(8534723577625674697),
+			g.GoldilocksField(3138422718990519265),
 		},
 		IsInf: false,
 	}
@@ -766,18 +784,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p4Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(2626390539619063455),
-			g.FromUint64(3069873143820007175),
-			g.FromUint64(16481805966921623903),
-			g.FromUint64(2169403494164322467),
-			g.FromUint64(15849876939764656634),
+			g.GoldilocksField(2626390539619063455),
+			g.GoldilocksField(3069873143820007175),
+			g.GoldilocksField(16481805966921623903),
+			g.GoldilocksField(2169403494164322467),
+			g.GoldilocksField(15849876939764656634),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(8052493994140007067),
-			g.FromUint64(12476750341447220703),
-			g.FromUint64(7297584762312352412),
-			g.FromUint64(4456043296886321460),
-			g.FromUint64(17416054515469523789),
+			g.GoldilocksField(8052493994140007067),
+			g.GoldilocksField(12476750341447220703),
+			g.GoldilocksField(7297584762312352412),
+			g.GoldilocksField(4456043296886321460),
+			g.GoldilocksField(17416054515469523789),
 		},
 		IsInf: false,
 	}
@@ -791,18 +809,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p5Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(3378618241466923429),
-			g.FromUint64(1600085176765664645),
-			g.FromUint64(8450735902517439914),
-			g.FromUint64(879305481131694650),
-			g.FromUint64(9249368002914244868),
+			g.GoldilocksField(3378618241466923429),
+			g.GoldilocksField(1600085176765664645),
+			g.GoldilocksField(8450735902517439914),
+			g.GoldilocksField(879305481131694650),
+			g.GoldilocksField(9249368002914244868),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7063301786803892166),
-			g.FromUint64(16450112846546843898),
-			g.FromUint64(13291990378137922105),
-			g.FromUint64(17122501309646837992),
-			g.FromUint64(13551174888872382132),
+			g.GoldilocksField(7063301786803892166),
+			g.GoldilocksField(16450112846546843898),
+			g.GoldilocksField(13291990378137922105),
+			g.GoldilocksField(17122501309646837992),
+			g.GoldilocksField(13551174888872382132),
 		},
 		IsInf: false,
 	}
@@ -816,18 +834,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p6Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(12792842147978866906),
-			g.FromUint64(10605017725125541653),
-			g.FromUint64(7515179057747849898),
-			g.FromUint64(4244613931017322576),
-			g.FromUint64(5015379385130367832),
+			g.GoldilocksField(12792842147978866906),
+			g.GoldilocksField(10605017725125541653),
+			g.GoldilocksField(7515179057747849898),
+			g.GoldilocksField(4244613931017322576),
+			g.GoldilocksField(5015379385130367832),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(11618884250209642346),
-			g.FromUint64(14788516166813429253),
-			g.FromUint64(7317520700234795285),
-			g.FromUint64(12825292405177435802),
-			g.FromUint64(17658454967394645353),
+			g.GoldilocksField(11618884250209642346),
+			g.GoldilocksField(14788516166813429253),
+			g.GoldilocksField(7317520700234795285),
+			g.GoldilocksField(12825292405177435802),
+			g.GoldilocksField(17658454967394645353),
 		},
 		IsInf: false,
 	}
@@ -841,18 +859,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 
 	p7Expected := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(10440794216646581227),
-			g.FromUint64(13992847258701590930),
-			g.FromUint64(11213401763785319360),
-			g.FromUint64(12830171931568113117),
-			g.FromUint64(6220154342199499160),
+			g.GoldilocksField(10440794216646581227),
+			g.GoldilocksField(13992847258701590930),
+			g.GoldilocksField(11213401763785319360),
+			g.GoldilocksField(12830171931568113117),
+			g.GoldilocksField(6220154342199499160),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7971683838841472962),
-			g.FromUint64(1639066249976938469),
-			g.FromUint64(15015315060237521031),
-			g.FromUint64(10847769264696425470),
-			g.FromUint64(9177491810370773777),
+			g.GoldilocksField(7971683838841472962),
+			g.GoldilocksField(1639066249976938469),
+			g.GoldilocksField(15015315060237521031),
+			g.GoldilocksField(10847769264696425470),
+			g.GoldilocksField(9177491810370773777),
 		},
 		IsInf: false,
 	}
@@ -877,18 +895,18 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 func TestWeierstrassPrecomputeWindow(t *testing.T) {
 	qwe := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(7887569478949190020),
-			g.FromUint64(11586418388990522938),
-			g.FromUint64(13676447623055915878),
-			g.FromUint64(5945168854809921881),
-			g.FromUint64(16291886980725359814),
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7556511254681645335),
-			g.FromUint64(17611929280367064763),
-			g.FromUint64(9410908488141053806),
-			g.FromUint64(11351540010214108766),
-			g.FromUint64(4846226015431423207),
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
 		},
 		IsInf: false,
 	}
@@ -898,267 +916,267 @@ func TestWeierstrassPrecomputeWindow(t *testing.T) {
 	expectedWindow := []WeierstrassPoint{
 		{
 			X: gFp5.Element{
-				g.FromUint64(0),
-				g.FromUint64(0),
-				g.FromUint64(0),
-				g.FromUint64(0),
-				g.FromUint64(0),
+				g.GoldilocksField(0),
+				g.GoldilocksField(0),
+				g.GoldilocksField(0),
+				g.GoldilocksField(0),
+				g.GoldilocksField(0),
 			},
 			Y:     gFp5.FP5_ZERO,
 			IsInf: true,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(7887569478949190020),
-				g.FromUint64(11586418388990522938),
-				g.FromUint64(13676447623055915878),
-				g.FromUint64(5945168854809921881),
-				g.FromUint64(16291886980725359814),
+				g.GoldilocksField(7887569478949190020),
+				g.GoldilocksField(11586418388990522938),
+				g.GoldilocksField(13676447623055915878),
+				g.GoldilocksField(5945168854809921881),
+				g.GoldilocksField(16291886980725359814),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(7556511254681645335),
-				g.FromUint64(17611929280367064763),
-				g.FromUint64(9410908488141053806),
-				g.FromUint64(11351540010214108766),
-				g.FromUint64(4846226015431423207),
+				g.GoldilocksField(7556511254681645335),
+				g.GoldilocksField(17611929280367064763),
+				g.GoldilocksField(9410908488141053806),
+				g.GoldilocksField(11351540010214108766),
+				g.GoldilocksField(4846226015431423207),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(2626390539619063455),
-				g.FromUint64(3069873143820007175),
-				g.FromUint64(16481805966921623903),
-				g.FromUint64(2169403494164322467),
-				g.FromUint64(15849876939764656634),
+				g.GoldilocksField(2626390539619063455),
+				g.GoldilocksField(3069873143820007175),
+				g.GoldilocksField(16481805966921623903),
+				g.GoldilocksField(2169403494164322467),
+				g.GoldilocksField(15849876939764656634),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(8052493994140007067),
-				g.FromUint64(12476750341447220703),
-				g.FromUint64(7297584762312352412),
-				g.FromUint64(4456043296886321460),
-				g.FromUint64(17416054515469523789),
+				g.GoldilocksField(8052493994140007067),
+				g.GoldilocksField(12476750341447220703),
+				g.GoldilocksField(7297584762312352412),
+				g.GoldilocksField(4456043296886321460),
+				g.GoldilocksField(17416054515469523789),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(18176398362578182379),
-				g.FromUint64(4436023520237554199),
-				g.FromUint64(3215180516398562719),
-				g.FromUint64(6557371017655524187),
-				g.FromUint64(5543821526507387228),
+				g.GoldilocksField(18176398362578182379),
+				g.GoldilocksField(4436023520237554199),
+				g.GoldilocksField(3215180516398562719),
+				g.GoldilocksField(6557371017655524187),
+				g.GoldilocksField(5543821526507387228),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(13231520129332295641),
-				g.FromUint64(12272620923537119667),
-				g.FromUint64(2190001779233679631),
-				g.FromUint64(17429746542415208975),
-				g.FromUint64(3337887399771893342),
+				g.GoldilocksField(13231520129332295641),
+				g.GoldilocksField(12272620923537119667),
+				g.GoldilocksField(2190001779233679631),
+				g.GoldilocksField(17429746542415208975),
+				g.GoldilocksField(3337887399771893342),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(5948298497167270001),
-				g.FromUint64(15488083211069840053),
-				g.FromUint64(7462878240499130449),
-				g.FromUint64(5465845052061152523),
-				g.FromUint64(14272165321414720409),
+				g.GoldilocksField(5948298497167270001),
+				g.GoldilocksField(15488083211069840053),
+				g.GoldilocksField(7462878240499130449),
+				g.GoldilocksField(5465845052061152523),
+				g.GoldilocksField(14272165321414720409),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(7229037630209827809),
-				g.FromUint64(10702348517645256990),
-				g.FromUint64(8760795746058875829),
-				g.FromUint64(9846744510637391346),
-				g.FromUint64(3236820900223784510),
+				g.GoldilocksField(7229037630209827809),
+				g.GoldilocksField(10702348517645256990),
+				g.GoldilocksField(8760795746058875829),
+				g.GoldilocksField(9846744510637391346),
+				g.GoldilocksField(3236820900223784510),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(568906556912793428),
-				g.FromUint64(12270416106652192091),
-				g.FromUint64(17277438866839882878),
-				g.FromUint64(18290317522638929974),
-				g.FromUint64(7546670826452401067),
+				g.GoldilocksField(568906556912793428),
+				g.GoldilocksField(12270416106652192091),
+				g.GoldilocksField(17277438866839882878),
+				g.GoldilocksField(18290317522638929974),
+				g.GoldilocksField(7546670826452401067),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(1322178101989677577),
-				g.FromUint64(18254974566546618836),
-				g.FromUint64(1119202239871436890),
-				g.FromUint64(13885721715120393435),
-				g.FromUint64(7665289671288386226),
+				g.GoldilocksField(1322178101989677577),
+				g.GoldilocksField(18254974566546618836),
+				g.GoldilocksField(1119202239871436890),
+				g.GoldilocksField(13885721715120393435),
+				g.GoldilocksField(7665289671288386226),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(6854724460063782323),
-				g.FromUint64(7010495484231564745),
-				g.FromUint64(15016688843001273184),
-				g.FromUint64(9083584169580443423),
-				g.FromUint64(6530832684770892589),
+				g.GoldilocksField(6854724460063782323),
+				g.GoldilocksField(7010495484231564745),
+				g.GoldilocksField(15016688843001273184),
+				g.GoldilocksField(9083584169580443423),
+				g.GoldilocksField(6530832684770892589),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(13188019294905205452),
-				g.FromUint64(9894649816252217734),
-				g.FromUint64(4035350096343221693),
-				g.FromUint64(9024914229517462288),
-				g.FromUint64(14523942737067589623),
+				g.GoldilocksField(13188019294905205452),
+				g.GoldilocksField(9894649816252217734),
+				g.GoldilocksField(4035350096343221693),
+				g.GoldilocksField(9024914229517462288),
+				g.GoldilocksField(14523942737067589623),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(173069451201741305),
-				g.FromUint64(16407881748070922395),
-				g.FromUint64(1843877769060049981),
-				g.FromUint64(8394477401224475023),
-				g.FromUint64(15455323212667110231),
+				g.GoldilocksField(173069451201741305),
+				g.GoldilocksField(16407881748070922395),
+				g.GoldilocksField(1843877769060049981),
+				g.GoldilocksField(8394477401224475023),
+				g.GoldilocksField(15455323212667110231),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(7073462480600858335),
-				g.FromUint64(1218835901499910502),
-				g.FromUint64(4884985224204572316),
-				g.FromUint64(8579676009424088446),
-				g.FromUint64(8272242895251038218),
+				g.GoldilocksField(7073462480600858335),
+				g.GoldilocksField(1218835901499910502),
+				g.GoldilocksField(4884985224204572316),
+				g.GoldilocksField(8579676009424088446),
+				g.GoldilocksField(8272242895251038218),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(1164943004740104550),
-				g.FromUint64(6494467951550829605),
-				g.FromUint64(11394395084895053958),
-				g.FromUint64(11002214393170970880),
-				g.FromUint64(6198152590137047423),
+				g.GoldilocksField(1164943004740104550),
+				g.GoldilocksField(6494467951550829605),
+				g.GoldilocksField(11394395084895053958),
+				g.GoldilocksField(11002214393170970880),
+				g.GoldilocksField(6198152590137047423),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(6293376713015748154),
-				g.FromUint64(3978302408397307263),
-				g.FromUint64(10305750348797825360),
-				g.FromUint64(2653356225991763726),
-				g.FromUint64(18032604437344362964),
+				g.GoldilocksField(6293376713015748154),
+				g.GoldilocksField(3978302408397307263),
+				g.GoldilocksField(10305750348797825360),
+				g.GoldilocksField(2653356225991763726),
+				g.GoldilocksField(18032604437344362964),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(8412524841879898340),
-				g.FromUint64(5906329857715512849),
-				g.FromUint64(7781506052219784033),
-				g.FromUint64(747934326178282629),
-				g.FromUint64(9789520974115787951),
+				g.GoldilocksField(8412524841879898340),
+				g.GoldilocksField(5906329857715512849),
+				g.GoldilocksField(7781506052219784033),
+				g.GoldilocksField(747934326178282629),
+				g.GoldilocksField(9789520974115787951),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(16402983360046062715),
-				g.FromUint64(2610048768344810351),
-				g.FromUint64(1409991662255990973),
-				g.FromUint64(8262322794139104006),
-				g.FromUint64(17162526866400736394),
+				g.GoldilocksField(16402983360046062715),
+				g.GoldilocksField(2610048768344810351),
+				g.GoldilocksField(1409991662255990973),
+				g.GoldilocksField(8262322794139104006),
+				g.GoldilocksField(17162526866400736394),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(10048515622314644986),
-				g.FromUint64(12205112414027757400),
-				g.FromUint64(6798899797395644410),
-				g.FromUint64(5508399081833065246),
-				g.FromUint64(2545381917899893146),
+				g.GoldilocksField(10048515622314644986),
+				g.GoldilocksField(12205112414027757400),
+				g.GoldilocksField(6798899797395644410),
+				g.GoldilocksField(5508399081833065246),
+				g.GoldilocksField(2545381917899893146),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(13967674179646477901),
-				g.FromUint64(7464072417461755698),
-				g.FromUint64(10620790885582225633),
-				g.FromUint64(2124420630858145666),
-				g.FromUint64(1715438731398823203),
+				g.GoldilocksField(13967674179646477901),
+				g.GoldilocksField(7464072417461755698),
+				g.GoldilocksField(10620790885582225633),
+				g.GoldilocksField(2124420630858145666),
+				g.GoldilocksField(1715438731398823203),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(8945074870943081799),
-				g.FromUint64(6323068672198034776),
-				g.FromUint64(628757110948609554),
-				g.FromUint64(463667364946291331),
-				g.FromUint64(18333500614767793034),
+				g.GoldilocksField(8945074870943081799),
+				g.GoldilocksField(6323068672198034776),
+				g.GoldilocksField(628757110948609554),
+				g.GoldilocksField(463667364946291331),
+				g.GoldilocksField(18333500614767793034),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(1585562137944898917),
-				g.FromUint64(6965134006182209177),
-				g.FromUint64(7287494396640097306),
-				g.FromUint64(6989295600772373751),
-				g.FromUint64(4694512086109041789),
+				g.GoldilocksField(1585562137944898917),
+				g.GoldilocksField(6965134006182209177),
+				g.GoldilocksField(7287494396640097306),
+				g.GoldilocksField(6989295600772373751),
+				g.GoldilocksField(4694512086109041789),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(1353084308423766252),
-				g.FromUint64(9017409530297494922),
-				g.FromUint64(17666541873916336431),
-				g.FromUint64(11263790843735091100),
-				g.FromUint64(8436577988671463853),
+				g.GoldilocksField(1353084308423766252),
+				g.GoldilocksField(9017409530297494922),
+				g.GoldilocksField(17666541873916336431),
+				g.GoldilocksField(11263790843735091100),
+				g.GoldilocksField(8436577988671463853),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(2338633593176970866),
-				g.FromUint64(2404810229101070877),
-				g.FromUint64(16146490466464907277),
-				g.FromUint64(5696273511305368024),
-				g.FromUint64(15148244810777170464),
+				g.GoldilocksField(2338633593176970866),
+				g.GoldilocksField(2404810229101070877),
+				g.GoldilocksField(16146490466464907277),
+				g.GoldilocksField(5696273511305368024),
+				g.GoldilocksField(15148244810777170464),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(1474147635627813906),
-				g.FromUint64(11643377203770626355),
-				g.FromUint64(9314121941510315318),
-				g.FromUint64(9763644728022466505),
-				g.FromUint64(17192017882693797779),
+				g.GoldilocksField(1474147635627813906),
+				g.GoldilocksField(11643377203770626355),
+				g.GoldilocksField(9314121941510315318),
+				g.GoldilocksField(9763644728022466505),
+				g.GoldilocksField(17192017882693797779),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(4381200527555648826),
-				g.FromUint64(13015101990350251010),
-				g.FromUint64(16047910726372959546),
-				g.FromUint64(11605287252021821360),
-				g.FromUint64(10725156729712381290),
+				g.GoldilocksField(4381200527555648826),
+				g.GoldilocksField(13015101990350251010),
+				g.GoldilocksField(16047910726372959546),
+				g.GoldilocksField(11605287252021821360),
+				g.GoldilocksField(10725156729712381290),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(14169389411955179775),
-				g.FromUint64(18405651482817201996),
-				g.FromUint64(13913583073406638188),
-				g.FromUint64(7468262161993545065),
-				g.FromUint64(14000137716301361841),
+				g.GoldilocksField(14169389411955179775),
+				g.GoldilocksField(18405651482817201996),
+				g.GoldilocksField(13913583073406638188),
+				g.GoldilocksField(7468262161993545065),
+				g.GoldilocksField(14000137716301361841),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(14787739045021338943),
-				g.FromUint64(4141115345494939173),
-				g.FromUint64(10070258119240548823),
-				g.FromUint64(11477026875407130857),
-				g.FromUint64(6299768551826493717),
+				g.GoldilocksField(14787739045021338943),
+				g.GoldilocksField(4141115345494939173),
+				g.GoldilocksField(10070258119240548823),
+				g.GoldilocksField(11477026875407130857),
+				g.GoldilocksField(6299768551826493717),
 			},
 			IsInf: false,
 		},
 		{
 			X: gFp5.Element{
-				g.FromUint64(2020949939443349975),
-				g.FromUint64(4576727228132381036),
-				g.FromUint64(11685880123997658374),
-				g.FromUint64(10781236098739931544),
-				g.FromUint64(354959600421572530),
+				g.GoldilocksField(2020949939443349975),
+				g.GoldilocksField(4576727228132381036),
+				g.GoldilocksField(11685880123997658374),
+				g.GoldilocksField(10781236098739931544),
+				g.GoldilocksField(354959600421572530),
 			},
 			Y: gFp5.Element{
-				g.FromUint64(2226472037177585493),
-				g.FromUint64(8680432113228524002),
-				g.FromUint64(5532575929311408085),
-				g.FromUint64(17286717775780223599),
-				g.FromUint64(7476327786946640228),
+				g.GoldilocksField(2226472037177585493),
+				g.GoldilocksField(8680432113228524002),
+				g.GoldilocksField(5532575929311408085),
+				g.GoldilocksField(17286717775780223599),
+				g.GoldilocksField(7476327786946640228),
 			},
 			IsInf: false,
 		},
@@ -1174,36 +1192,36 @@ func TestWeierstrassPrecomputeWindow(t *testing.T) {
 func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
 	qwe := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(7887569478949190020),
-			g.FromUint64(11586418388990522938),
-			g.FromUint64(13676447623055915878),
-			g.FromUint64(5945168854809921881),
-			g.FromUint64(16291886980725359814),
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7556511254681645335),
-			g.FromUint64(17611929280367064763),
-			g.FromUint64(9410908488141053806),
-			g.FromUint64(11351540010214108766),
-			g.FromUint64(4846226015431423207),
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
 		},
 		IsInf: false,
 	}
 	doubled := qwe.Double()
 
 	expectedX := gFp5.Element{
-		g.FromUint64(2626390539619063455),
-		g.FromUint64(3069873143820007175),
-		g.FromUint64(16481805966921623903),
-		g.FromUint64(2169403494164322467),
-		g.FromUint64(15849876939764656634),
+		g.GoldilocksField(2626390539619063455),
+		g.GoldilocksField(3069873143820007175),
+		g.GoldilocksField(16481805966921623903),
+		g.GoldilocksField(2169403494164322467),
+		g.GoldilocksField(15849876939764656634),
 	}
 	expectedY := gFp5.Element{
-		g.FromUint64(8052493994140007067),
-		g.FromUint64(12476750341447220703),
-		g.FromUint64(7297584762312352412),
-		g.FromUint64(4456043296886321460),
-		g.FromUint64(17416054515469523789),
+		g.GoldilocksField(8052493994140007067),
+		g.GoldilocksField(12476750341447220703),
+		g.GoldilocksField(7297584762312352412),
+		g.GoldilocksField(4456043296886321460),
+		g.GoldilocksField(17416054515469523789),
 	}
 
 	for i := 0; i < len(expectedX); i++ {
@@ -1227,18 +1245,18 @@ func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
 
 	abc := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(10440794216646581227),
-			g.FromUint64(13992847258701590930),
-			g.FromUint64(11213401763785319360),
-			g.FromUint64(12830171931568113117),
-			g.FromUint64(6220154342199499160),
+			g.GoldilocksField(10440794216646581227),
+			g.GoldilocksField(13992847258701590930),
+			g.GoldilocksField(11213401763785319360),
+			g.GoldilocksField(12830171931568113117),
+			g.GoldilocksField(6220154342199499160),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7971683838841472962),
-			g.FromUint64(1639066249976938469),
-			g.FromUint64(15015315060237521031),
-			g.FromUint64(10847769264696425470),
-			g.FromUint64(9177491810370773777),
+			g.GoldilocksField(7971683838841472962),
+			g.GoldilocksField(1639066249976938469),
+			g.GoldilocksField(15015315060237521031),
+			g.GoldilocksField(10847769264696425470),
+			g.GoldilocksField(9177491810370773777),
 		},
 		IsInf: false,
 	}
@@ -1246,18 +1264,18 @@ func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
 	added := qwe.Add(abc)
 
 	expectedAddedX := gFp5.Element{
-		g.FromUint64(15147435967142035350),
-		g.FromUint64(4142330994743253079),
-		g.FromUint64(5589541853421788480),
-		g.FromUint64(8174056014411977160),
-		g.FromUint64(6779289104727130815),
+		g.GoldilocksField(15147435967142035350),
+		g.GoldilocksField(4142330994743253079),
+		g.GoldilocksField(5589541853421788480),
+		g.GoldilocksField(8174056014411977160),
+		g.GoldilocksField(6779289104727130815),
 	}
 	expectedAddedY := gFp5.Element{
-		g.FromUint64(6941633164497114792),
-		g.FromUint64(102684445415310288),
-		g.FromUint64(3954903931673222082),
-		g.FromUint64(5355092272832152159),
-		g.FromUint64(15982629021221531228),
+		g.GoldilocksField(6941633164497114792),
+		g.GoldilocksField(102684445415310288),
+		g.GoldilocksField(3954903931673222082),
+		g.GoldilocksField(5355092272832152159),
+		g.GoldilocksField(15982629021221531228),
 	}
 
 	for i := 0; i < len(expectedAddedX); i++ {
@@ -1281,36 +1299,36 @@ func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
 
 	a := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(568906556912793428),
-			g.FromUint64(12270416106652192091),
-			g.FromUint64(17277438866839882878),
-			g.FromUint64(18290317522638929974),
-			g.FromUint64(7546670826452401067),
+			g.GoldilocksField(568906556912793428),
+			g.GoldilocksField(12270416106652192091),
+			g.GoldilocksField(17277438866839882878),
+			g.GoldilocksField(18290317522638929974),
+			g.GoldilocksField(7546670826452401067),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(1322178101989677577),
-			g.FromUint64(18254974566546618836),
-			g.FromUint64(1119202239871436890),
-			g.FromUint64(13885721715120393435),
-			g.FromUint64(7665289671288386226),
+			g.GoldilocksField(1322178101989677577),
+			g.GoldilocksField(18254974566546618836),
+			g.GoldilocksField(1119202239871436890),
+			g.GoldilocksField(13885721715120393435),
+			g.GoldilocksField(7665289671288386226),
 		},
 		IsInf: false,
 	}
 
 	b := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(6853785572863472834),
-			g.FromUint64(11312233137032236241),
-			g.FromUint64(10155632987885765027),
-			g.FromUint64(761788325161687206),
-			g.FromUint64(10399811161072514291),
+			g.GoldilocksField(6853785572863472834),
+			g.GoldilocksField(11312233137032236241),
+			g.GoldilocksField(10155632987885765027),
+			g.GoldilocksField(761788325161687206),
+			g.GoldilocksField(10399811161072514291),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7631903676079326707),
-			g.FromUint64(10538051161007880093),
-			g.FromUint64(515356923921201259),
-			g.FromUint64(2139317767893795964),
-			g.FromUint64(17894501390404592328),
+			g.GoldilocksField(7631903676079326707),
+			g.GoldilocksField(10538051161007880093),
+			g.GoldilocksField(515356923921201259),
+			g.GoldilocksField(2139317767893795964),
+			g.GoldilocksField(17894501390404592328),
 		},
 		IsInf: false,
 	}
@@ -1318,18 +1336,18 @@ func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
 	added = a.Add(b)
 	expectedAdded := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(14961006762295990506),
-			g.FromUint64(17765806093265157085),
-			g.FromUint64(6029983000119323104),
-			g.FromUint64(14198599897861826986),
-			g.FromUint64(2432992229534936263),
+			g.GoldilocksField(14961006762295990506),
+			g.GoldilocksField(17765806093265157085),
+			g.GoldilocksField(6029983000119323104),
+			g.GoldilocksField(14198599897861826986),
+			g.GoldilocksField(2432992229534936263),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(9056990811557987042),
-			g.FromUint64(5949732889787570233),
-			g.FromUint64(5696931170027194764),
-			g.FromUint64(9998144444122976852),
-			g.FromUint64(13118328774200361975),
+			g.GoldilocksField(9056990811557987042),
+			g.GoldilocksField(5949732889787570233),
+			g.GoldilocksField(5696931170027194764),
+			g.GoldilocksField(9998144444122976852),
+			g.GoldilocksField(13118328774200361975),
 		},
 		IsInf: false,
 	}
@@ -1351,35 +1369,35 @@ func TestWeierstrassDoubleAndWeierstrassAdd(t *testing.T) {
 func TestWeierstrassMulAdd2(t *testing.T) {
 	qwe := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(7887569478949190020),
-			g.FromUint64(11586418388990522938),
-			g.FromUint64(13676447623055915878),
-			g.FromUint64(5945168854809921881),
-			g.FromUint64(16291886980725359814),
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7556511254681645335),
-			g.FromUint64(17611929280367064763),
-			g.FromUint64(9410908488141053806),
-			g.FromUint64(11351540010214108766),
-			g.FromUint64(4846226015431423207),
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
 		},
 		IsInf: false,
 	}
 	abc := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(10440794216646581227),
-			g.FromUint64(13992847258701590930),
-			g.FromUint64(11213401763785319360),
-			g.FromUint64(12830171931568113117),
-			g.FromUint64(6220154342199499160),
+			g.GoldilocksField(10440794216646581227),
+			g.GoldilocksField(13992847258701590930),
+			g.GoldilocksField(11213401763785319360),
+			g.GoldilocksField(12830171931568113117),
+			g.GoldilocksField(6220154342199499160),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(7971683838841472962),
-			g.FromUint64(1639066249976938469),
-			g.FromUint64(15015315060237521031),
-			g.FromUint64(10847769264696425470),
-			g.FromUint64(9177491810370773777),
+			g.GoldilocksField(7971683838841472962),
+			g.GoldilocksField(1639066249976938469),
+			g.GoldilocksField(15015315060237521031),
+			g.GoldilocksField(10847769264696425470),
+			g.GoldilocksField(9177491810370773777),
 		},
 		IsInf: false,
 	}
@@ -1404,18 +1422,18 @@ func TestWeierstrassMulAdd2(t *testing.T) {
 	muladd := MulAdd2(qwe, abc, s, e)
 	expectedMulAdd := WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(16860216879980764002),
-			g.FromUint64(13774182223913431169),
-			g.FromUint64(3778637410337906635),
-			g.FromUint64(7996647345600328210),
-			g.FromUint64(17994036749345991288),
+			g.GoldilocksField(16860216879980764002),
+			g.GoldilocksField(13774182223913431169),
+			g.GoldilocksField(3778637410337906635),
+			g.GoldilocksField(7996647345600328210),
+			g.GoldilocksField(17994036749345991288),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(2325740112090595939),
-			g.FromUint64(18412478076524955076),
-			g.FromUint64(8648800055674409134),
-			g.FromUint64(7238972640284452927),
-			g.FromUint64(17572285593460315724),
+			g.GoldilocksField(2325740112090595939),
+			g.GoldilocksField(18412478076524955076),
+			g.GoldilocksField(8648800055674409134),
+			g.GoldilocksField(7238972640284452927),
+			g.GoldilocksField(17572285593460315724),
 		},
 		IsInf: false,
 	}

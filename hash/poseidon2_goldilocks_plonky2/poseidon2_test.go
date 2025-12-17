@@ -277,7 +277,7 @@ func TestHashToQuinticExtension(t *testing.T) {
 		14449776097783372302,
 	}
 	for i := 0; i < 5; i++ {
-		if result[i] != g.FromUint64(expected[i]) {
+		if result[i].ToCanonicalUint64() != expected[i] {
 			t.Logf("Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 			t.Fail()
 		}

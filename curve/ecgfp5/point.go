@@ -1,7 +1,6 @@
 package ecgfp5
 
 import (
-	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
@@ -58,7 +57,7 @@ func CanBeDecodedIntoPoint(w gFp5.Element) bool {
 	e := gFp5.Sub(gFp5.Square(w), A_ECgFp5Point)
 	delta := gFp5.Sub(gFp5.Square(e), B_MUL4_ECgFp5Point)
 	deltaLegendre := gFp5.Legendre(delta)
-	return gFp5.IsZero(w) || deltaLegendre.IsOne()
+	return gFp5.IsZero(w) || deltaLegendre.ToCanonicalUint64() == 1
 }
 
 func (p ECgFp5Point) Encode() gFp5.Element {
@@ -83,12 +82,11 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 
 	x1 := gFp5.Div(gFp5.Add(e, r), gFp5.FP5_TWO)
 	x2 := gFp5.Div(gFp5.Sub(e, r), gFp5.FP5_TWO)
-	x := x2
+	x := x1
 
 	x1Legendre := gFp5.Legendre(x1)
-	one := g.One()
-	if !one.Equal(&x1Legendre) {
-		x = x1
+	if x1Legendre.ToCanonicalUint64() == 1 {
+		x = x2
 	}
 
 	// If c == true (delta is not a sqrt) then we want to get the neutral here; note that if

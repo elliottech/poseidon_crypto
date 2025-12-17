@@ -271,7 +271,7 @@ func (s ECgFp5Scalar) expPowerOf2(exp int) ECgFp5Scalar {
 
 func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
 	return FromNonCanonicalBigInt(BigIntFromArray([5]uint64{
-		fp5[0].Uint64(), fp5[1].Uint64(), fp5[2].Uint64(), fp5[3].Uint64(), fp5[4].Uint64(),
+		fp5[0].ToCanonicalUint64(), fp5[1].ToCanonicalUint64(), fp5[2].ToCanonicalUint64(), fp5[3].ToCanonicalUint64(), fp5[4].ToCanonicalUint64(),
 	}))
 }
 

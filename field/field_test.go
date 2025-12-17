@@ -2,6 +2,7 @@ package field
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 	"testing"
 
@@ -396,6 +397,33 @@ func FuzzTestF(f *testing.F) {
 				t.Fatalf("Reduce96Bit: Expected reduction of %v to be %d, but got %d", val, expected, reduced.ToCanonicalUint64())
 			}
 		}
+
+		{ // InverseOrZero
+			val := g.GoldilocksField(lhs)
+			inv := val.InverseOrZero()
+			if val.IsZero() {
+				if !inv.IsZero() {
+					t.Fatalf("InverseOrZero: Expected inverse of 0 to be 0, but got %v", inv)
+				}
+			} else {
+				prod := g.MulF(val, inv).ToCanonicalUint64()
+				if prod != 1 {
+					t.Fatalf("InverseOrZero: Expected %d * inv(%d) = 1, but got %d", lhs, lhs, prod)
+				}
+			}
+		}
+
+		{ // SqrtF
+			val := g.GoldilocksField(lhs)
+			val2 := g.SquareF(val)
+			s := g.SqrtF(val2)
+			if s == nil {
+				t.Fatalf("SqrtF: Expected sqrt to exist for square of %d, but got nil", lhs)
+			}
+			if g.SquareF(*s).ToCanonicalUint64() != val2.ToCanonicalUint64() {
+				t.Fatalf("SqrtF: Expected sqrt^2 to be %d, but got %d", val2.ToCanonicalUint64(), g.SquareF(*s).ToCanonicalUint64())
+			}
+		}
 	})
 }
 
@@ -403,24 +431,24 @@ func FuzzTestF(f *testing.F) {
 
 func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	val1 := gFp5.Element{
-		g.FromUint64(0x1234567890ABCDEF),
-		g.FromUint64(0x0FEDCBA987654321),
-		g.FromUint64(0x1122334455667788),
-		g.FromUint64(0x8877665544332211),
-		g.FromUint64(0xAABBCCDDEEFF0011),
+		g.GoldilocksField(0x1234567890ABCDEF),
+		g.GoldilocksField(0x0FEDCBA987654321),
+		g.GoldilocksField(0x1122334455667788),
+		g.GoldilocksField(0x8877665544332211),
+		g.GoldilocksField(0xAABBCCDDEEFF0011),
 	}
 	val2 := gFp5.Element{
-		g.FromUint64(0xFFFFFFFFFFFFFFFF),
-		g.FromUint64(0xFFFFFFFFFFFFFFFF),
-		g.FromUint64(0xFFFFFFFFFFFFFFFF),
-		g.FromUint64(0xFFFFFFFFFFFFFFFF),
-		g.FromUint64(0xFFFFFFFFFFFFFFFF),
+		g.GoldilocksField(0xFFFFFFFFFFFFFFFF),
+		g.GoldilocksField(0xFFFFFFFFFFFFFFFF),
+		g.GoldilocksField(0xFFFFFFFFFFFFFFFF),
+		g.GoldilocksField(0xFFFFFFFFFFFFFFFF),
+		g.GoldilocksField(0xFFFFFFFFFFFFFFFF),
 	}
 
 	add := gFp5.Add(val1, val2)
 	expectedAdd := [5]uint64{1311768471589866989, 1147797413325783839, 1234605620731475846, 9833440832084189711, 12302652064957136911}
 	for i := 0; i < 5; i++ {
-		if add[i].Uint64() != expectedAdd[i] {
+		if add[i].ToCanonicalUint64() != expectedAdd[i] {
 			t.Fatalf("Addition: Expected limb %d to be %x, but got %x", i, expectedAdd[i], add[i])
 		}
 	}
@@ -428,7 +456,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	sub := gFp5.Sub(val1, val2)
 	expectedSub := [5]uint64{1311768462999932401, 1147797404735849251, 1234605612141541258, 9833440823494255123, 12302652056367202323}
 	for i := 0; i < 5; i++ {
-		if sub[i].Uint64() != expectedSub[i] {
+		if sub[i].ToCanonicalUint64() != expectedSub[i] {
 			t.Fatalf("Subtraction: Expected limb %d to be %x, but got %x", i, expectedSub[i], sub[i])
 		}
 	}
@@ -436,7 +464,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 	mul := gFp5.Mul(val1, val2)
 	expectedMul := [5]uint64{12801331769143413385, 14031114708135177824, 4192851210753422088, 14031114723597060086, 4193451712464626164}
 	for i := 0; i < 5; i++ {
-		if mul[i].Uint64() != expectedMul[i] {
+		if mul[i].ToCanonicalUint64() != expectedMul[i] {
 			t.Fatalf("Multiplication: Expected limb %d to be %x, but got %x", i, expectedMul[i], mul[i])
 		}
 	}
@@ -450,7 +478,7 @@ func TestQuinticExtensionAddSubMulSquare(t *testing.T) {
 		2864528669572451733,
 	}
 	for i := 0; i < 5; i++ {
-		if square[i].Uint64() != expectedSquare[i] {
+		if square[i].ToCanonicalUint64() != expectedSquare[i] {
 			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expectedSquare[i], square[i])
 		}
 	}
@@ -475,7 +503,7 @@ func TestQuinticExtensionAddSubMulSquareF(t *testing.T) {
 	add := gFp5.Add(val1, val2)
 	expectedAdd := [5]uint64{1311768471589866989, 1147797413325783839, 1234605620731475846, 9833440832084189711, 12302652064957136911}
 	for i := 0; i < 5; i++ {
-		if add[i].Uint64() != expectedAdd[i] {
+		if add[i].ToCanonicalUint64() != expectedAdd[i] {
 			t.Fatalf("Addition: Expected limb %d to be %x, but got %x", i, expectedAdd[i], add[i])
 		}
 	}
@@ -483,7 +511,7 @@ func TestQuinticExtensionAddSubMulSquareF(t *testing.T) {
 	sub := gFp5.Sub(val1, val2)
 	expectedSub := [5]uint64{1311768462999932401, 1147797404735849251, 1234605612141541258, 9833440823494255123, 12302652056367202323}
 	for i := 0; i < 5; i++ {
-		if sub[i].Uint64() != expectedSub[i] {
+		if sub[i].ToCanonicalUint64() != expectedSub[i] {
 			t.Fatalf("Subtraction: Expected limb %d to be %x, but got %x", i, expectedSub[i], sub[i])
 		}
 	}
@@ -491,7 +519,7 @@ func TestQuinticExtensionAddSubMulSquareF(t *testing.T) {
 	mul := gFp5.Mul(val1, val2)
 	expectedMul := [5]uint64{12801331769143413385, 14031114708135177824, 4192851210753422088, 14031114723597060086, 4193451712464626164}
 	for i := 0; i < 5; i++ {
-		if mul[i].Uint64() != expectedMul[i] {
+		if mul[i].ToCanonicalUint64() != expectedMul[i] {
 			t.Fatalf("Multiplication: Expected limb %d to be %x, but got %x", i, expectedMul[i], mul[i])
 		}
 	}
@@ -505,7 +533,7 @@ func TestQuinticExtensionAddSubMulSquareF(t *testing.T) {
 		2864528669572451733,
 	}
 	for i := 0; i < 5; i++ {
-		if square[i].Uint64() != expectedSquare[i] {
+		if square[i].ToCanonicalUint64() != expectedSquare[i] {
 			t.Fatalf("Square: Expected limb %d to be %x, but got %x", i, expectedSquare[i], square[i])
 		}
 	}
@@ -513,11 +541,11 @@ func TestQuinticExtensionAddSubMulSquareF(t *testing.T) {
 
 func TestRepeatedFrobeniusgFp5(t *testing.T) {
 	val := gFp5.Element{
-		g.FromUint64(0x1234567890ABCDEF),
-		g.FromUint64(0x0FEDCBA987654321),
-		g.FromUint64(0x1122334455667788),
-		g.FromUint64(0x8877665544332211),
-		g.FromUint64(0xAABBCCDDEEFF0011),
+		g.GoldilocksField(0x1234567890ABCDEF),
+		g.GoldilocksField(0x0FEDCBA987654321),
+		g.GoldilocksField(0x1122334455667788),
+		g.GoldilocksField(0x8877665544332211),
+		g.GoldilocksField(0xAABBCCDDEEFF0011),
 	}
 
 	res := gFp5.RepeatedFrobenius(val, 1)
@@ -530,7 +558,7 @@ func TestRepeatedFrobeniusgFp5(t *testing.T) {
 		17855579289599571296,
 	}
 	for i := 0; i < 5; i++ {
-		if res[i] != g.FromUint64(expected[i]) {
+		if res[i] != g.GoldilocksField(expected[i]) {
 			t.Fatalf("Assertion failed at index %d: expected %d, got %d", i, expected[i], res[i])
 		}
 	}
@@ -538,11 +566,11 @@ func TestRepeatedFrobeniusgFp5(t *testing.T) {
 
 func TestTryInverse(t *testing.T) {
 	val := gFp5.Element{
-		g.FromUint64(0x1234567890ABCDEF),
-		g.FromUint64(0x0FEDCBA987654321),
-		g.FromUint64(0x1122334455667788),
-		g.FromUint64(0x8877665544332211),
-		g.FromUint64(0xAABBCCDDEEFF0011),
+		g.GoldilocksField(0x1234567890ABCDEF),
+		g.GoldilocksField(0x0FEDCBA987654321),
+		g.GoldilocksField(0x1122334455667788),
+		g.GoldilocksField(0x8877665544332211),
+		g.GoldilocksField(0xAABBCCDDEEFF0011),
 	}
 	result := gFp5.InverseOrZero(val)
 
@@ -556,7 +584,7 @@ func TestTryInverse(t *testing.T) {
 	}
 
 	for i, elem := range result.ToBasefieldArray() {
-		if elem.Uint64() != expected[i] {
+		if elem.ToCanonicalUint64() != expected[i] {
 			t.Fatalf("Assertion failed at index %d: expected %d, got %d", i, expected[i], elem)
 		}
 	}
@@ -564,11 +592,11 @@ func TestTryInverse(t *testing.T) {
 
 func TestQuinticExtSgn0(t *testing.T) {
 	if !gFp5.Sgn0(gFp5.Element{
-		g.FromUint64(7146494650688613286),
-		g.FromUint64(2524706331227574337),
-		g.FromUint64(2805008444831673606),
-		g.FromUint64(10342159727506097401),
-		g.FromUint64(5582307593199735986),
+		g.GoldilocksField(7146494650688613286),
+		g.GoldilocksField(2524706331227574337),
+		g.GoldilocksField(2805008444831673606),
+		g.GoldilocksField(10342159727506097401),
+		g.GoldilocksField(5582307593199735986),
 	}) {
 		t.Fatalf("Expected sign to be true, but got false")
 	}
@@ -576,19 +604,27 @@ func TestQuinticExtSgn0(t *testing.T) {
 
 func TestSqrtFunctions(t *testing.T) {
 	x := gFp5.Element{
-		g.FromUint64(17397692312497920520),
-		g.FromUint64(4597259071399531684),
-		g.FromUint64(15835726694542307225),
-		g.FromUint64(16979717054676631815),
-		g.FromUint64(12876043227925845432),
+		g.GoldilocksField(17397692312497920520),
+		g.GoldilocksField(4597259071399531684),
+		g.GoldilocksField(15835726694542307225),
+		g.GoldilocksField(16979717054676631815),
+		g.GoldilocksField(12876043227925845432),
+	}
+
+	expectedCanonical := gFp5.Element{
+		g.GoldilocksField(16260118390353633405),
+		g.GoldilocksField(2204473665618140400),
+		g.GoldilocksField(10421517006653550782),
+		g.GoldilocksField(4618467884536173852),
+		g.GoldilocksField(15556190572415033139),
 	}
 
 	expected := gFp5.Element{
-		g.FromUint64(16260118390353633405),
-		g.FromUint64(2204473665618140400),
-		g.FromUint64(10421517006653550782),
-		g.FromUint64(4618467884536173852),
-		g.FromUint64(15556190572415033139),
+		g.GoldilocksField(2186625679060950916),
+		g.GoldilocksField(16242270403796443921),
+		g.GoldilocksField(8025227062761033539),
+		g.GoldilocksField(13828276184878410469),
+		g.GoldilocksField(2890553496999551182),
 	}
 
 	result, exists := gFp5.CanonicalSqrt(x)
@@ -596,8 +632,8 @@ func TestSqrtFunctions(t *testing.T) {
 		t.Fatalf("Expected canonical sqrt to exist, but it does not")
 	}
 
-	if !gFp5.Equals(result, expected) {
-		t.Fatalf("Expected canonical sqrt to be %v, but got %v", expected, result)
+	if !gFp5.Equals(result, expectedCanonical) {
+		t.Fatalf("Expected canonical sqrt to be %v, but got %v", expectedCanonical, result)
 	}
 
 	result2, exists2 := gFp5.Sqrt(x)
@@ -608,18 +644,26 @@ func TestSqrtFunctions(t *testing.T) {
 	if !gFp5.Equals(result2, expected) {
 		t.Fatalf("Expected sqrt to be %v, but got %v", expected, result2)
 	}
+
+	fmt.Printf("result: %+v \n", result)
+	fmt.Printf("result2: %+v", result2)
 }
 
 func TestSqrtNonExistent(t *testing.T) {
 	_, exists := gFp5.Sqrt(gFp5.Element{
-		g.FromUint64(3558249639744866495),
-		g.FromUint64(2615658757916804776),
-		g.FromUint64(14375546700029059319),
-		g.FromUint64(16160052538060569780),
-		g.FromUint64(8366525948816396307),
+		g.GoldilocksField(3558249639744866495),
+		g.GoldilocksField(2615658757916804776),
+		g.GoldilocksField(14375546700029059319),
+		g.GoldilocksField(16160052538060569780),
+		g.GoldilocksField(8366525948816396307),
 	})
 	if exists {
 		t.Fatalf("Expected sqrt not to exist, but it does")
+	}
+
+	_, exists = gFp5.Sqrt(gFp5.FromUint64(263)) // B of the curve, not a square
+	if exists {
+		t.Fatalf("Expected sqrt of -1 not to exist, but it does")
 	}
 }
 
@@ -642,9 +686,7 @@ func TestLegendre(t *testing.T) {
 		}
 		legendreSym := gFp5.Legendre(x)
 
-		negOne := g.NegOne()
-
-		if !negOne.Equal(&legendreSym) {
+		if legendreSym.ToCanonicalUint64() != g.ORDER-1 {
 			t.Fatalf("Expected Legendre symbol of non-square to be -1, but got %v", legendreSym)
 		}
 	}
@@ -655,7 +697,7 @@ func TestLegendre(t *testing.T) {
 		square := gFp5.Square(x)
 		legendreSym := gFp5.Legendre(square)
 
-		if !legendreSym.IsOne() {
+		if legendreSym.ToCanonicalUint64() != 1 {
 			t.Fatalf("Expected Legendre symbol of square to be 1, but got %v", legendreSym)
 		}
 	}

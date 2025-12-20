@@ -10,7 +10,6 @@ import (
 )
 
 type HashOut [4]g.GoldilocksField
-type NumericalHashOut [4]uint64
 
 func EmptyHashOut() HashOut {
 	return HashOut{g.ZeroF(), g.ZeroF(), g.ZeroF(), g.ZeroF()}

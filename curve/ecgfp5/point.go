@@ -1,6 +1,7 @@
 package ecgfp5
 
 import (
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
@@ -14,13 +15,13 @@ type ECgFp5Point struct {
 
 // Constants for ECgFp5Point
 var (
-	A_ECgFp5Point = gFp5.FromUint64Array([5]uint64{2, 0, 0, 0, 0})
+	A_ECgFp5Point = gFp5.Element{2, 0, 0, 0, 0}
 
-	B1                  = uint64(263)
-	B_ECgFp5Point       = gFp5.FromUint64Array([5]uint64{0, B1, 0, 0, 0})
-	B_MUL2_ECgFp5Point  = gFp5.FromUint64Array([5]uint64{0, 2 * B1, 0, 0, 0})
-	B_MUL4_ECgFp5Point  = gFp5.FromUint64Array([5]uint64{0, 4 * B1, 0, 0, 0})
-	B_MUL16_ECgFp5Point = gFp5.FromUint64Array([5]uint64{0, 16 * B1, 0, 0, 0})
+	B1                  = g.GoldilocksField(263)
+	B_ECgFp5Point       = gFp5.Element{0, B1, 0, 0, 0}
+	B_MUL2_ECgFp5Point  = gFp5.Element{0, 2 * B1, 0, 0, 0}
+	B_MUL4_ECgFp5Point  = gFp5.Element{0, 4 * B1, 0, 0, 0}
+	B_MUL16_ECgFp5Point = gFp5.Element{0, 16 * B1, 0, 0, 0}
 
 	NEUTRAL_ECgFp5Point = ECgFp5Point{
 		x: gFp5.FP5_ZERO,
@@ -30,17 +31,16 @@ var (
 	}
 
 	GENERATOR_ECgFp5Point = ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			12883135586176881569,
 			4356519642755055268,
 			5248930565894896907,
 			2165973894480315022,
 			2448410071095648785,
 		},
-		),
 		z: gFp5.FP5_ONE,
 		u: gFp5.FP5_ONE,
-		t: gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0}),
+		t: gFp5.Element{4, 0, 0, 0, 0},
 	}
 )
 
@@ -49,15 +49,6 @@ func (p ECgFp5Point) Equals(rhs ECgFp5Point) bool {
 		gFp5.Mul(p.u, rhs.t),
 		gFp5.Mul(rhs.u, p.t),
 	)
-}
-
-func CanBeDecodedIntoPoint(w gFp5.Element) bool {
-	// Value w can be decoded if and only if it is zero, or
-	// (w^2 - a)^2 - 4*b is a quadratic residue.
-	e := gFp5.Sub(gFp5.Square(w), A_ECgFp5Point)
-	delta := gFp5.Sub(gFp5.Square(e), B_MUL4_ECgFp5Point)
-	deltaLegendre := gFp5.Legendre(delta)
-	return gFp5.IsZero(w) || deltaLegendre.ToCanonicalUint64() == 1
 }
 
 func (p ECgFp5Point) Encode() gFp5.Element {
@@ -208,7 +199,7 @@ func (p *ECgFp5Point) SetDouble() {
 	tNew := gFp5.Sub(
 		gFp5.Double(x1),
 		gFp5.Add(
-			gFp5.Mul(t4, gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})),
+			gFp5.Mul(t4, gFp5.Element{4, 0, 0, 0, 0}),
 			zNew,
 		),
 	)
@@ -258,7 +249,7 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 	w := gFp5.Sub(
 		gFp5.Double(x1),
 		gFp5.Add(
-			gFp5.Mul(t5, gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0})),
+			gFp5.Mul(t5, gFp5.Element{4, 0, 0, 0, 0}),
 			t4,
 		),
 	)
@@ -291,7 +282,7 @@ func (p *ECgFp5Point) SetMDouble(n uint32) {
 					t2,
 					gFp5.Sub(
 						B_MUL4_ECgFp5Point,
-						gFp5.FromUint64Array([5]uint64{4, 0, 0, 0, 0}),
+						gFp5.Element{4, 0, 0, 0, 0},
 					),
 				),
 			),
@@ -361,7 +352,7 @@ func BatchToAffine(src []ECgFp5Point) []AffinePoint {
 	// cost of 1 inversion and 3*(n-1) multiplications.
 	n := len(src)
 	if n == 0 {
-		return []AffinePoint{}
+		return nil
 	}
 	if n == 1 {
 		p := src[0]
@@ -418,22 +409,20 @@ func (p ECgFp5Point) MakeWindowAffine() []AffinePoint {
 }
 
 // Multiply this point by a scalar.
-func (p *ECgFp5Point) SetMul(s *ECgFp5Scalar) {
+func (r ECgFp5Point) Mul(s ECgFp5Scalar) ECgFp5Point {
+	p := r
+
 	// Make a window with affine points.
 	win := p.MakeWindowAffine()
 	digits := make([]int32, (319+WINDOW)/WINDOW)
 	s.RecodeSigned(digits, int32(WINDOW))
 
-	*p = LookupVarTime(win, digits[len(digits)-1]).ToPoint()
+	p = LookupVarTime(win, digits[len(digits)-1]).ToPoint()
 	for i := len(digits) - 2; i >= 0; i-- {
 		p.SetMDouble(uint32(WINDOW))
 		lookup := Lookup(win, digits[i])
-		*p = p.AddAffine(lookup)
+		p = p.AddAffine(lookup)
 	}
-}
 
-func (p ECgFp5Point) Mul(s *ECgFp5Scalar) ECgFp5Point {
-	newPoint := p
-	newPoint.SetMul(s)
-	return newPoint
+	return p
 }

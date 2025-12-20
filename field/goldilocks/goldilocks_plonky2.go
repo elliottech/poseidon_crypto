@@ -5,10 +5,13 @@ import (
 	"encoding/binary"
 	"math/big"
 	"math/bits"
+
+	. "github.com/elliottech/poseidon_crypto/int"
 )
 
 type GoldilocksField uint64
 
+const Bytes = 8
 const EPSILON = uint64((1 << 32) - 1)
 const ORDER = uint64(0xffffffff00000001)
 const TWO_ADICITY = 32
@@ -165,27 +168,10 @@ func FromCanonicalLittleEndianBytesF(b []byte) GoldilocksField {
 	return GoldilocksField(binary.LittleEndian.Uint64(b))
 }
 
-type UInt128 struct {
-	Hi, Lo uint64
-}
-
 // NonCanonical conversion
 func AsUInt128(f GoldilocksField) UInt128 {
 	u := uint64(f)
-	return UInt128{0, u}
-}
-
-func AddUInt128(x, y UInt128) UInt128 {
-	var carry uint64
-	var z UInt128
-	z.Lo, carry = bits.Add64(x.Lo, y.Lo, 0)
-	z.Hi = x.Hi + y.Hi + carry
-	return z
-}
-
-func MulUInt64(x, y uint64) UInt128 {
-	hi, lo := bits.Mul64(x, y)
-	return UInt128{hi, lo}
+	return UInt128{Hi: 0, Lo: u}
 }
 
 // Assumes x is 96-bit number
@@ -289,6 +275,14 @@ func (self GoldilocksField) InverseOrZero() GoldilocksField {
 	t63 := MulF(ExpPowerOf2(t31, 32), t31)
 
 	return MulF(SquareF(t63), self)
+}
+
+func (self GoldilocksField) Inverse() GoldilocksField {
+	if self.IsZero() {
+		panic("inverse of zero")
+	}
+
+	return self.InverseOrZero()
 }
 
 // Powers starting from 1

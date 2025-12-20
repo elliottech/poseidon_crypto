@@ -7,36 +7,41 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
+func canBeDecodedIntoPoint(w gFp5.Element) bool {
+	// Value w can be decoded if and only if it is zero, or
+	// (w^2 - a)^2 - 4*b is a quadratic residue.
+	e := gFp5.Sub(gFp5.Square(w), A_ECgFp5Point)
+	delta := gFp5.Sub(gFp5.Square(e), B_MUL4_ECgFp5Point)
+	deltaLegendre := gFp5.Legendre(delta)
+	return gFp5.IsZero(w) || deltaLegendre.ToCanonicalUint64() == 1
+}
+
 func TestEncode(t *testing.T) {
 	point := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			8219099146870311261,
 			1751466925979295147,
 			7427996218561204331,
 			5499363376829590386,
 			17146362437196146248},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+		z: gFp5.Element{
 			9697849239028047855,
 			5846309906783017685,
 			10545493423738651463,
 			2054382452661947581,
 			7470471124463677860},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+		u: gFp5.Element{
 			2901139745109740356,
 			15850005224840060392,
 			3464972059371886732,
 			15264046134718393739,
 			9208307769190416697},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+		t: gFp5.Element{
 			4691886900801030369,
 			14793814721360336872,
 			14452533794393275351,
 			3652664841353278369,
 			4894903405053011144},
-		),
 	}
 
 	encoded := point.Encode()
@@ -57,64 +62,62 @@ func TestEncode(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	a := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			6598630105941849408,
 			1859688128646629097,
 			17294281002801957241,
 			14913942670710662913,
 			10914775081841233526},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			5768577777379827814,
 			1670898087452303151,
 			149395834104961848,
 			10215820955974196778,
 			12220782198555404872},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			8222038236695704789,
 			7213480445243459136,
 			12261234501547702974,
 			16991275954331307770,
 			13268460265795104226},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			13156365331881093743,
 			1228071764139434927,
 			12765463901361527883,
 			708052950516284594,
 			2091843551884526165},
-		),
 	}
 	b := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			12601734882931894875,
 			8567855799503419472,
 			10972305351681971938,
 			10379631676278166937,
 			14389591363895654229},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			7813541982583063146,
 			5326831614826269688,
 			674248499729254112,
 			6075985944329658642,
 			4509699573536613779},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			18059989919748409029,
 			4197498098921379230,
 			8619952860870967373,
 			4771999616217997413,
 			18075221430709764120},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			14710659590503370792,
 			13425914726164358056,
 			15027060927285830507,
 			17361235517359536873,
 			1738580404337116326},
-		),
 	}
 
 	c := a.Add(b)
@@ -165,67 +168,65 @@ func TestAdd(t *testing.T) {
 
 func TestDouble(t *testing.T) {
 	point := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			2091129225269376836,
 			9405624996184206232,
 			3901502046808513894,
 			17705383837126423407,
 			9421907235969101682},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			5829667370837222420,
 			11237187675958101957,
 			1807194474973812009,
 			15957008761806494676,
 			16213732873017933964},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			17708743171457526148,
 			7256550674326982355,
 			4002326258245501339,
 			5920160861215573533,
 			6620019694807786845},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			8994820555257560065,
 			3865139429644955984,
 			222111198601608498,
 			5080186348564946426,
 			910404641634132272},
-		),
 	}
 
 	point.SetDouble()
 
 	expected := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			17841786997947248136,
 			6795260826091178564,
 			17040031878202156690,
 			17452087436690889171,
 			3812897545652133031},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			11020726505488657009,
 			1091762938184204841,
 			4410430720558219763,
 			4363379995258938087,
 			13994951776877072532},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			9442293568698796309,
 			11629160327398360345,
 			1740514571594869537,
 			1168842489343203981,
 			5537908027019165338},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			14684689082562511355,
 			9795998745315395469,
 			11643703245601798489,
 			9164627329631566444,
 			14463660178939261073},
-		),
 	}
 
 	if !point.Equals(expected) {
@@ -235,67 +236,65 @@ func TestDouble(t *testing.T) {
 
 func TestMDouble(t *testing.T) {
 	point := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			2091129225269376836,
 			9405624996184206232,
 			3901502046808513894,
 			17705383837126423407,
 			9421907235969101682},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			5829667370837222420,
 			11237187675958101957,
 			1807194474973812009,
 			15957008761806494676,
 			16213732873017933964},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			17708743171457526148,
 			7256550674326982355,
 			4002326258245501339,
 			5920160861215573533,
 			6620019694807786845},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			8994820555257560065,
 			3865139429644955984,
 			222111198601608498,
 			5080186348564946426,
 			910404641634132272},
-		),
 	}
 
 	point.SetMDouble(35)
 
 	expectedDouble := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			5913227576680434070,
 			7982325190863789325,
 			996872074809285515,
 			13250982632111464330,
 			12283818425722177845},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			11109298682748378964,
 			10740549672355474144,
 			8575099619865922741,
 			7569981484002838575,
 			8334331076253814622},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			2081907484718321711,
 			2871920152785433924,
 			16079876071712475691,
 			12304725828108396137,
 			5091453661983356959},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			16573251802693900474,
 			18328109793157914401,
 			5893679867263862011,
 			8243272292726266031,
 			9080497760919830159},
-		),
 	}
 
 	for i := 0; i < 5; i++ {
@@ -316,34 +315,33 @@ func TestMDouble(t *testing.T) {
 
 func TestToAffineAndLookup(t *testing.T) {
 	point := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			6641938805100417611,
 			4637251792794046952,
 			9680215716198734904,
 			7124887799004433445,
 			3695446893682682870},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			1,
 			0,
 			0,
 			0,
 			0},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			1,
 			0,
 			0,
 			0,
 			0},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			12539254003028696409,
 			15524144070600887654,
 			15092036948424041984,
 			11398871370327264211,
 			10958391180505708567},
-		),
 	}
 
 	tab1 := make([]ECgFp5Point, 8)
@@ -396,71 +394,69 @@ func TestToAffineAndLookup(t *testing.T) {
 
 func TestScalarMul(t *testing.T) {
 	p1 := ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			16818074783491816710,
 			5830279414330569119,
 			3449083115922675783,
 			1268145320872323641,
 			12614816166275380125},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			1,
 			0,
 			0,
 			0,
 			0},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			1,
 			0,
 			0,
 			0,
 			0},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			7534507442095725921,
 			16658460051907528927,
 			12417574136563175256,
 			2750788641759288856,
 			620002843272906439},
-		),
 	}
 
-	if !p1.Mul(&ECgFp5Scalar{
+	if !p1.Mul(ECgFp5Scalar{
 		996458928865875995,
 		7368213710557165165,
 		8553572641065079816,
 		15282443801767955752,
 		251150557732720826,
 	}).Equals(ECgFp5Point{
-		x: gFp5.FromUint64Array([5]uint64{
+		x: gFp5.Element{
 			16885333682092300432,
 			5595343485914691669,
 			13188593663496831978,
 			10414629856394645794,
 			5668658507670629815},
-		),
-		z: gFp5.FromUint64Array([5]uint64{
+
+		z: gFp5.Element{
 			1,
 			0,
 			0,
 			0,
 			0},
-		),
-		u: gFp5.FromUint64Array([5]uint64{
+
+		u: gFp5.Element{
 			1,
 			0,
 			0,
 			0,
 			0},
-		),
-		t: gFp5.FromUint64Array([5]uint64{
+
+		t: gFp5.Element{
 			9486104512504676657,
 			14312981644741144668,
 			5159846406177847664,
 			15978863787033795628,
 			3249948839313771192},
-		),
 	}) {
 		t.Fail()
 	}
@@ -577,7 +573,7 @@ func TestBasicOps(t *testing.T) {
 		},
 	}
 	for _, w := range bww {
-		if CanBeDecodedIntoPoint(w) {
+		if canBeDecodedIntoPoint(w) {
 			t.Fatalf("Validation should fail for element: %v", w)
 		}
 		if _, success := Decode(w); success {
@@ -587,7 +583,7 @@ func TestBasicOps(t *testing.T) {
 
 	vectors := testVectors()
 	for _, w := range vectors {
-		if !CanBeDecodedIntoPoint(w) {
+		if !canBeDecodedIntoPoint(w) {
 			t.Fatalf("Validation failed for element: %v", w)
 		}
 	}

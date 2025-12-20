@@ -1,4 +1,4 @@
-package ecgfp5
+package int
 
 // A custom 640-bit integer type (signed).
 // Elements are mutable containers.
@@ -19,23 +19,6 @@ func FromNsquared() *Signed640 {
 		0xBFFFFFCB80000099,
 		0x3FFFFFFD8000000D,
 	}
-}
-
-// Obtain an instance containing a*b (both a and b are interpreted
-// as integers in the 0..n-1 range).
-func FromMulScalars(a, b *ECgFp5Scalar) *Signed640 {
-	var r Signed640
-	for i := 0; i < 5; i++ {
-		aw := a[i]
-		cc := uint64(0)
-		for j := 0; j < 5; j++ {
-			z := U128From64(aw).Mul64(b[j]).Add64(r[i+j]).Add64(cc)
-			r[i+j] = z.Lo
-			cc = z.Hi
-		}
-		r[i+5] = cc
-	}
-	return &r
 }
 
 // Add 1 to this instance.
@@ -131,7 +114,7 @@ func (s *Signed640) AddShiftedSmall(v []uint64, shift int32) {
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
 
-		z := U128From64(s[i]).Add64(vws).Add64(cc)
+		z := AddUint128AndUint64(AddUint64(s[i], vws), cc)
 		s[i] = z.Lo
 		cc = z.Hi
 	}
@@ -141,7 +124,7 @@ func (s *Signed640) Add(v []uint64) {
 	cc := uint64(0)
 	j := 10 - len(v)
 	for i := j; i < 10; i++ {
-		z := U128From64(s[i]).Add64(v[i-j]).Add64(cc)
+		z := AddUint128AndUint64(AddUint64(s[i], v[i-j]), cc)
 		s[i] = z.Lo
 		cc = z.Hi
 	}
@@ -166,7 +149,7 @@ func (s *Signed640) SubShiftedSmall(v []uint64, shift int32) {
 		vws := (vw << (uint32(shift) % 64)) | vbits
 		vbits = vw >> ((64 - uint32(shift)) % 64)
 
-		z := U128From64(s[i]).Sub64(vws).Sub64(cc)
+		z := SubUint128AndUint64(SubUint128AndUint64(UInt128FromUint64(s[i]), vws), cc)
 		s[i] = z.Lo
 		cc = z.Hi & 1
 	}
@@ -175,7 +158,7 @@ func (s *Signed640) SubShiftedSmall(v []uint64, shift int32) {
 func (s *Signed640) Sub(v []uint64) {
 	cc, j := uint64(0), 10-len(v)
 	for i := j; i < 10; i++ {
-		z := U128From64(s[i]).Sub64(v[i-j]).Sub64(cc)
+		z := SubUint128AndUint64(SubUint128AndUint64(UInt128FromUint64(s[i]), v[i-j]), cc)
 		s[i] = z.Lo
 		cc = z.Hi & 1
 	}

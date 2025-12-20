@@ -1,6 +1,7 @@
 package signature
 
 import (
+	"errors"
 	"fmt"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
@@ -14,21 +15,12 @@ type Signature struct {
 	E curve.ECgFp5Scalar
 }
 
-type NumericalSignature [10]uint64
-
-func (s Signature) ToNumericalSignature() NumericalSignature {
-	return NumericalSignature{
-		s.S[0], s.S[1], s.S[2], s.S[3], s.S[4],
-		s.E[0], s.E[1], s.E[2], s.E[3], s.E[4],
-	}
+var ZERO_SIG = Signature{
+	S: curve.ZERO,
+	E: curve.ZERO,
 }
 
-func (s Signature) DeepCopy() Signature {
-	return Signature{
-		S: s.S.DeepCopy(),
-		E: s.E.DeepCopy(),
-	}
-}
+var ONE_SK = curve.ONE
 
 // (s little endian) || (e little endian)
 func (s Signature) ToBytes() []byte {
@@ -42,7 +34,7 @@ func (s Signature) ToBytes() []byte {
 
 func SigFromBytes(b []byte) (Signature, error) {
 	if len(b) != 80 {
-		return ZERO_SIG, fmt.Errorf("signature length should be 80 but is %d", len(b))
+		return ZERO_SIG, errors.New("invalid signature length, must be 80 bytes")
 	}
 
 	return Signature{
@@ -51,53 +43,38 @@ func SigFromBytes(b []byte) (Signature, error) {
 	}, nil
 }
 
-var ZERO_SIG = Signature{
-	S: curve.ZERO,
-	E: curve.ZERO,
-}
-
-var ONE_SK = curve.ONE
-
 // Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
 func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
-	return curve.GENERATOR_ECgFp5Point.Mul(&sk).Encode()
+	return curve.GENERATOR_ECgFp5Point.Mul(sk).Encode()
 }
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
-	k := curve.SampleScalarCrypto()
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
+	k := curve.SampleScalar()
+	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.GoldilocksField, 5+5)
-	for i, elem := range r.ToBasefieldArray() {
-		preImage[i] = elem
-	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
-		preImage[i+5] = elem
-	}
+	copy(preImage[:5], r[:])
+	copy(preImage[5:], hashedMsg[:])
 
 	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 	return Signature{
-		S: k.Sub(*e.Mul(&sk)),
+		S: k.Sub(e.Mul(sk)),
 		E: e,
 	}
 }
 
 func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
-	r := curve.GENERATOR_ECgFp5Point.Mul(&k).Encode()
+	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.GoldilocksField, 5+5)
-	for i, elem := range r.ToBasefieldArray() {
-		preImage[i] = elem
-	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
-		preImage[i+5] = elem
-	}
+	copy(preImage[:5], r[:])
+	copy(preImage[5:], hashedMsg[:])
 
 	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 	return Signature{
-		S: k.Sub(*e.Mul(&sk)),
+		S: k.Sub(e.Mul(sk)),
 		E: e,
 	}
 }
@@ -116,16 +93,16 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 		return fmt.Errorf("failed to convert signature bytes to Schnorr signature: %w", err)
 	}
 
-	valid := IsSchnorrSignatureValid(&pk, &hashedMsgElem, s)
+	valid := IsSchnorrSignatureValid(pk, hashedMsgElem, s)
 	if !valid {
-		return fmt.Errorf("signature is invalid")
+		return errors.New("signature is invalid")
 	}
 
 	return nil
 }
 
-func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) bool {
-	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(*pubKey)
+func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool {
+	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
 	if !ok {
 		return false
 	}
@@ -133,13 +110,9 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg *gFp5.Element, sig Signature) boo
 	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
 
 	preImage := make([]g.GoldilocksField, 5+5)
-	for i, elem := range rV.ToBasefieldArray() {
-		preImage[i] = elem
-	}
-	for i, elem := range hashedMsg.ToBasefieldArray() {
-		preImage[i+5] = elem
-	}
+	copy(preImage[:5], rV[:])
+	copy(preImage[5:], hashedMsg[:])
 	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
 
-	return eV.Equals(&sig.E) // e_v == e
+	return eV.Equals(sig.E) // e_v == e
 }

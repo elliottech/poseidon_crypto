@@ -2,76 +2,16 @@ package ecgfp5
 
 import (
 	cryptorand "crypto/rand"
-	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
-	"math/rand"
 
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+	. "github.com/elliottech/poseidon_crypto/int"
 )
 
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar [5]uint64
-
-func (s *ECgFp5Scalar) DeepCopy() ECgFp5Scalar {
-	return ECgFp5Scalar{s[0], s[1], s[2], s[3], s[4]}
-}
-
-func (s ECgFp5Scalar) ToLittleEndianBytes() []byte {
-	var result [40]byte
-	for i := 0; i < 5; i++ {
-		binary.LittleEndian.PutUint64(result[i*8:], s[i])
-	}
-	return result[:]
-}
-
-func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
-	if len(data) != 40 {
-		panic("invalid length")
-	}
-
-	var value ECgFp5Scalar
-	for i := 0; i < 5; i++ {
-		value[i] = binary.LittleEndian.Uint64(data[i*8:])
-	}
-	return value
-}
-
-func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
-	limbs := s[:]
-	var result [80]uint8
-	for i := 0; i < 5; i++ {
-		for j := 0; j < 16; j++ {
-			result[i*16+j] = uint8((limbs[i] >> uint(j*4)) & 0xF)
-		}
-	}
-	return result
-}
-
-func SampleScalarCrypto() ECgFp5Scalar {
-	rng, err := cryptorand.Int(cryptorand.Reader, ORDER)
-	if err != nil {
-		panic("failed to read random bytes into buffer")
-	}
-	return FromNonCanonicalBigInt(rng)
-}
-
-func SampleScalar(seed *string) ECgFp5Scalar {
-	var rng *rand.Rand
-	if seed == nil {
-		return SampleScalarCrypto()
-	}
-
-	hash := sha256.Sum256([]byte(*seed))
-	var intSeed int64
-	for _, b := range hash[:8] {
-		intSeed = (intSeed << 8) | int64(b)
-	}
-	rng = rand.New(rand.NewSource(intSeed))
-
-	return FromNonCanonicalBigInt(new(big.Int).Rand(rng, ORDER))
-}
 
 var (
 	ORDER, _ = new(big.Int).SetString("1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241", 10)
@@ -87,8 +27,40 @@ var (
 	}
 )
 
-func (s ECgFp5Scalar) Order() *big.Int {
-	return ORDER
+func (s ECgFp5Scalar) ToLittleEndianBytes() []byte {
+	result := make([]byte, 40)
+	for i := 0; i < 5; i++ {
+		binary.LittleEndian.PutUint64(result[i*8:], s[i])
+	}
+	return result
+}
+
+func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
+	_ = data[39] // bounds check
+
+	var value ECgFp5Scalar
+	for i := 0; i < 5; i++ {
+		value[i] = binary.LittleEndian.Uint64(data[i*8:])
+	}
+	return value
+}
+
+func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
+	var result [80]uint8
+	for i := 0; i < 5; i++ {
+		for j := 0; j < 16; j++ {
+			result[i*16+j] = uint8((s[i] >> uint(j*4)) & 0xF)
+		}
+	}
+	return result
+}
+
+func SampleScalar() ECgFp5Scalar {
+	rng, err := cryptorand.Int(cryptorand.Reader, ORDER)
+	if err != nil {
+		panic("failed to read random bytes into buffer")
+	}
+	return FromNonCanonicalBigInt(rng)
 }
 
 var (
@@ -129,22 +101,8 @@ var (
 	}
 )
 
-func (s *ECgFp5Scalar) IsZero() bool {
-	for i := 0; i < 5; i++ {
-		if s[i] != 0 {
-			return false
-		}
-	}
-	return true
-}
-
-func (s *ECgFp5Scalar) Equals(rhs *ECgFp5Scalar) bool {
-	for i := 0; i < 5; i++ {
-		if s[i] != rhs[i] {
-			return false
-		}
-	}
-	return true
+func (s ECgFp5Scalar) Equals(rhs ECgFp5Scalar) bool {
+	return s[0] == rhs[0] && s[1] == rhs[1] && s[2] == rhs[2] && s[3] == rhs[3] && s[4] == rhs[4]
 }
 
 // raw addition (no reduction)
@@ -152,7 +110,7 @@ func (s ECgFp5Scalar) AddInner(a ECgFp5Scalar) ECgFp5Scalar {
 	var r ECgFp5Scalar
 	var c uint64 = 0
 	for i := 0; i < 5; i++ {
-		z := U128From64(s[i]).Add64(a[i]).Add64(c)
+		z := AddUint128AndUint64(AddUint64(s[i], a[i]), c)
 
 		r[i] = z.Lo
 		c = z.Hi
@@ -162,12 +120,12 @@ func (s ECgFp5Scalar) AddInner(a ECgFp5Scalar) ECgFp5Scalar {
 
 // raw subtraction (no reduction)
 // Final borrow is returned (0xFFFFFFFFFFFFFFFF if borrow, 0 otherwise).
-func (s *ECgFp5Scalar) SubInner(a *ECgFp5Scalar) (*ECgFp5Scalar, uint64) {
-	r := new(ECgFp5Scalar)
+func (s ECgFp5Scalar) SubInner(a ECgFp5Scalar) (ECgFp5Scalar, uint64) {
+	var r ECgFp5Scalar
 	c := uint64(0)
 
 	for i := 0; i < 5; i++ {
-		z := U128From64(s[i]).Sub64(a[i]).Sub64(c)
+		z := SubUint128AndUint64(SubUint128AndUint64(UInt128FromUint64(s[i]), a[i]), c)
 		r[i] = z.Lo
 		c = z.Hi & 1
 	}
@@ -181,8 +139,8 @@ func (s *ECgFp5Scalar) SubInner(a *ECgFp5Scalar) (*ECgFp5Scalar, uint64) {
 // If c == 0, return a0.
 // If c == 0xFFFFFFFFFFFFFFFF, return a1.
 // c MUST be equal to 0 or 0xFFFFFFFFFFFFFFFF.
-func Select(c uint64, a0, a1 *ECgFp5Scalar) *ECgFp5Scalar {
-	return &ECgFp5Scalar{
+func Select(c uint64, a0, a1 ECgFp5Scalar) ECgFp5Scalar {
+	return ECgFp5Scalar{
 		a0[0] ^ (c & (a0[0] ^ a1[0])),
 		a0[1] ^ (c & (a0[1] ^ a1[1])),
 		a0[2] ^ (c & (a0[2] ^ a1[2])),
@@ -193,34 +151,27 @@ func Select(c uint64, a0, a1 *ECgFp5Scalar) *ECgFp5Scalar {
 
 func (s ECgFp5Scalar) Add(rhs ECgFp5Scalar) ECgFp5Scalar {
 	r0 := s.AddInner(rhs)
-	r1, c := r0.SubInner(&N)
-	return *Select(c, r1, &r0)
+	r1, c := r0.SubInner(N) // one reduce is enough if s < n and rhs < n
+	return Select(c, r1, r0)
 }
 
-func (s ECgFp5Scalar) Sub(rhs ECgFp5Scalar) ECgFp5Scalar {
-	r0, c := s.SubInner(&rhs)
-	r1 := r0.AddInner(N)
-	return *Select(c, r0, &r1)
+func (s *ECgFp5Scalar) Sub(rhs ECgFp5Scalar) ECgFp5Scalar {
+	r0, c := s.SubInner(rhs)
+	r1 := r0.AddInner(N) // one add is enough if s < n and rhs < n
+	return Select(c, r0, r1)
 }
 
-func (s ECgFp5Scalar) Neg() ECgFp5Scalar {
-	return ZERO.Sub(s)
-}
-
-func (s *ECgFp5Scalar) Mul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
-	res := s.MontyMul(&R2).MontyMul(rhs)
+// 's' must be less than n.
+func (s ECgFp5Scalar) Mul(rhs ECgFp5Scalar) ECgFp5Scalar {
+	res := s.MontyMul(R2).MontyMul(rhs)
 	return res
 }
 
-func (s *ECgFp5Scalar) Square() *ECgFp5Scalar {
-	return s.Mul(s)
-}
-
 // Montgomery multiplication.
-// Returns (self*rhs)/2^320 mod n.
-// 'self' MUST be less than n (the other operand can be up to 2^320-1).
-func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
-	r := new(ECgFp5Scalar)
+// Returns (s*rhs)/2^320 mod n.
+// 's' MUST be less than n (the other operand can be up to 2^320-1).
+func (s ECgFp5Scalar) MontyMul(rhs ECgFp5Scalar) ECgFp5Scalar {
+	var r ECgFp5Scalar
 	for i := 0; i < 5; i++ {
 		// Iteration i computes r <- (r + self*rhs_i + f*n)/2^64.
 		// Factor f is at most 2^64-1 and set so that the division
@@ -240,9 +191,9 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 
 		cc1, cc2 := uint64(0), uint64(0)
 		for j := 0; j < 5; j++ {
-			z := U128From64(s[j]).Mul64(m).Add64(r[j]).Add64(cc1)
+			z := AddUint128AndUint64(AddUint128AndUint64(MulUInt64(s[j], m), r[j]), cc1)
 			cc1 = z.Hi
-			z = U128From64(f).Mul64(N[j]).Add64(z.Lo).Add64(cc2)
+			z = AddUint128AndUint64(AddUint128AndUint64(MulUInt64(f, N[j]), z.Lo), cc2)
 			cc2 = z.Hi
 			if j > 0 {
 				r[j-1] = z.Lo
@@ -257,49 +208,36 @@ func (s *ECgFp5Scalar) MontyMul(rhs *ECgFp5Scalar) *ECgFp5Scalar {
 	//    ff < 2^320
 	// Thus, the value we obtained is lower than 2*n. Subtracting n
 	// once (conditionally) is sufficient to achieve full reduction.
-	r2, c := r.SubInner(&N)
+	r2, c := r.SubInner(N)
 	return Select(c, r2, r)
 }
 
-func (s ECgFp5Scalar) expPowerOf2(exp int) ECgFp5Scalar {
-	result := s
-	for i := 0; i < exp; i++ {
-		result = *result.Square()
-	}
-	return result
-}
-
 func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
-	return FromNonCanonicalBigInt(BigIntFromArray([5]uint64{
-		fp5[0].ToCanonicalUint64(), fp5[1].ToCanonicalUint64(), fp5[2].ToCanonicalUint64(), fp5[3].ToCanonicalUint64(), fp5[4].ToCanonicalUint64(),
-	}))
-}
-
-func BigIntFromArray(arr [5]uint64) *big.Int {
 	result := new(big.Int)
 	for i := 4; i >= 0; i-- {
 		result.Lsh(result, 64)
-		result.Or(result, new(big.Int).SetUint64(arr[i]))
+		result.Or(result, new(big.Int).SetUint64(fp5[i].ToCanonicalUint64())) // it always fit to
 	}
-	return result
+
+	return FromNonCanonicalBigInt(result)
 }
 
+// Warn: This won't work in 32-bit systems!
 func FromNonCanonicalBigInt(val *big.Int) ECgFp5Scalar {
 	limbs := new(big.Int).Mod(val, ORDER).Bits()
 	if len(limbs) < 5 {
-		limbs = append(limbs, 0)
+		limbs = append(limbs, make([]big.Word, 5-len(limbs))...)
 	}
-	return ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])}
+
+	return ECgFp5Scalar{uint64(limbs[0]), uint64(limbs[1]), uint64(limbs[2]), uint64(limbs[3]), uint64(limbs[4])} // assuming big.Word is 64 bits
 }
 
-func (s ECgFp5Scalar) ToCanonicalBigInt() *big.Int {
-	result := BigIntFromArray(s)
-
-	order := ORDER
-	if result.Cmp(order) >= 0 {
-		result.Sub(result, order)
+func ToNonCanonicalBigInt(s ECgFp5Scalar) *big.Int {
+	result := new(big.Int)
+	for i := 4; i >= 0; i-- {
+		result.Lsh(result, 64)
+		result.Or(result, new(big.Int).SetUint64(s[i]))
 	}
-
 	return result
 }
 
@@ -311,39 +249,4 @@ func (s ECgFp5Scalar) ToCanonicalBigInt() *big.Int {
 // Window width MUST be between 2 and 10.
 func (s ECgFp5Scalar) RecodeSigned(ss []int32, w int32) {
 	RecodeSignedFromLimbs(s[:], ss, w)
-}
-
-func RecodeSignedFromLimbs(limbs []uint64, ss []int32, w int32) {
-	var acc uint64 = 0
-	var accLen int32 = 0
-	var j int = 0
-	mw := (uint32(1) << w) - 1
-	hw := uint32(1) << (w - 1)
-	var cc uint32 = 0
-	for i := 0; i < len(ss); i++ {
-		// Get next w-bit chunk in bb.
-		var bb uint32
-		if accLen < w {
-			if j < len(limbs) {
-				nl := limbs[j]
-				j++
-				bb = (uint32(acc | (nl << accLen))) & mw
-				acc = nl >> (w - accLen)
-			} else {
-				bb = uint32(acc) & mw
-				acc = 0
-			}
-			accLen += 64 - w
-		} else {
-			bb = uint32(acc) & mw
-			accLen -= w
-			acc >>= w
-		}
-
-		// If bb is greater than 2^(w-1), subtract 2^w and propagate a carry.
-		bb += cc
-
-		cc = (hw - bb) >> 31
-		ss[i] = int32(bb) - int32(cc<<w)
-	}
 }

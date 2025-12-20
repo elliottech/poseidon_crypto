@@ -6,6 +6,7 @@ import (
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+	. "github.com/elliottech/poseidon_crypto/int"
 )
 
 type HashOut [4]g.GoldilocksField
@@ -149,7 +150,7 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 }
 
 func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
-	s128 := [WIDTH]g.UInt128{}
+	s128 := [WIDTH]UInt128{}
 	for i := 0; i < WIDTH; i++ {
 		s128[i] = g.AsUInt128(s[i])
 	}
@@ -161,44 +162,44 @@ func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
 	}
 }
 
-func externalLinearLayer128(s *[WIDTH]g.UInt128) {
+func externalLinearLayer128(s *[WIDTH]UInt128) {
 	for i := 0; i < WIDTH; i += 4 {
-		t01 := g.AddUInt128(s[i], s[i+1])
-		t23 := g.AddUInt128(s[i+2], s[i+3])
-		t0123 := g.AddUInt128(t01, t23)
+		t01 := AddUInt128(s[i], s[i+1])
+		t23 := AddUInt128(s[i+2], s[i+3])
+		t0123 := AddUInt128(t01, t23)
 
 		x0 := s[i]
 		x2 := s[i+2]
 
-		s[i] = g.AddUInt128(g.AddUInt128(t0123, t01), s[i+1])
-		s[i+1] = g.AddUInt128(g.AddUInt128(g.AddUInt128(t0123, s[i+1]), x2), x2)
-		s[i+2] = g.AddUInt128(g.AddUInt128(t0123, t23), s[i+3])
-		s[i+3] = g.AddUInt128(g.AddUInt128(g.AddUInt128(t0123, s[i+3]), x0), x0)
+		s[i] = AddUInt128(AddUInt128(t0123, t01), s[i+1])
+		s[i+1] = AddUInt128(AddUInt128(AddUInt128(t0123, s[i+1]), x2), x2)
+		s[i+2] = AddUInt128(AddUInt128(t0123, t23), s[i+3])
+		s[i+3] = AddUInt128(AddUInt128(AddUInt128(t0123, s[i+3]), x0), x0)
 	}
 
-	sums := [4]g.UInt128{}
+	sums := [4]UInt128{}
 	for i := 0; i < 4; i++ {
-		sums[i] = g.AddUInt128(g.AddUInt128(s[i], s[i+4]), s[i+8])
+		sums[i] = AddUInt128(AddUInt128(s[i], s[i+4]), s[i+8])
 	}
 
 	for i := 0; i < WIDTH; i++ {
-		s[i] = g.AddUInt128(s[i], sums[i%4])
+		s[i] = AddUInt128(s[i], sums[i%4])
 	}
 }
 
 func internalLinearLayer(state *[WIDTH]g.GoldilocksField) {
 	sum := g.AsUInt128(state[0])
-	sum = g.AddUInt128(sum, g.AsUInt128(state[1]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[2]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[3]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[4]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[5]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[6]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[7]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[8]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[9]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[10]))
-	sum = g.AddUInt128(sum, g.AsUInt128(state[11]))
+	sum = AddUInt128(sum, g.AsUInt128(state[1]))
+	sum = AddUInt128(sum, g.AsUInt128(state[2]))
+	sum = AddUInt128(sum, g.AsUInt128(state[3]))
+	sum = AddUInt128(sum, g.AsUInt128(state[4]))
+	sum = AddUInt128(sum, g.AsUInt128(state[5]))
+	sum = AddUInt128(sum, g.AsUInt128(state[6]))
+	sum = AddUInt128(sum, g.AsUInt128(state[7]))
+	sum = AddUInt128(sum, g.AsUInt128(state[8]))
+	sum = AddUInt128(sum, g.AsUInt128(state[9]))
+	sum = AddUInt128(sum, g.AsUInt128(state[10]))
+	sum = AddUInt128(sum, g.AsUInt128(state[11]))
 	sumF := g.Reduce96Bit(sum)
 
 	state[0] = g.MulAccF(sumF, state[0], MATRIX_DIAG_12_U64[0])

@@ -6,18 +6,20 @@ import (
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
-	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks"
+	p2 "github.com/elliottech/poseidon_crypto/hash/poseidon2_goldilocks_plonky2"
 )
 
 func TestSchnorrSignAndVerify(t *testing.T) {
-	sk := curve.SampleScalarCrypto() // Sample a secret key
-	msg := g.RandArray(244)
+	sk := curve.SampleScalar() // Sample a secret key
+	msg := make([]g.GoldilocksField, 244)
+	for i := 0; i < 244; i++ {
+		msg[i] = g.SampleF()
+	}
 	hashedMsg := p2.HashToQuinticExtension(msg)
-	k := curve.SampleScalarCrypto()
 
-	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k)
+	sig := SchnorrSignHashedMessage(hashedMsg, sk)
 	pk := SchnorrPkFromSk(sk)
-	if !IsSchnorrSignatureValid(&pk, &hashedMsg, sig) {
+	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
 	}
 }
@@ -135,24 +137,33 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 		}
 
 		pk := SchnorrPkFromSk(sks[i])
-		if !IsSchnorrSignatureValid(&pk, &hashedMessages[i], sig) {
+		if !IsSchnorrSignatureValid(pk, hashedMessages[i], sig) {
 			t.Fatalf("Signature is invalid")
 		}
 	}
 }
 
 func TestBytes(t *testing.T) {
-	sk := curve.SampleScalarCrypto() // Sample a secret key
-	msg := g.RandArray(244)          // Random message of 244 field elements (big)
-	hashedMsg := p2.HashToQuinticExtension(msg)
+	sk := curve.SampleScalar() // Sample a secret key
+	msg := make([]g.GoldilocksField, 244)
+	for i := 0; i < 244; i++ {
+		msg[i] = g.SampleF()
+	}
+	hashedMsg := p2.HashToQuinticExtension(msg) // Random message
 
 	sig := SchnorrSignHashedMessage(hashedMsg, sk)
-	sig2, _ := SigFromBytes(sig.ToBytes())
-	if !sig2.S.Equals(&sig.S) || !sig2.E.Equals(&sig.E) {
+	sig2, err := SigFromBytes(sig.ToBytes())
+	if err != nil {
+		t.Fatalf("Failed to convert signature bytes to Schnorr signature: %v", err)
+	}
+	if !sig2.S.Equals(sig.S) || !sig2.E.Equals(sig.E) {
 		t.Fatalf("bytes do not match")
 	}
 
-	pk, _ := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	pk, err := gFp5.FromCanonicalLittleEndianBytes(SchnorrPkFromSk(sk).ToLittleEndianBytes())
+	if err != nil {
+		t.Fatalf("failed to convert public key bytes to field element: %v", err)
+	}
 
 	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
@@ -160,11 +171,14 @@ func TestBytes(t *testing.T) {
 }
 
 func BenchmarkSignatureVerify(b *testing.B) {
-	sk := curve.SampleScalarCrypto() // Sample a secret key
-	msg := g.RandArray(244)
+	sk := curve.SampleScalar() // Sample a secret key
+	msg := make([]g.GoldilocksField, 244)
+	for i := 0; i < 244; i++ {
+		msg[i] = g.SampleF()
+	}
 	hashedMsg := p2.HashToQuinticExtension(msg)
 	hashedMsgBytes := hashedMsg.ToLittleEndianBytes()
-	k := curve.SampleScalarCrypto()
+	k := curve.SampleScalar()
 
 	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k).ToBytes()
 	pk := SchnorrPkFromSk(sk).ToLittleEndianBytes()
@@ -175,5 +189,19 @@ func BenchmarkSignatureVerify(b *testing.B) {
 		if err != nil {
 			b.Fatalf("Signature is invalid")
 		}
+	}
+}
+
+func BenchmarkSignatureSign(b *testing.B) {
+	sk := curve.SampleScalar() // Sample a secret key
+	msg := make([]g.GoldilocksField, 244)
+	for i := 0; i < 244; i++ {
+		msg[i] = g.SampleF()
+	}
+	hashedMsg := p2.HashToQuinticExtension(msg)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = SchnorrSignHashedMessage(hashedMsg, sk)
 	}
 }

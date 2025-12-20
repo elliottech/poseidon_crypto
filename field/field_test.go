@@ -7,6 +7,7 @@ import (
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
+	. "github.com/elliottech/poseidon_crypto/int"
 
 	"math/big"
 	"math/rand/v2"
@@ -205,7 +206,7 @@ func TestMulAccF(t *testing.T) {
 }
 
 func TestReduce128Bit(t *testing.T) {
-	testValues := []g.UInt128{
+	testValues := []UInt128{
 		{0, 0},
 		{1, 0},
 		{math.MaxUint64, math.MaxUint64},
@@ -231,7 +232,7 @@ func TestReduce128Bit(t *testing.T) {
 }
 
 func TestReduce96Bit(t *testing.T) {
-	testValues := []g.UInt128{
+	testValues := []UInt128{
 		{0, 0},
 		{1, 0},
 		{math.MaxUint32, math.MaxUint64},
@@ -369,7 +370,7 @@ func FuzzTestF(f *testing.F) {
 
 		// Reduce128Bit
 		{
-			val := g.UInt128{Hi: lhs, Lo: rhs}
+			val := UInt128{Hi: lhs, Lo: rhs}
 			reduced := g.Reduce128Bit(val)
 			bigVal := new(big.Int).SetUint64(val.Hi)
 			bigVal.Lsh(bigVal, 64)
@@ -384,7 +385,7 @@ func FuzzTestF(f *testing.F) {
 
 		// Reduce96Bit
 		{
-			val := g.UInt128{Hi: uint64(uint32(lhs)), Lo: rhs}
+			val := UInt128{Hi: uint64(uint32(lhs)), Lo: rhs}
 			reduced := g.Reduce96Bit(val)
 			bigVal := new(big.Int).SetUint64(val.Hi)
 			bigVal.Lsh(bigVal, 64)
@@ -582,7 +583,7 @@ func TestTryInverse(t *testing.T) {
 		8256636258983026155,
 	}
 
-	for i, elem := range result.ToBasefieldArray() {
+	for i, elem := range result {
 		if elem.ToCanonicalUint64() != expected[i] {
 			t.Fatalf("Assertion failed at index %d: expected %d, got %d", i, expected[i], elem)
 		}

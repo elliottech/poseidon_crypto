@@ -1,57 +1,49 @@
 package goldilocks_quintic_extension
 
 import (
-	"fmt"
+	"errors"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
 
 type Element [5]g.GoldilocksField
 
-type NumericalElement [5]uint64
-
 const Bytes = g.Bytes * 5
 
 var (
 	FP5_D = 5
 
-	FP5_ZERO = Element{g.ZeroF(), g.ZeroF(), g.ZeroF(), g.ZeroF(), g.ZeroF()}
-	FP5_ONE  = Element{g.OneF(), g.ZeroF(), g.ZeroF(), g.ZeroF(), g.ZeroF()}
-	FP5_TWO  = FromUint64(2)
+	FP5_ZERO = Element{0, 0, 0, 0, 0}
+	FP5_ONE  = Element{1, 0, 0, 0, 0}
+	FP5_TWO  = Element{2, 0, 0, 0, 0}
 
 	FP5_W        = g.GoldilocksField(3)
 	FP5_DTH_ROOT = g.GoldilocksField(1041288259238279555)
 )
 
-func (e *Element) ToString() string {
-	return fmt.Sprintf("%d,%d,%d,%d,%d", e[0].ToCanonicalUint64(), e[1].ToCanonicalUint64(), e[2].ToCanonicalUint64(), e[3].ToCanonicalUint64(), e[4].ToCanonicalUint64())
-}
-
 func (e Element) ToUint64Array() [5]uint64 {
 	return [5]uint64{e[0].ToCanonicalUint64(), e[1].ToCanonicalUint64(), e[2].ToCanonicalUint64(), e[3].ToCanonicalUint64(), e[4].ToCanonicalUint64()}
 }
 
-func (e Element) ToBasefieldArray() [5]g.GoldilocksField {
-	return e
-}
-
 func (e Element) ToLittleEndianBytes() []byte {
-	elemBytes := [Bytes]byte{}
+	elemBytes := make([]byte, Bytes)
 	for i, limb := range e {
 		copy(elemBytes[i*g.Bytes:], g.ToLittleEndianBytesF(limb))
 	}
-	return elemBytes[:]
+	return elemBytes
 }
 
 func FromCanonicalLittleEndianBytes(in []byte) (Element, error) {
 	if len(in) != Bytes {
-		return FP5_ZERO, fmt.Errorf("input bytes len should be 40 but is %d", len(in))
+		return FP5_ZERO, errors.New("invalid input length. Expected 40 bytes")
 	}
 
 	var elem Element
-	for i := 0; i < 5; i++ {
-		elem[i] = g.FromCanonicalLittleEndianBytesF(in[i*8 : (i+1)*8])
-	}
+	elem[0] = g.FromCanonicalLittleEndianBytesF(in[0:8])
+	elem[1] = g.FromCanonicalLittleEndianBytesF(in[8:16])
+	elem[2] = g.FromCanonicalLittleEndianBytesF(in[16:24])
+	elem[3] = g.FromCanonicalLittleEndianBytesF(in[24:32])
+	elem[4] = g.FromCanonicalLittleEndianBytesF(in[32:40])
 
 	return elem, nil
 }
@@ -78,16 +70,6 @@ func FromF(elem g.GoldilocksField) Element {
 
 func FromUint64(a uint64) Element {
 	return Element{g.GoldilocksField(a), 0, 0, 0, 0}
-}
-
-func FromUint64Array(elems [5]uint64) Element {
-	return Element{
-		g.GoldilocksField(elems[0]),
-		g.GoldilocksField(elems[1]),
-		g.GoldilocksField(elems[2]),
-		g.GoldilocksField(elems[3]),
-		g.GoldilocksField(elems[4]),
-	}
 }
 
 func Neg(e Element) Element {
@@ -162,6 +144,7 @@ func Mul(a, b Element) Element {
 	return Element{c0, c1, c2, c3, c4}
 }
 
+// Returns a / b. Panics if b == 0.
 func Div(a, b Element) Element {
 	bInv := InverseOrZero(b)
 	if IsZero(bInv) {
@@ -170,6 +153,7 @@ func Div(a, b Element) Element {
 	return Mul(a, bInv)
 }
 
+// x^(2^power)
 func ExpPowerOf2(x Element, power int) Element {
 	res := Element{x[0], x[1], x[2], x[3], x[4]}
 	for i := 0; i < power; i++ {
@@ -308,7 +292,7 @@ func InverseOrZero(a Element) Element {
 	muld := g.MulF(FP5_W, added)
 	gg := g.AddF(a0b0, muld)
 
-	return ScalarMul(f, gg.InverseOrZero())
+	return ScalarMul(f, gg.Inverse())
 }
 
 func Frobenius(x Element) Element {

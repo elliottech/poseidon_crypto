@@ -29,7 +29,7 @@ func TestLongRunningCompare(t *testing.T) {
 	for j := 0; j < 1_000_000_000; j++ {
 		inputs := make([]uint64, 12)
 		for i := 0; i < 12; i++ {
-			inputs[i] = rand.Uint64N(g.ORDER)
+			inputs[i] = rand.Uint64N(g.ORDER) //nolint:gosec
 		}
 
 		// Convert to GoldilocksField

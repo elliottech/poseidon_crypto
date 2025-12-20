@@ -45,8 +45,7 @@ func HashOutFromUint64Array(arr [4]uint64) HashOut {
 }
 
 func HashToQuinticExtension(m []g.GoldilocksField) gFp5.Element {
-	res := HashNToMNoPad(m, 5)
-	return gFp5.FromPlonky2GoldilocksField(res[:])
+	return gFp5.FromPlonky2GoldilocksField(HashNToMNoPad(m, 5))
 }
 
 type Poseidon2 struct{}

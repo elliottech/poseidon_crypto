@@ -37,7 +37,7 @@ func ArrayFromCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
 		}
 
 		slice := make([]byte, 8)
-		copy(slice[:], in[i:nextStart])
+		copy(slice, in[i:nextStart])
 		if len(slice) < 8 {
 			slice = append(slice, make([]byte, missing)...)
 		}
@@ -86,10 +86,6 @@ func ToString(e ...Element) string {
 	return res
 }
 
-func FromInt64Abs(value int64) Element {
-	return FromUint64(uint64(value & 0x7FFFFFFFFFFFFFFF))
-}
-
 func FromInt64(value int64) Element {
 	elem := g.NewElement(0)
 	elem.SetInt64(value)
@@ -131,7 +127,10 @@ func NegOne() *Element {
 
 func Sample() Element {
 	elem := g.NewElement(0)
-	elem.SetRandom()
+	_, err := elem.SetRandom()
+	if err != nil {
+		panic(fmt.Sprintf("failed to sample random field element: %v", err))
+	}
 	return elem
 }
 
@@ -144,7 +143,7 @@ func Sqrt(elem *Element) *Element {
 func Powers(e *Element, count int) []Element {
 	ret := make([]Element, count)
 	ret[0] = g.One()
-	for i := 1; i < int(count); i++ {
+	for i := 1; i < count; i++ {
 		ret[i].Mul(&ret[i-1], e)
 	}
 	return ret

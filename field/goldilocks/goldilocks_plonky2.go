@@ -66,7 +66,7 @@ func AddF(lhs, rhs GoldilocksField) GoldilocksField {
 
 // Assuming lhs or rhs is in the field, i.e. x < ORDER and other in non-canonical form(u64). This assumption can be used to remove second overflow check.
 func AddCanonicalUint64(lhs GoldilocksField, rhs uint64) GoldilocksField {
-	sum, over := bits.Add64(uint64(lhs), uint64(rhs), 0)
+	sum, over := bits.Add64(uint64(lhs), rhs, 0)
 	// if overflowed, sum := lhs + rhs - 2^64 => sum + EPSILON = lhs + rhs - 2^64 + 2^32 -1 = lhs + rhs - ORDER < ORDER + 2^64 - ORDER = 2^64, so there is no overflow in this case.
 	return GoldilocksField(sum + over*EPSILON)
 }
@@ -289,7 +289,7 @@ func (self GoldilocksField) Inverse() GoldilocksField {
 func PowersF(e GoldilocksField, count int) []GoldilocksField {
 	ret := make([]GoldilocksField, count)
 	ret[0] = OneF()
-	for i := 1; i < int(count); i++ {
+	for i := 1; i < count; i++ {
 		ret[i] = MulF(ret[i-1], e)
 	}
 	return ret

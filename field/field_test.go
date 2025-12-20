@@ -29,7 +29,7 @@ func TestBytes(t *testing.T) {
 		t.Fatalf("bytes do not match")
 	}
 
-	r := rand.Uint64N(g.ORDER)
+	r := rand.Uint64N(g.ORDER) //nolint:gosec
 
 	leBytesUint64 := make([]byte, 8)
 	binary.LittleEndian.PutUint64(leBytesUint64, r)
@@ -43,7 +43,7 @@ func TestBytes(t *testing.T) {
 }
 
 func TestBytesF(t *testing.T) {
-	r := rand.Uint64N(g.ORDER)
+	r := rand.Uint64N(g.ORDER) //nolint:gosec
 	f := g.GoldilocksField(r)
 
 	rBytes := make([]byte, 8)
@@ -308,8 +308,8 @@ func FuzzTestF(f *testing.F) {
 	f.Add(uint64(1), uint64(1))
 	f.Add(uint64(math.MaxUint64), uint64(math.MaxUint64))
 	f.Add(uint64(math.MaxUint32), uint64(math.MaxUint64))
-	f.Add(uint64(g.ORDER-1), uint64(g.ORDER-1))
-	f.Add(uint64(g.ORDER), uint64(g.ORDER))
+	f.Add(g.ORDER-1, g.ORDER-1)
+	f.Add(g.ORDER, g.ORDER)
 
 	f.Fuzz(func(t *testing.T, lhs, rhs uint64) {
 		// AddF

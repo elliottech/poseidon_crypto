@@ -627,7 +627,7 @@ func TestBasicOps(t *testing.T) {
 	if p1.IsNeutral() || p2.IsNeutral() || p3.IsNeutral() || p4.IsNeutral() || p5.IsNeutral() || p6.IsNeutral() || p7.IsNeutral() {
 		t.Fatalf("p1...p7 should not be neutral")
 	}
-	if !p0.Equals(p0) || !p1.Equals(p1) || p0.Equals(p1) || p1.Equals(p0) || p1.Equals(p2) {
+	if !p0.Equals(p0) || !p1.Equals(p1) || p0.Equals(p1) || p1.Equals(p0) || p1.Equals(p2) { //nolint:gocritic
 		t.Fatalf("Equality checks failed")
 	}
 

@@ -27,8 +27,8 @@ func (s Signature) ToBytes() []byte {
 	sBytes := s.S.ToLittleEndianBytes()
 	eBytes := s.E.ToLittleEndianBytes()
 	res := make([]byte, 80)
-	copy(res[:40], sBytes[:])
-	copy(res[40:], eBytes[:])
+	copy(res[:40], sBytes)
+	copy(res[40:], eBytes)
 	return res
 }
 

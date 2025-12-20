@@ -49,7 +49,7 @@ func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
 	var result [80]uint8
 	for i := 0; i < 5; i++ {
 		for j := 0; j < 16; j++ {
-			result[i*16+j] = uint8((s[i] >> uint(j*4)) & 0xF)
+			result[i*16+j] = uint8((s[i] >> uint(j*4)) & 0xF) //nolint:gosec
 		}
 	}
 	return result

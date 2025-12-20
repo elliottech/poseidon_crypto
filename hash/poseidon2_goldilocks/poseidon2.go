@@ -21,8 +21,7 @@ func (h HashOut) ToUint64Array() [4]uint64 {
 }
 
 func HashToQuinticExtension(m []g.Element) gFp5.Element {
-	res := HashNToMNoPad(m, 5)
-	return gFp5.FromGnarkGoldilocksField(res[:])
+	return gFp5.FromGnarkGoldilocksField(HashNToMNoPad(m, 5))
 }
 
 func HashOutFromUint64Array(arr [4]uint64) HashOut {

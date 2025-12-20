@@ -7,7 +7,7 @@ type UInt128 struct {
 }
 
 func UInt128FromUint64(v uint64) UInt128 {
-	return UInt128{Lo: v}
+	return UInt128{Hi: 0, Lo: v}
 }
 
 func AddUInt128(x, y UInt128) UInt128 {

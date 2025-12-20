@@ -34,16 +34,16 @@ func (p *AffinePoint) SetNeg() {
 // point is k*P.
 func Lookup(win []AffinePoint, k int32) AffinePoint {
 	// sign = 0xFFFFFFFF if k < 0, 0x00000000 otherwise
-	sign := uint32(k >> 31)
+	sign := uint32(k >> 31) //nolint:gosec
 	// ka = abs(k)
-	ka := (uint32(k) ^ sign) - sign
+	ka := (uint32(k) ^ sign) - sign //nolint:gosec
 	// km1 = ka - 1
 	km1 := ka - 1
 
 	x := gFp5.FP5_ZERO
 	u := gFp5.FP5_ZERO
 	for i := 0; i < len(win); i++ {
-		m := km1 - uint32(i)
+		m := km1 - uint32(i) //nolint:gosec
 		c_1 := (m | (^m + 1)) >> 31
 		c := uint64(c_1) - 1
 		if c != 0 {

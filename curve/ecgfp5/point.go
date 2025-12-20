@@ -101,7 +101,7 @@ func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 		return ECgFp5Point{x: x, z: z, u: u, t: t}, true
 	}
 
-	return ECgFp5Point{}, false
+	return NEUTRAL_ECgFp5Point, false
 }
 
 func (p ECgFp5Point) IsNeutral() bool {

@@ -87,7 +87,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	if success || gFp5.IsZero(w) {
 		return WeierstrassPoint{X: x, Y: y, IsInf: isInf}, true
 	}
-	return WeierstrassPoint{}, false
+	return NEUTRAL_WEIERSTRASS, false
 }
 
 func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {

@@ -1,0 +1,35 @@
+run:
+  # The default concurrency value is the number of available CPU.
+  concurrency: 4
+  timeout: 5m
+
+linters:
+  enable:
+    - unparam
+    - bidichk
+    - durationcheck
+    - gocritic
+    - gosec
+    - unconvert
+    - exhaustruct
+
+linters-settings:
+  govet:
+    enable:
+      - nilness
+    disable:
+      - composites
+  gocritic:
+    disabled-checks:
+      - captLocal
+      - ifElseChain
+
+issues:
+  max-issues-per-linter: 100
+  max-same-issues: 100
+
+  exclude-rules:
+    - path: ".*_test.go"
+      linters:
+        - gosec
+      text: "G115"

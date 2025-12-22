@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"math/big"
 
+	"github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	. "github.com/elliottech/poseidon_crypto/int"
 )
@@ -12,6 +13,18 @@ import (
 // ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar [5]uint64
+
+func (s ECgFp5Scalar) IsCanonical() bool {
+	for _, elem := range s {
+		if elem >= goldilocks.ORDER {
+			return false
+		}
+	}
+	if ToNonCanonicalBigInt(s).Cmp(ORDER) >= 0 {
+		return false
+	}
+	return true
+}
 
 var (
 	ORDER, _ = new(big.Int).SetString("1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241", 10)

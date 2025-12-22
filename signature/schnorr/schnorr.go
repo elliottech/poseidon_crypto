@@ -15,6 +15,10 @@ type Signature struct {
 	E curve.ECgFp5Scalar
 }
 
+func (s Signature) IsCanonical() bool {
+	return s.E.IsCanonical() && s.S.IsCanonical()
+}
+
 var ZERO_SIG = Signature{
 	S: curve.ZERO,
 	E: curve.ZERO,
@@ -102,6 +106,10 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 }
 
 func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool {
+	if !sig.IsCanonical() {
+		return false
+	}
+
 	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
 	if !ok {
 		return false

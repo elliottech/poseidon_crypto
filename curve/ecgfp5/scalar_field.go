@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	. "github.com/elliottech/poseidon_crypto/int"
 )
@@ -15,15 +14,7 @@ import (
 type ECgFp5Scalar [5]uint64
 
 func (s ECgFp5Scalar) IsCanonical() bool {
-	for _, elem := range s {
-		if elem >= goldilocks.ORDER {
-			return false
-		}
-	}
-	if ToNonCanonicalBigInt(s).Cmp(ORDER) >= 0 {
-		return false
-	}
-	return true
+	return ToNonCanonicalBigInt(s).Cmp(ORDER) < 0
 }
 
 var (

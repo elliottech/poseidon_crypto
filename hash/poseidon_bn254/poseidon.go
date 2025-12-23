@@ -196,7 +196,6 @@ func (d *digest) BlockSize() int {
 }
 
 // Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
 	e := fr.Element{0, 0, 0, 0}
 	e.SetBigInt(new(big.Int).SetBytes(PoseidonBytes(d.data...)))

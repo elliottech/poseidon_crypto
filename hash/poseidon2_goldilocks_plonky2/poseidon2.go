@@ -268,7 +268,6 @@ func (d *digest) Write(p []byte) (n int, err error) {
 }
 
 // Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
 	h := HashNToMNoPadBytes(d.data, 4)
 	d.Reset()

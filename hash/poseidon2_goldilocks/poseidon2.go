@@ -226,7 +226,6 @@ func (d *digest) BlockSize() int {
 }
 
 // Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
 	b = append(b, HashNToHashNoPad(d.data).ToLittleEndianBytes()...)
 	d.data = nil

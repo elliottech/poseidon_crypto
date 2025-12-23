@@ -10,8 +10,6 @@ import (
 
 type Element = g.Element
 
-const Bytes = 8
-
 func NewElement(value uint64) Element {
 	return g.NewElement(value)
 }
@@ -39,7 +37,7 @@ func ArrayFromCanonicalLittleEndianBytes(in []byte) ([]Element, error) {
 		}
 
 		slice := make([]byte, 8)
-		copy(slice[:], in[i:nextStart])
+		copy(slice, in[i:nextStart])
 		if len(slice) < 8 {
 			slice = append(slice, make([]byte, missing)...)
 		}
@@ -88,17 +86,6 @@ func ToString(e ...Element) string {
 	return res
 }
 
-func FromBool(value bool) Element {
-	if value {
-		return One()
-	}
-	return Zero()
-}
-
-func FromInt64Abs(value int64) Element {
-	return FromUint64(uint64(value & 0x7FFFFFFFFFFFFFFF))
-}
-
 func FromInt64(value int64) Element {
 	elem := g.NewElement(0)
 	elem.SetInt64(value)
@@ -117,10 +104,6 @@ func FromUint32(value uint32) Element {
 
 func Equals(a, b *Element) bool {
 	return a.Equal(b)
-}
-
-func Modulus() uint64 {
-	return g.Modulus().Uint64()
 }
 
 func Zero() Element {
@@ -144,55 +127,24 @@ func NegOne() *Element {
 
 func Sample() Element {
 	elem := g.NewElement(0)
-	elem.SetRandom()
+	_, err := elem.SetRandom()
+	if err != nil {
+		panic(fmt.Sprintf("failed to sample random field element: %v", err))
+	}
 	return elem
 }
 
-func RandArray(count int) []Element {
-	ret := make([]Element, count)
-	for i := 0; i < count; i++ {
-		ret[i] = Sample()
-	}
-	return ret
-}
-
-func Add(elems ...Element) Element {
-	res := g.NewElement(0)
-	for _, elem := range elems {
-		res.Add(&res, &elem)
-	}
-	return res
-}
-
-func Sub(a, b *Element) Element {
-	res := g.NewElement(0)
-	res.Sub(a, b)
-	return res
-}
-
-func Mul(elems ...*Element) Element {
-	res := g.NewElement(1)
-	for _, elem := range elems {
-		res.Mul(&res, elem)
-	}
-	return res
-}
-
 func Sqrt(elem *Element) *Element {
-	elemCopy := DeepCopy(elem)
-	return elemCopy.Sqrt(&elemCopy)
+	elemCopy := new(Element).Set(elem)
+	return elemCopy.Sqrt(elemCopy)
 }
 
 // Powers starting from 1
 func Powers(e *Element, count int) []Element {
 	ret := make([]Element, count)
 	ret[0] = g.One()
-	for i := 1; i < int(count); i++ {
+	for i := 1; i < count; i++ {
 		ret[i].Mul(&ret[i-1], e)
 	}
 	return ret
-}
-
-func DeepCopy(source *Element) Element {
-	return Element{source[0]}
 }

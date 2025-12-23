@@ -15,28 +15,28 @@ type WeierstrassPoint struct {
 var (
 	GENERATOR_WEIERSTRASS = WeierstrassPoint{
 		X: gFp5.Element{
-			g.FromUint64(11712523173042564207),
-			g.FromUint64(14090224426659529053),
-			g.FromUint64(13197813503519687414),
-			g.FromUint64(16280770174934269299),
-			g.FromUint64(15998333998318935536),
+			g.GoldilocksField(11712523173042564207),
+			g.GoldilocksField(14090224426659529053),
+			g.GoldilocksField(13197813503519687414),
+			g.GoldilocksField(16280770174934269299),
+			g.GoldilocksField(15998333998318935536),
 		},
 		Y: gFp5.Element{
-			g.FromUint64(14639054205878357578),
-			g.FromUint64(17426078571020221072),
-			g.FromUint64(2548978194165003307),
-			g.FromUint64(8663895577921260088),
-			g.FromUint64(9793640284382595140),
+			g.GoldilocksField(14639054205878357578),
+			g.GoldilocksField(17426078571020221072),
+			g.GoldilocksField(2548978194165003307),
+			g.GoldilocksField(8663895577921260088),
+			g.GoldilocksField(9793640284382595140),
 		},
 		IsInf: false,
 	}
 
 	A_WEIERSTRASS = gFp5.Element{
-		g.FromUint64(6148914689804861439),
-		g.FromUint64(263),
-		g.FromUint64(0),
-		g.FromUint64(0),
-		g.FromUint64(0),
+		g.GoldilocksField(6148914689804861439),
+		g.GoldilocksField(263),
+		g.GoldilocksField(0),
+		g.GoldilocksField(0),
+		g.GoldilocksField(0),
 	}
 
 	NEUTRAL_WEIERSTRASS = WeierstrassPoint{
@@ -68,10 +68,10 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	x1 := gFp5.Div(gFp5.Add(e, r), gFp5.FP5_TWO)
 	x2 := gFp5.Div(gFp5.Sub(e, r), gFp5.FP5_TWO)
 
-	x := x1
+	x := x2
 	x1Legendre := gFp5.Legendre(x1)
-	if !x1Legendre.IsOne() {
-		x = x2
+	if x1Legendre.ToCanonicalUint64() == 1 {
+		x = x1
 	}
 
 	y := gFp5.Neg(gFp5.Mul(w, x))
@@ -87,7 +87,7 @@ func DecodeFp5AsWeierstrass(w gFp5.Element) (WeierstrassPoint, bool) {
 	if success || gFp5.IsZero(w) {
 		return WeierstrassPoint{X: x, Y: y, IsInf: isInf}, true
 	}
-	return WeierstrassPoint{}, false
+	return NEUTRAL_WEIERSTRASS, false
 }
 
 func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {

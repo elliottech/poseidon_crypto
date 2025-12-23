@@ -32,18 +32,18 @@ func (p *AffinePoint) SetNeg() {
 // i*P for i = 1 to n (win[0] contains P, win[1] contains 2*P, and
 // so on). Index value k is an integer in the -n to n range; returned
 // point is k*P.
-func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
+func Lookup(win []AffinePoint, k int32) AffinePoint {
 	// sign = 0xFFFFFFFF if k < 0, 0x00000000 otherwise
-	sign := uint32(k >> 31)
+	sign := uint32(k >> 31) //nolint:gosec
 	// ka = abs(k)
-	ka := (uint32(k) ^ sign) - sign
+	ka := (uint32(k) ^ sign) - sign //nolint:gosec
 	// km1 = ka - 1
 	km1 := ka - 1
 
 	x := gFp5.FP5_ZERO
 	u := gFp5.FP5_ZERO
 	for i := 0; i < len(win); i++ {
-		m := km1 - uint32(i)
+		m := km1 - uint32(i) //nolint:gosec
 		c_1 := (m | (^m + 1)) >> 31
 		c := uint64(c_1) - 1
 		if c != 0 {
@@ -55,18 +55,12 @@ func (p *AffinePoint) SetLookup(win []AffinePoint, k int32) {
 
 	// If k < 0, then we must negate the point.
 	c := uint64(sign) | (uint64(sign) << 32)
-	p.x = x
-	p.u = u
 
 	if c != 0 {
-		p.u = gFp5.Neg(p.u)
+		u = gFp5.Neg(u)
 	}
-}
 
-func Lookup(win []AffinePoint, k int32) AffinePoint {
-	r := AFFINE_NEUTRAL
-	r.SetLookup(win, k)
-	return r
+	return AffinePoint{x, u}
 }
 
 // Same as lookup(), except this implementation is variable-time.

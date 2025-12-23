@@ -10,8 +10,6 @@ import (
 
 type HashOut [4]g.Element
 
-type NumericalHashOut [4]uint64
-
 func (h HashOut) ToLittleEndianBytes() []byte {
 	return g.ArrayToLittleEndianBytes([]g.Element{h[0], h[1], h[2], h[3]})
 }
@@ -21,8 +19,7 @@ func (h HashOut) ToUint64Array() [4]uint64 {
 }
 
 func HashToQuinticExtension(m []g.Element) gFp5.Element {
-	res := HashNToMNoPad(m, 5)
-	return gFp5.Element(res[:])
+	return gFp5.FromGnarkGoldilocksField(HashNToMNoPad(m, 5))
 }
 
 func HashOutFromUint64Array(arr [4]uint64) HashOut {

@@ -9,7 +9,10 @@ import (
 	. "github.com/elliottech/poseidon_crypto/int"
 )
 
-// ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve where
+// ECgFp5Scalar represents the scalar field of the ECgFP5 elliptic curve.
+//
+// GROUP ORDER (PRIME):
+// The group order is a PRIME number p ≈ 2^319:
 // p = 1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241
 type ECgFp5Scalar [5]uint64
 
@@ -18,6 +21,7 @@ func (s ECgFp5Scalar) IsCanonical() bool {
 }
 
 var (
+	// ORDER is the prime order of the ECgFp5 group (p ≈ 2^319).
 	ORDER, _ = new(big.Int).SetString("1067993516717146951041484916571792702745057740581727230159139685185762082554198619328292418486241", 10)
 	ZERO     = ECgFp5Scalar{}
 	ONE      = ECgFp5Scalar{1, 0, 0, 0, 0}
@@ -46,6 +50,11 @@ func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
 	for i := 0; i < 5; i++ {
 		value[i] = binary.LittleEndian.Uint64(data[i*8:])
 	}
+
+	if !value.IsCanonical() {
+		panic("trying to deserialize non-canonical bytes")
+	}
+
 	return value
 }
 
@@ -165,8 +174,16 @@ func (s *ECgFp5Scalar) Sub(rhs ECgFp5Scalar) ECgFp5Scalar {
 	return Select(c, r0, r1)
 }
 
-// 's' must be less than n.
+// 's' and 'rhs' must be less than n (canonical form).
 func (s ECgFp5Scalar) Mul(rhs ECgFp5Scalar) ECgFp5Scalar {
+	// SECURITY: Verify both operands are canonical before Montgomery multiplication
+	if !s.IsCanonical() {
+		panic("Mul: first operand 's' must be canonical (< n)")
+	}
+	if !rhs.IsCanonical() {
+		panic("Mul: second operand 'rhs' must be canonical (< n)")
+	}
+
 	res := s.MontyMul(R2).MontyMul(rhs)
 	return res
 }
@@ -175,6 +192,11 @@ func (s ECgFp5Scalar) Mul(rhs ECgFp5Scalar) ECgFp5Scalar {
 // Returns (s*rhs)/2^320 mod n.
 // 's' MUST be less than n (the other operand can be up to 2^320-1).
 func (s ECgFp5Scalar) MontyMul(rhs ECgFp5Scalar) ECgFp5Scalar {
+	// SECURITY: Verify that 's' is canonical (< n) as required by Montgomery multiplication
+	if !s.IsCanonical() {
+		panic("MontyMul: first operand 's' must be canonical (< n)")
+	}
+
 	var r ECgFp5Scalar
 	for i := 0; i < 5; i++ {
 		// Iteration i computes r <- (r + self*rhs_i + f*n)/2^64.

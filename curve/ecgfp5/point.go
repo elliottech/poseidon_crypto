@@ -5,6 +5,29 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
+// ECgFp5 is an elliptic curve group defined over the quintic extension of the Goldilocks field.
+//
+// CURVE PROPERTIES (Important for cryptographic security):
+//
+//  1. PRIME ORDER (No Cofactor):
+//     The group has prime order n ≈ 2^319, with NO small subgroups.
+//     This eliminates the need for cofactor clearing or subgroup checks.
+//
+//  2. CANONICAL ENCODING:
+//     Each group element has exactly one valid encoding as an Fp5 element.
+//     Decoding succeeds only for canonical representations.
+//
+//  3. COMPLETE FORMULAS:
+//     Point addition uses complete formulas with no special cases (10M cost).
+//
+//  4. NEUTRAL ELEMENT AND GROUP LAW:
+//     The neutral element is N = (0, 0), the unique point of order 2 on the curve.
+//     The group law is defined as: P ⊕ Q = P + Q + N (on the underlying curve).
+//     NOTE: The Add() function formulas already implement this group law - callers
+//     do not need to explicitly add N, as it's built into the complete formulas.
+//
+// Reference: https://github.com/pornin/ecgfp5
+//
 // A curve point.
 type ECgFp5Point struct {
 	// Internally, we use the (x,u) fractional coordinates: for curve
@@ -55,7 +78,19 @@ func (p ECgFp5Point) Encode() gFp5.Element {
 	return gFp5.Mul(p.t, gFp5.InverseOrZero(p.u))
 }
 
-// Attempt to decode a point from an gFp5 element
+// Decode attempts to decode a point from an Fp5 element.
+//
+// CANONICAL DECODING PROPERTY:
+// This function implements canonical decoding - each valid group element has
+// exactly ONE valid encoding. Invalid encodings are rejected, preventing
+// point malleability attacks.
+//
+// SECURITY IMPLICATION:
+// Since ECgFp5 has prime order (no cofactor), there is NO need to check for
+// small subgroup membership. Any successfully decoded point is guaranteed to
+// be in the prime-order group.
+//
+// Returns (point, true) on success, (NEUTRAL, false) on invalid encoding.
 func Decode(w gFp5.Element) (ECgFp5Point, bool) {
 	// Curve equation is y^2 = x*(x^2 + a*x + b); encoded value
 	// is w = y/x. Dividing by x, we get the equation:
@@ -108,9 +143,14 @@ func (p ECgFp5Point) IsNeutral() bool {
 	return gFp5.IsZero(p.u)
 }
 
-// General point addition. formulas are complete (no special case).
+// Add computes the group sum P ⊕ Q using complete addition formulas.
+//
+// These formulas implement the ECgFp5 group law: P ⊕ Q = P + Q + N (on the curve),
+// where N = (0,0) is the neutral element. The formulas are "complete" (no special cases)
+// and automatically handle all point combinations including the neutral element.
+//
+// Cost: 10 field multiplications (10M).
 func (p ECgFp5Point) Add(rhs ECgFp5Point) ECgFp5Point {
-	// cost: 10M
 
 	x1 := p.x
 	z1 := p.z

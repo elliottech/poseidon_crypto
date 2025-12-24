@@ -80,6 +80,8 @@ func SigFromBytes(b []byte) (Signature, error) {
 		return ZERO_SIG, errors.New("invalid signature length, must be 80 bytes")
 	}
 
+	// ScalarElementFromLittleEndianBytes will check s and e are both in
+	// canonical form
 	return Signature{
 		S: curve.ScalarElementFromLittleEndianBytes(b[:40]),
 		E: curve.ScalarElementFromLittleEndianBytes(b[40:]),

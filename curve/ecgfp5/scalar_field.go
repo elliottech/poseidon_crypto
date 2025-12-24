@@ -50,6 +50,11 @@ func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
 	for i := 0; i < 5; i++ {
 		value[i] = binary.LittleEndian.Uint64(data[i*8:])
 	}
+
+	if !value.IsCanonical() {
+		panic("trying to deserialize non-canonical bytes")
+	}
+
 	return value
 }
 

@@ -101,6 +101,8 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 	copy(preImage[:5], r[:])
 	copy(preImage[5:], hashedMsg[:])
 
+	// TODO: Something to be considered later (and require coordinate with Rust)
+	//
 	// It is possible that we only use 128 bits for e (instread of 320 bits)
 	// That is, we can build e with the first 3 limbs of p2.HashToQuinticExtension(preImage)
 	// This should improve the performance of schnorr signature.
@@ -126,6 +128,8 @@ func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar)
 	copy(preImage[:5], r[:])
 	copy(preImage[5:], hashedMsg[:])
 
+	// TODO: Something to be considered later (and require coordinate with Rust)
+	//
 	// It is possible that we only use 128 bits for e (instread of 320 bits)
 	// That is, we can build e with the first 3 limbs of p2.HashToQuinticExtension(preImage)
 	// This should improve the performance of schnorr signature.

@@ -76,6 +76,11 @@ func HashNToHashNoPad(input []g.GoldilocksField) HashOut {
 }
 
 func HashNToMNoPad(input []g.GoldilocksField, numOutputs int) []g.GoldilocksField {
+	for i := 0; i < len(input); i++ {
+		if uint64(input[i]) >= g.ORDER {
+			panic("input contains non-canonical field element (value >= ORDER)")
+		}
+	}
 	var perm [WIDTH]g.GoldilocksField
 	for i := 0; i < len(input); i += RATE {
 		for j := 0; j < RATE && i+j < len(input); j++ {
@@ -96,32 +101,48 @@ func HashNToMNoPad(input []g.GoldilocksField, numOutputs int) []g.GoldilocksFiel
 	}
 }
 
+// we want to be able to hash arbitrary messages to a digest.
+// we parse the input as follows:
+//
+// pad the input with 0s to a multiple of 7
+// for each 7 bytes; convert them into a goldilocks field element
+//
+// this creates len(input)/7 field elements
+//
+// we use Poseidon hash function to absort it, in each permutation, we absorb
+//
+//	RATE = 8
+//
+// field elements.
+//
+// Once we absorbed all field elements, return the first numOutputs field elements.
+// If numOutputs > RATE, keep permute and append the output.
+//
+// Note if we convert 8 bytes into a field element, then in current setup,
+// an attacker may find a collision for two different messages m1, m2 where
+//
+//	u64(m1[:8]) = u64(m2[:8]) + Goldilocks::Order
 func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
-	if len(input)%g.Bytes != 0 {
-		panic("input length should be multiple of 8")
+	absorbLen := g.Bytes - 1
+	if len(input) == 0 {
+		return HashNToMNoPad(nil, numOutputs)
 	}
 
-	inputLen := len(input) / g.Bytes
-
-	var perm [WIDTH]g.GoldilocksField
-	for i := 0; i < inputLen; i += RATE {
-		for j := 0; j < RATE && i+j < inputLen; j++ {
-			index := (i + j) * g.Bytes
-			perm[j] = g.FromCanonicalLittleEndianBytesF(input[index : index+g.Bytes])
+	chunkCount := (len(input) + absorbLen - 1) / absorbLen
+	fields := make([]g.GoldilocksField, chunkCount)
+	for i := 0; i < chunkCount; i++ {
+		start := i * absorbLen
+		end := start + absorbLen
+		if end > len(input) {
+			end = len(input)
 		}
-		Permute(&perm)
+
+		var paddedChunk [g.Bytes]byte
+		copy(paddedChunk[:], input[start:end])
+		fields[i] = g.FromCanonicalLittleEndianBytesF(paddedChunk[:])
 	}
 
-	outputs := make([]g.GoldilocksField, 0, numOutputs)
-	for {
-		for i := 0; i < RATE; i++ {
-			outputs = append(outputs, perm[i])
-			if len(outputs) == numOutputs {
-				return outputs
-			}
-		}
-		Permute(&perm)
-	}
+	return HashNToMNoPad(fields, numOutputs)
 }
 
 func Permute(input *[WIDTH]g.GoldilocksField) {

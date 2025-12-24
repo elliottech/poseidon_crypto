@@ -19,8 +19,27 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	}
 	hashedMsg := p2.HashToQuinticExtension(msg)
 
-	sig := SchnorrSignHashedMessage(hashedMsg, sk)
+	sig := SchnorrSignFieldElements(msg, sk)
 	pk := SchnorrPkFromSk(sk)
+	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
+		t.Fatalf("Signature is invalid")
+	}
+}
+
+func TestSchnorrSignBytesAndVerify(t *testing.T) {
+	sk := curve.SampleScalar() // Sample a secret key
+	msgBytes := make([]byte, 244*8) // 244 field elements * 8 bytes each
+	for i := range msgBytes {
+		msgBytes[i] = byte(i % 256)
+	}
+
+	sig := SchnorrSignBytes(msgBytes, sk)
+	pk := SchnorrPkFromSk(sk)
+
+	// Hash the message the same way as SchnorrSignBytes does
+	msgElements := p2.HashNToMNoPadBytes(msgBytes, 5)
+	hashedMsg := gFp5.FromPlonky2GoldilocksField(msgElements)
+
 	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
 	}
@@ -29,18 +48,22 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 func FuzzTestSchnorrSignAndVerify(f *testing.F) {
 	f.Add([]byte{1, 2, 3, 4}, []byte{5, 6, 7, 8})
 
-	f.Fuzz(func(t *testing.T, a, b []byte) {
-		scalar := curve.FromNonCanonicalBigInt(new(big.Int).SetBytes(a))
+		f.Fuzz(func(t *testing.T, a, b []byte) {
+			scalar := curve.FromNonCanonicalBigInt(new(big.Int).SetBytes(a))
 
-		msgBytes := make([]g.GoldilocksField, 0)
-		for i := 0; i < len(b); i += 8 {
-			var chunk [8]byte
-			copy(chunk[:], b[i:min(i+8, len(b))])
-			msgBytes = append(msgBytes, g.GoldilocksField(binary.LittleEndian.Uint64(chunk[:])))
-		}
-		hashedMsg := p2.HashToQuinticExtension(msgBytes)
+			msgBytes := make([]g.GoldilocksField, 0)
+			for i := 0; i < len(b); i += 8 {
+				var chunk [8]byte
+				copy(chunk[:], b[i:min(i+8, len(b))])
+				val := binary.LittleEndian.Uint64(chunk[:])
+				if val >= g.ORDER {
+					val -= g.ORDER
+				}
+				msgBytes = append(msgBytes, g.GoldilocksField(val))
+			}
+			hashedMsg := p2.HashToQuinticExtension(msgBytes)
 
-		sig := SchnorrSignHashedMessage(hashedMsg, scalar)
+		sig := SchnorrSignFieldElements(msgBytes, scalar)
 		pk := SchnorrPkFromSk(scalar)
 		if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
 			t.Fatalf("Signature is invalid")
@@ -175,7 +198,7 @@ func TestBytes(t *testing.T) {
 	}
 	hashedMsg := p2.HashToQuinticExtension(msg) // Random message
 
-	sig := SchnorrSignHashedMessage(hashedMsg, sk)
+	sig := SchnorrSignFieldElements(msg, sk)
 	sig2, err := SigFromBytes(sig.ToBytes())
 	if err != nil {
 		t.Fatalf("Failed to convert signature bytes to Schnorr signature: %v", err)
@@ -222,10 +245,9 @@ func BenchmarkSignatureSign(b *testing.B) {
 	for i := 0; i < 244; i++ {
 		msg[i] = g.SampleF()
 	}
-	hashedMsg := p2.HashToQuinticExtension(msg)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = SchnorrSignHashedMessage(hashedMsg, sk)
+		_ = SchnorrSignFieldElements(msg, sk)
 	}
 }

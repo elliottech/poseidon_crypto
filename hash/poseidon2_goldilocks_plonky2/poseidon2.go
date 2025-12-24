@@ -1,6 +1,7 @@
 package poseidon2_plonky2
 
 import (
+	"encoding/binary"
 	"fmt"
 	"hash"
 
@@ -122,7 +123,7 @@ func HashNToMNoPad(input []g.GoldilocksField, numOutputs int) []g.GoldilocksFiel
 // an attacker may find a collision for two different messages m1, m2 where
 //
 //	u64(m1[:8]) = u64(m2[:8]) + Goldilocks::Order
-func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
+func HashNToMPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 	absorbLen := g.Bytes - 1
 	if len(input) == 0 {
 		return HashNToMNoPad(nil, numOutputs)
@@ -143,6 +144,45 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 	}
 
 	return HashNToMNoPad(fields, numOutputs)
+}
+
+// Backward-compatible wrapper: identical to HashNToMPadBytes.
+func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
+	return HashNToMPadBytes(input, numOutputs)
+}
+
+// Hash bytes to field elements. Assumes every 8 bytes maps to a canonical field element.
+// Panics if the field element is non-canonical.
+func HashNToMCanonicalBytes(input []byte, numOutputs int) []g.GoldilocksField {
+
+	if len(input)%g.Bytes != 0 {
+		panic("input length should be multiple of 8")
+	}
+	inputLen := len(input) / g.Bytes
+
+	var perm [WIDTH]g.GoldilocksField
+	for i := 0; i < inputLen; i += RATE {
+		for j := 0; j < RATE && i+j < inputLen; j++ {
+			index := (i + j) * g.Bytes
+			elem := binary.LittleEndian.Uint64(input[index : index+g.Bytes])
+			if elem >= g.ORDER {
+				panic("input contains non-canonical field element (value >= ORDER)")
+			}
+			perm[j] = g.GoldilocksField(elem)
+		}
+		Permute(&perm)
+	}
+
+	outputs := make([]g.GoldilocksField, 0, numOutputs)
+	for {
+		for i := 0; i < RATE; i++ {
+			outputs = append(outputs, perm[i])
+			if len(outputs) == numOutputs {
+				return outputs
+			}
+		}
+		Permute(&perm)
+	}
 }
 
 func Permute(input *[WIDTH]g.GoldilocksField) {

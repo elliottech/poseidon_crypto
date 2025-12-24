@@ -93,10 +93,20 @@ func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
 	return curve.GENERATOR_ECgFp5Point.Mul(sk).Encode()
 }
 
+// Sign the bytes; with the assumption that each 8 bytes is mapped to a canonical Field elements
+func SchnorrSignCanonicalBytes(msg []byte, sk curve.ECgFp5Scalar) Signature {
+	// Hash bytes directly to quintic extension (5 field elements)
+	msgElements := p2.HashNToMCanonicalBytes(msg, 5)
+	// we are sure msgElements are in the cononical form already
+	hashedMsg := gFp5.FromPlonky2GoldilocksField(msgElements)
+	// Sign the hashed message
+	return schnorrSignHashedMessage(hashedMsg, sk)
+}
+
 // Signing arbitrary length bytes.
 func SchnorrSignBytes(msg []byte, sk curve.ECgFp5Scalar) Signature {
 	// Hash bytes directly to quintic extension (5 field elements)
-	msgElements := p2.HashNToMNoPadBytes(msg, 5)
+	msgElements := p2.HashNToMPadBytes(msg, 5)
 	// we are sure msgElements are in the cononical form already
 	hashedMsg := gFp5.FromPlonky2GoldilocksField(msgElements)
 	// Sign the hashed message

@@ -2,6 +2,7 @@ package poseidon2_plonky2
 
 import (
 	"bytes"
+	"encoding/binary"
 	"math"
 	"testing"
 
@@ -342,4 +343,32 @@ func bytesToFieldElements(input []byte) []g.GoldilocksField {
 	}
 
 	return fields
+}
+
+func TestHashNToMCanonicalBytesMatchesFieldHash(t *testing.T) {
+	inputFields := []g.GoldilocksField{
+		1, 2, 3, 4, 5, 6, 7, 8,
+	}
+	inputBytes := make([]byte, len(inputFields)*g.Bytes)
+	for i, f := range inputFields {
+		copy(inputBytes[i*g.Bytes:(i+1)*g.Bytes], g.ToLittleEndianBytesF(f))
+	}
+
+	expected := HashNToMNoPad(inputFields, 4)
+	result := HashNToMCanonicalBytes(inputBytes, 4)
+
+	compareFieldSlices(t, result, expected)
+}
+
+func TestHashNToMCanonicalBytesPanicsOnNonCanonical(t *testing.T) {
+	input := make([]byte, g.Bytes)
+	binary.LittleEndian.PutUint64(input, g.ORDER)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic for non-canonical field element")
+		}
+	}()
+
+	_ = HashNToMCanonicalBytes(input, 1)
 }

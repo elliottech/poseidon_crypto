@@ -7,7 +7,7 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
-func canBeDecodedIntoPoint(w gFp5.Element) bool {
+func CanBeDecodedIntoPoint(w gFp5.Element) bool {
 	// Value w can be decoded if and only if it is zero, or
 	// (w^2 - a)^2 - 4*b is a quadratic residue.
 	e := gFp5.Sub(gFp5.Square(w), A_ECgFp5Point)
@@ -573,7 +573,7 @@ func TestBasicOps(t *testing.T) {
 		},
 	}
 	for _, w := range bww {
-		if canBeDecodedIntoPoint(w) {
+		if CanBeDecodedIntoPoint(w) {
 			t.Fatalf("Validation should fail for element: %v", w)
 		}
 		if _, success := Decode(w); success {
@@ -583,7 +583,7 @@ func TestBasicOps(t *testing.T) {
 
 	vectors := testVectors()
 	for _, w := range vectors {
-		if !canBeDecodedIntoPoint(w) {
+		if !CanBeDecodedIntoPoint(w) {
 			t.Fatalf("Validation failed for element: %v", w)
 		}
 	}

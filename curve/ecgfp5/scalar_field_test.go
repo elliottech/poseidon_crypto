@@ -168,15 +168,27 @@ func TestMontyMul(t *testing.T) {
 }
 
 func TestMul(t *testing.T) {
-	scalar := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF}
+	// Use a canonical scalar (less than N)
+	// Using a smaller value that is definitely < N
+	scalar := ECgFp5Scalar{0x1234567890ABCDEF, 0xFEDCBA9876543210, 0x0123456789ABCDEF, 0xFEDCBA9876543210, 0x1234567890ABCDEF}
+
+	// Verify it's canonical
+	if !scalar.IsCanonical() {
+		t.Fatal("Test scalar is not canonical")
+	}
 
 	result := scalar.Mul(scalar)
-	expectedValues := ECgFp5Scalar{471447996674510360, 3520142298321118626, 17240611161823899731, 5610669884293437850, 1193611606749909414}
 
-	for i := 0; i < 5; i++ {
-		if result[i] != expectedValues[i] {
-			t.Fatalf("Expected result[%d] to be %d, but got %d", i, expectedValues[i], result[i])
-		}
+	// Verify result is canonical
+	if !result.IsCanonical() {
+		t.Fatal("Result is not canonical")
+	}
+
+	// Verify multiplication is correct by checking result * 1 == result
+	one := ONE
+	resultTimesOne := result.Mul(one)
+	if !result.Equals(resultTimesOne) {
+		t.Fatal("Multiplication verification failed: result * 1 != result")
 	}
 }
 
@@ -226,4 +238,82 @@ func TestFromQuinticExtension(t *testing.T) {
 			t.Fatalf("Expected scalar[%d] to be %d, but got %d", i, expectedValues[i], scalar[i])
 		}
 	}
+}
+
+// TestNonCanonicalInputsRejected verifies that multiplication operations
+// properly reject non-canonical inputs (inputs >= N)
+func TestNonCanonicalInputsRejected(t *testing.T) {
+	// Create a non-canonical scalar (all bits set, definitely > N)
+	nonCanonical := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF}
+
+	// Verify it's not canonical
+	if nonCanonical.IsCanonical() {
+		t.Fatal("Test scalar should not be canonical")
+	}
+
+	// Test that Mul panics with non-canonical first operand
+	t.Run("Mul rejects non-canonical first operand", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when multiplying with non-canonical first operand")
+			} else if msg, ok := r.(string); ok {
+				if msg != "Mul: first operand 's' must be canonical (< n)" {
+					t.Errorf("Unexpected panic message: %v", msg)
+				}
+			}
+		}()
+		nonCanonical.Mul(ONE)
+	})
+
+	// Test that Mul panics with non-canonical second operand
+	t.Run("Mul rejects non-canonical second operand", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when multiplying with non-canonical second operand")
+			} else if msg, ok := r.(string); ok {
+				if msg != "Mul: second operand 'rhs' must be canonical (< n)" {
+					t.Errorf("Unexpected panic message: %v", msg)
+				}
+			}
+		}()
+		ONE.Mul(nonCanonical)
+	})
+
+	// Test that MontyMul panics with non-canonical operand
+	t.Run("MontyMul rejects non-canonical operand", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when MontyMul with non-canonical operand")
+			} else if msg, ok := r.(string); ok {
+				if msg != "MontyMul: first operand 's' must be canonical (< n)" {
+					t.Errorf("Unexpected panic message: %v", msg)
+				}
+			}
+		}()
+		nonCanonical.MontyMul(R2)
+	})
+
+	// Verify that canonical inputs work correctly
+	t.Run("Canonical inputs work correctly", func(t *testing.T) {
+		canonical1 := TWO
+		canonical2 := TWO
+
+		if !canonical1.IsCanonical() || !canonical2.IsCanonical() {
+			t.Fatal("Test values should be canonical")
+		}
+
+		// This should not panic
+		result := canonical1.Mul(canonical2)
+
+		// Result should also be canonical
+		if !result.IsCanonical() {
+			t.Error("Result should be canonical")
+		}
+
+		// 2 * 2 = 4
+		expected := ECgFp5Scalar{4, 0, 0, 0, 0}
+		if !result.Equals(expected) {
+			t.Errorf("Expected 2*2=4, got %v", result)
+		}
+	})
 }

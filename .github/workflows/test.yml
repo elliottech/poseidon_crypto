@@ -33,6 +33,14 @@ jobs:
       - name: Run fuzzy field tests
         run: |
           go test -tags=fuzz -fuzz=Fuzz -fuzztime=30s github.com/elliottech/poseidon_crypto/field
+      - name: Run fuzzy signature tests
+        run: |
+          go test -tags=fuzz -fuzz=Fuzz -fuzztime=30s github.com/elliottech/poseidon_crypto/signature/schnorr
+      - name: Run fuzzy int tests
+        run: |
+          for test in $(go test -list='Fuzz.*' github.com/elliottech/poseidon_crypto/int | grep ^Fuzz); do
+              go test -fuzz="^${test}$" -fuzztime=30s github.com/elliottech/poseidon_crypto/int
+          done
 
   lint:
     name: Lint

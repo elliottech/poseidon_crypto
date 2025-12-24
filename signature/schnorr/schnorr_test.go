@@ -1,6 +1,8 @@
 package signature
 
 import (
+	"encoding/binary"
+	"math/big"
 	"testing"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
@@ -22,6 +24,28 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
 	}
+}
+
+func FuzzTestSchnorrSignAndVerify(f *testing.F) {
+	f.Add([]byte{1, 2, 3, 4}, []byte{5, 6, 7, 8})
+
+	f.Fuzz(func(t *testing.T, a, b []byte) {
+		scalar := curve.FromNonCanonicalBigInt(new(big.Int).SetBytes(a))
+
+		msgBytes := make([]g.GoldilocksField, 0)
+		for i := 0; i < len(b); i += 8 {
+			var chunk [8]byte
+			copy(chunk[:], b[i:min(i+8, len(b))])
+			msgBytes = append(msgBytes, g.GoldilocksField(binary.LittleEndian.Uint64(chunk[:])))
+		}
+		hashedMsg := p2.HashToQuinticExtension(msgBytes)
+
+		sig := SchnorrSignHashedMessage(hashedMsg, scalar)
+		pk := SchnorrPkFromSk(scalar)
+		if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
+			t.Fatalf("Signature is invalid")
+		}
+	})
 }
 
 func TestComparativeSchnorrSignAndVerify(t *testing.T) {

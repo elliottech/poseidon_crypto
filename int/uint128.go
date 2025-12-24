@@ -1,9 +1,19 @@
 package int
 
-import "math/bits"
+import (
+	"math/big"
+	"math/bits"
+)
 
 type UInt128 struct {
 	Hi, Lo uint64
+}
+
+func (u UInt128) ToBigInt() *big.Int {
+	bi := new(big.Int).SetUint64(u.Hi)
+	bi.Lsh(bi, 64)
+	bi.Add(bi, new(big.Int).SetUint64(u.Lo))
+	return bi
 }
 
 func UInt128FromUint64(v uint64) UInt128 {

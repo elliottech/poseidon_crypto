@@ -2,6 +2,7 @@ package poseidon2_plonky2
 
 import (
 	"bytes"
+	"encoding/binary"
 	"math"
 	"testing"
 
@@ -112,15 +113,13 @@ func TestDigest(t *testing.T) {
 	inputs[1][6] = 1
 	inputs[1][7] = 0
 
-	g1 := g.FromCanonicalLittleEndianBytesF(inputs[0]) // 289077004332300282
-	g2 := g.FromCanonicalLittleEndianBytesF(inputs[1]) // 289644378102298614
-
 	hFunc.Write(inputs[0])
 	hFunc.Write(inputs[1])
 
 	hash := hFunc.Sum(nil)
 
-	hash2Elems := HashNoPad([]g.GoldilocksField{g1, g2})
+	messageBytes := append(append([]byte{}, inputs[0]...), inputs[1]...)
+	hash2Elems := HashNToHashNoPad(bytesToFieldElements(messageBytes))
 	hash2 := hash2Elems.ToLittleEndianBytes()
 
 	if !bytes.Equal(hash, hash2) {
@@ -173,27 +172,19 @@ func TestHashNToHashNoPad(t *testing.T) {
 }
 
 func TestHashNToHashNoPadLarge(t *testing.T) {
-	res := HashNToHashNoPad([]g.GoldilocksField{
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("HashNToHashNoPad should panic on non-canonical input (value >= ORDER)")
+		}
+	}()
+
+	HashNToHashNoPad([]g.GoldilocksField{
 		g.GoldilocksField(g.ORDER + 1),
 		g.GoldilocksField(g.ORDER + 2),
 		g.GoldilocksField(g.ORDER + 3),
 		g.GoldilocksField(math.MaxUint64),
 		g.GoldilocksField(math.MaxUint64 - 1),
 	})
-
-	expected := HashOut{
-		14216040864787980138,
-		17275303675000904868,
-		11831395338463193314,
-		281267649235863375,
-	}
-
-	for i := 0; i < 4; i++ {
-		if res[i] != expected[i] {
-			t.Logf("Expected: %v, got: %v\n", expected, res)
-			t.FailNow()
-		}
-	}
 }
 
 func TestHashTwoToOne(t *testing.T) {
@@ -300,4 +291,84 @@ func TestConstantsAreInTheField(t *testing.T) {
 			t.Fail()
 		}
 	}
+}
+
+func TestHashNToMNoPadBytesMatchesFieldHashSingleChunk(t *testing.T) {
+	input := []byte{1, 2, 3, 4, 5, 6, 7}
+	expected := HashNToMNoPad(bytesToFieldElements(input), 4)
+	result := HashNToMNoPadBytes(input, 4)
+
+	compareFieldSlices(t, result, expected)
+}
+
+func TestHashNToMNoPadBytesMatchesFieldHashPartialChunk(t *testing.T) {
+	input := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	expected := HashNToMNoPad(bytesToFieldElements(input), 4)
+	result := HashNToMNoPadBytes(input, 4)
+
+	compareFieldSlices(t, result, expected)
+}
+
+func compareFieldSlices(t *testing.T, got, want []g.GoldilocksField) {
+	if len(got) != len(want) {
+		t.Fatalf("expected %d output elements, got %d", len(want), len(got))
+	}
+
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("expected element %d to be %d, got %d", i, want[i], got[i])
+		}
+	}
+}
+
+func bytesToFieldElements(input []byte) []g.GoldilocksField {
+	absorbLen := g.Bytes - 1
+	if len(input) == 0 {
+		return nil
+	}
+
+	chunkCount := (len(input) + absorbLen - 1) / absorbLen
+	fields := make([]g.GoldilocksField, chunkCount)
+
+	for i := 0; i < chunkCount; i++ {
+		start := i * absorbLen
+		end := start + absorbLen
+		if end > len(input) {
+			end = len(input)
+		}
+
+		var paddedChunk [g.Bytes]byte
+		copy(paddedChunk[:], input[start:end])
+		fields[i] = g.FromCanonicalLittleEndianBytesF(paddedChunk[:])
+	}
+
+	return fields
+}
+
+func TestHashNToMCanonicalBytesMatchesFieldHash(t *testing.T) {
+	inputFields := []g.GoldilocksField{
+		1, 2, 3, 4, 5, 6, 7, 8,
+	}
+	inputBytes := make([]byte, len(inputFields)*g.Bytes)
+	for i, f := range inputFields {
+		copy(inputBytes[i*g.Bytes:(i+1)*g.Bytes], g.ToLittleEndianBytesF(f))
+	}
+
+	expected := HashNToMNoPad(inputFields, 4)
+	result := HashNToMCanonicalBytes(inputBytes, 4)
+
+	compareFieldSlices(t, result, expected)
+}
+
+func TestHashNToMCanonicalBytesPanicsOnNonCanonical(t *testing.T) {
+	input := make([]byte, g.Bytes)
+	binary.LittleEndian.PutUint64(input, g.ORDER)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic for non-canonical field element")
+		}
+	}()
+
+	_ = HashNToMCanonicalBytes(input, 1)
 }

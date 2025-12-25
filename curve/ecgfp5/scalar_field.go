@@ -51,11 +51,12 @@ func ScalarElementFromLittleEndianBytes(data []byte) ECgFp5Scalar {
 		value[i] = binary.LittleEndian.Uint64(data[i*8:])
 	}
 
-	if !value.IsCanonical() {
-		panic("trying to deserialize non-canonical bytes")
+	bigValue := ToNonCanonicalBigInt(value)
+	if bigValue.Cmp(ORDER) < 0 {
+		return value
 	}
 
-	return value
+	return FromNonCanonicalBigInt(bigValue)
 }
 
 func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
@@ -163,12 +164,26 @@ func Select(c uint64, a0, a1 ECgFp5Scalar) ECgFp5Scalar {
 }
 
 func (s ECgFp5Scalar) Add(rhs ECgFp5Scalar) ECgFp5Scalar {
+	if !s.IsCanonical() {
+		panic("Add: first operand 's' must be canonical (< n)")
+	}
+	if !rhs.IsCanonical() {
+		panic("Add: second operand 'rhs' must be canonical (< n)")
+	}
+
 	r0 := s.AddInner(rhs)
 	r1, c := r0.SubInner(N) // one reduce is enough if s < n and rhs < n
 	return Select(c, r1, r0)
 }
 
 func (s *ECgFp5Scalar) Sub(rhs ECgFp5Scalar) ECgFp5Scalar {
+	if !s.IsCanonical() {
+		panic("Sub: first operand 's' must be canonical (< n)")
+	}
+	if !rhs.IsCanonical() {
+		panic("Sub: second operand 'rhs' must be canonical (< n)")
+	}
+
 	r0, c := s.SubInner(rhs)
 	r1 := r0.AddInner(N) // one add is enough if s < n and rhs < n
 	return Select(c, r0, r1)
@@ -242,7 +257,7 @@ func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
 	result := new(big.Int)
 	for i := 4; i >= 0; i-- {
 		result.Lsh(result, 64)
-		result.Or(result, new(big.Int).SetUint64(fp5[i].ToCanonicalUint64())) // it always fit to
+		result.Or(result, new(big.Int).SetUint64(fp5[i].ToCanonicalUint64()))
 	}
 
 	return FromNonCanonicalBigInt(result)

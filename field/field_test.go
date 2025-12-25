@@ -72,7 +72,8 @@ var inputs = []uint64{
 	9223372036854775798, 9223372036854775799, 9223372036854775800, 9223372036854775801, 9223372036854775802, 9223372036854775803, 9223372036854775804, 9223372036854775805,
 	9223372036854775806, 9223372036854775807, 9223372036854775808, 9223372036854775809, 9223372036854775810, 9223372036854775811, 9223372036854775812, 9223372036854775813,
 	9223372036854775814, 9223372036854775815, 9223372036854775816, 9223372036854775817, 18446744069414584311, 18446744069414584312, 18446744069414584313, 18446744069414584314,
-	18446744069414584315, 18446744069414584316, 18446744069414584317, 18446744069414584318, 18446744069414584319, 18446744069414584320,
+	18446744069414584315, 18446744069414584316, 18446744069414584317, 18446744069414584318, 18446744069414584319, 18446744069414584320, 18446744069414584321, 18446744069414584323,
+	math.MaxUint64,
 }
 
 func NewBigInt(x uint64) *big.Int {
@@ -423,6 +424,27 @@ func FuzzTestF(f *testing.F) {
 			if g.SquareF(*s).ToCanonicalUint64() != val2.ToCanonicalUint64() {
 				t.Fatalf("SqrtF: Expected sqrt^2 to be %d, but got %d", val2.ToCanonicalUint64(), g.SquareF(*s).ToCanonicalUint64())
 			}
+		}
+	})
+}
+
+func FuzzEquivalenceF(f *testing.F) {
+	f.Add(uint64(0))
+	f.Add(uint64(1))
+	f.Add(g.ORDER - 1)
+	f.Add(g.ORDER + 1)
+	f.Add(uint64(math.MaxUint64))
+
+	f.Fuzz(func(t *testing.T, val uint64) {
+		fVal := g.GoldilocksField(val)
+		gVal := g.FromUint64(val)
+
+		if fVal.ToCanonicalUint64() != gVal.Uint64() {
+			t.Fatalf("FromUint64: Expected %d to be equal, but got %d and %d", val, fVal.ToCanonicalUint64(), gVal.Uint64())
+		}
+
+		if g.SquareF(fVal).ToCanonicalUint64() != new(g.Element).Square(&gVal).Uint64() {
+			t.Fatalf("Square: Expected square of %d to be equal, but got %d and %d", val, g.SquareF(fVal).ToCanonicalUint64(), new(g.Element).Square(&gVal).Uint64())
 		}
 	})
 }

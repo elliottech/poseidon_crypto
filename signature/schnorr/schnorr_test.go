@@ -192,6 +192,14 @@ func TestBytes(t *testing.T) {
 	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig2.ToBytes()); err != nil {
 		t.Fatalf("Signature is invalid")
 	}
+
+	// Works with non-canonical inputs
+	sig3 := sig2
+	sig3.S = sig3.S.AddInner(curve.N)
+	sig3.E = sig3.E.AddInner(curve.N)
+	if err := Validate(pk.ToLittleEndianBytes(), hashedMsg.ToLittleEndianBytes(), sig3.ToBytes()); err != nil {
+		t.Fatalf("Signature is invalid")
+	}
 }
 
 func BenchmarkSignatureVerify(b *testing.B) {

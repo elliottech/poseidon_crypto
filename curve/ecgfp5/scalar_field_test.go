@@ -1,6 +1,7 @@
 package ecgfp5
 
 import (
+	"math/big"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -22,6 +23,40 @@ func TestSerdes(t *testing.T) {
 	if !scalar.Equals(result) {
 		t.Fatalf("Expected %v, but got %v", scalar, result)
 	}
+}
+
+func TestScalarElementFromLittleEndianBytesReduces(t *testing.T) {
+	// Create a byte array that represents a scalar larger than the order
+	bigScalar := new(big.Int).Add(ORDER, big.NewInt(1234567890))
+	leBytes := bigScalar.Bytes()
+	s := ScalarElementFromLittleEndianBytes(leBytes)
+
+	if ToNonCanonicalBigInt(s).Cmp(ORDER) != -1 {
+		t.Fatalf("Expected scalar to be reduced modulo order, but got %v", ToNonCanonicalBigInt(s))
+	}
+}
+
+func FuzzSerdes(f *testing.F) {
+	f.Add([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40})
+	f.Add(ORDER.Bytes())
+
+	f.Fuzz(func(t *testing.T, a []byte) {
+		// take 40 bytes only
+		if len(a) > 40 {
+			a = a[:40]
+		} else if len(a) < 40 {
+			// pad with zeros
+			a = append(a, make([]byte, 40-len(a))...)
+		}
+		s := ScalarElementFromLittleEndianBytes(a)
+
+		b := s.ToLittleEndianBytes()
+		ss := ScalarElementFromLittleEndianBytes(b)
+
+		if !s.Equals(ss) {
+			t.Fatalf("Serdes mismatch: %v != %v", s, ss)
+		}
+	})
 }
 
 func TestSplitTo4LimbBits(t *testing.T) {
@@ -120,18 +155,56 @@ func TestAddScalar(t *testing.T) {
 	}
 }
 
+func FuzzAddScalar(f *testing.F) {
+	f.Add([]byte{1, 2, 3, 4}, []byte{5, 6, 7, 8})
+	f.Add(ORDER.Bytes(), ORDER.Bytes())
+
+	f.Fuzz(func(t *testing.T, a []byte, b []byte) {
+		aBig := new(big.Int).SetBytes(a)
+		scalar1 := FromNonCanonicalBigInt(aBig)
+		bBig := new(big.Int).SetBytes(b)
+		scalar2 := FromNonCanonicalBigInt(bBig)
+
+		result := scalar1.Add(scalar2)
+		resultBig := FromNonCanonicalBigInt(new(big.Int).Add(aBig, bBig))
+
+		if !result.Equals(resultBig) {
+			t.Fatalf("Addition mismatch: %v + %v != %v", scalar1, scalar2, result)
+		}
+	})
+}
+
 func TestSub(t *testing.T) {
 	scalar1 := ECgFp5Scalar{1, 2, 0, 0, 0}
-	scalar2 := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF}
+	scalar2 := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x0FFFFFFFFFFFFFFF}
 
 	result := scalar1.Sub(scalar2)
-	expectedValues := ECgFp5Scalar{0xe80fd996948bffe3, 0xe8885c39d724a09e, 0x7fffffe6cfb80639, 0x7ffffff100000016, 0x7ffffffd80000007}
+	expectedValues := ECgFp5Scalar{0xe80fd996948bffe3, 0xe8885c39d724a09e, 0x7fffffe6cfb80639, 0x7ffffff100000016, 8070450521510510599}
 
 	for i := 0; i < 5; i++ {
 		if result[i] != expectedValues[i] {
 			t.Fatalf("Expected result[%d] to be %d, but got %d", i, expectedValues[i], result[i])
 		}
 	}
+}
+
+func FuzzSubScalar(f *testing.F) {
+	f.Add([]byte{1, 2, 3, 4}, []byte{5, 6, 7, 8})
+	f.Add(ORDER.Bytes(), ORDER.Bytes())
+
+	f.Fuzz(func(t *testing.T, a []byte, b []byte) {
+		aBig := new(big.Int).SetBytes(a)
+		scalar1 := FromNonCanonicalBigInt(aBig)
+		bBig := new(big.Int).SetBytes(b)
+		scalar2 := FromNonCanonicalBigInt(bBig)
+
+		result := scalar1.Sub(scalar2)
+		resultBig := FromNonCanonicalBigInt(new(big.Int).Sub(aBig, bBig))
+
+		if !result.Equals(resultBig) {
+			t.Fatalf("Subtraction mismatch: %v - %v != %v", scalar1, scalar2, result)
+		}
+	})
 }
 
 func TestSelect(t *testing.T) {
@@ -155,7 +228,7 @@ func TestSelect(t *testing.T) {
 
 func TestMontyMul(t *testing.T) {
 	scalar1 := ECgFp5Scalar{1, 2, 3, 4, 5}
-	scalar2 := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF}
+	scalar2 := ECgFp5Scalar{0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF} // montymul can work with non-canonical inputs
 
 	result := scalar1.MontyMul(scalar2)
 	expectedValues := ECgFp5Scalar{10974894505036100890, 7458803775930281466, 744239893213209819, 3396127080529349464, 5979369289905897562}
@@ -190,6 +263,25 @@ func TestMul(t *testing.T) {
 	if !result.Equals(resultTimesOne) {
 		t.Fatal("Multiplication verification failed: result * 1 != result")
 	}
+}
+
+func FuzzMulScalar(f *testing.F) {
+	f.Add([]byte{1, 2, 3, 4}, []byte{5, 6, 7, 8})
+	f.Add(ORDER.Bytes(), ORDER.Bytes())
+
+	f.Fuzz(func(t *testing.T, a []byte, b []byte) {
+		aBig := new(big.Int).SetBytes(a)
+		scalar1 := FromNonCanonicalBigInt(aBig)
+		bBig := new(big.Int).SetBytes(b)
+		scalar2 := FromNonCanonicalBigInt(bBig)
+
+		result := scalar1.Mul(scalar2)
+		resultBig := FromNonCanonicalBigInt(new(big.Int).Mul(aBig, bBig))
+
+		if !result.Equals(resultBig) {
+			t.Fatalf("Multiplication mismatch: %v * %v != %v", scalar1, scalar2, result)
+		}
+	})
 }
 
 func TestRecodeSigned(t *testing.T) {

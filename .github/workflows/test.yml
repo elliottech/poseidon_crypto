@@ -41,6 +41,11 @@ jobs:
           for test in $(go test -list='Fuzz.*' github.com/elliottech/poseidon_crypto/int | grep ^Fuzz); do
               go test -fuzz="^${test}$" -fuzztime=30s github.com/elliottech/poseidon_crypto/int
           done
+      - name: Run fuzzy ecgfp5 tests
+        run: |
+          for test in $(go test -list='Fuzz.*' github.com/elliottech/poseidon_crypto/curve/ecgfp5 | grep ^Fuzz); do
+              go test -fuzz="^${test}$" -fuzztime=30s github.com/elliottech/poseidon_crypto/curve/ecgfp5
+          done
 
   lint:
     name: Lint

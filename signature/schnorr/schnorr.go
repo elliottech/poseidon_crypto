@@ -90,7 +90,7 @@ func SigFromBytes(b []byte) (Signature, error) {
 
 // Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
 func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
-	return curve.GENERATOR_ECgFp5Point.Mul(sk).Encode()
+	return curve.MulGenerator(sk).Encode()
 }
 
 // Sign the bytes; with the assumption that each 8 bytes is mapped to a canonical Field elements
@@ -126,7 +126,7 @@ func SchnorrSignFieldElements(msgElements []g.GoldilocksField, sk curve.ECgFp5Sc
 func schnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
 	k := curve.SampleScalar()
-	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
+	r := curve.MulGenerator(k).Encode()
 
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.GoldilocksField, 5+5)
@@ -154,7 +154,7 @@ func schnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 }
 
 func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
-	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
+	r := curve.MulGenerator(k).Encode()
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], r[:])
@@ -227,7 +227,7 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool
 		return false
 	}
 
-	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+	rV := curve.MulAdd2WithGen(pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk (optimized with precomputed generator table)
 
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], rV[:])

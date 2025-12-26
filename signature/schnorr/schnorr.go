@@ -227,7 +227,7 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool
 		return false
 	}
 
-	rV := curve.MulAdd2WithGen(pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk (optimized with precomputed generator table)
+	rV := curve.MulAdd2WithGenJacobian(pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk (Jacobian-optimized)
 
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], rV[:])

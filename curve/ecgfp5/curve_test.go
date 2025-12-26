@@ -1775,3 +1775,252 @@ func BenchmarkMulAdd2WithGen(b *testing.B) {
 	}
 }
 
+
+// TestJacobianConversion verifies conversion between affine and Jacobian coordinates.
+func TestJacobianConversion(t *testing.T) {
+	// Test with generator
+	genJac := GENERATOR_WEIERSTRASS.ToJacobian()
+	genBack := genJac.ToAffine()
+	if !GENERATOR_WEIERSTRASS.Equals(genBack) {
+		t.Errorf("Generator: affine -> Jacobian -> affine should preserve the point")
+	}
+
+	// Test with random point
+	point := WeierstrassPoint{
+		X: gFp5.Element{
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
+		},
+		Y: gFp5.Element{
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
+		},
+		IsInf: false,
+	}
+
+	pointJac := point.ToJacobian()
+	pointBack := pointJac.ToAffine()
+	if !point.Equals(pointBack) {
+		t.Errorf("Random point: affine -> Jacobian -> affine should preserve the point")
+	}
+
+	// Test with infinity
+	infJac := NEUTRAL_WEIERSTRASS.ToJacobian()
+	if !infJac.IsInfinity() {
+		t.Errorf("Converted infinity point should be infinity in Jacobian")
+	}
+	infBack := infJac.ToAffine()
+	if !infBack.IsInf {
+		t.Errorf("Jacobian infinity -> affine should give infinity")
+	}
+}
+
+// TestJacobianDoubling verifies that Jacobian doubling produces correct results.
+func TestJacobianDoubling(t *testing.T) {
+	// Test doubling generator
+	genJac := GENERATOR_WEIERSTRASS.ToJacobian()
+	doubledJac := genJac.DoubleJacobian()
+	doubledAffine := doubledJac.ToAffine()
+
+	expectedDouble := GENERATOR_WEIERSTRASS.Double()
+	if !expectedDouble.Equals(doubledAffine) {
+		t.Errorf("Jacobian doubling of generator produces incorrect result")
+		t.Errorf("  Expected: X=%v, Y=%v", expectedDouble.X, expectedDouble.Y)
+		t.Errorf("  Got:      X=%v, Y=%v", doubledAffine.X, doubledAffine.Y)
+	}
+
+	// Test multiple doublings
+	point := GENERATOR_WEIERSTRASS
+	pointJac := point.ToJacobian()
+	for i := 0; i < 10; i++ {
+		point = point.Double()
+		pointJac = pointJac.DoubleJacobian()
+
+		pointJacAffine := pointJac.ToAffine()
+		if !point.Equals(pointJacAffine) {
+			t.Errorf("After %d doublings, Jacobian and affine results differ", i+1)
+			break
+		}
+	}
+}
+
+// TestJacobianMixedAddition verifies mixed addition (Jacobian + Affine).
+func TestJacobianMixedAddition(t *testing.T) {
+	// Test adding generator to itself
+	genJac := GENERATOR_WEIERSTRASS.ToJacobian()
+	resultJac := genJac.AddMixed(GENERATOR_WEIERSTRASS)
+	resultAffine := resultJac.ToAffine()
+
+	expectedDouble := GENERATOR_WEIERSTRASS.Double()
+	if !expectedDouble.Equals(resultAffine) {
+		t.Errorf("Mixed addition G + G should equal 2G")
+	}
+
+	// Test adding different points
+	p1 := GENERATOR_WEIERSTRASS
+	p2 := GENERATOR_WEIERSTRASS.Double()
+
+	p1Jac := p1.ToJacobian()
+	resultJac = p1Jac.AddMixed(p2)
+	resultAffine = resultJac.ToAffine()
+
+	expectedSum := p1.Add(p2)
+	if !expectedSum.Equals(resultAffine) {
+		t.Errorf("Mixed addition produces incorrect result")
+		t.Errorf("  Expected: X=%v, Y=%v", expectedSum.X, expectedSum.Y)
+		t.Errorf("  Got:      X=%v, Y=%v", resultAffine.X, resultAffine.Y)
+	}
+
+	// Test adding infinity
+	resultJac = genJac.AddMixed(NEUTRAL_WEIERSTRASS)
+	resultAffine = resultJac.ToAffine()
+	if !GENERATOR_WEIERSTRASS.Equals(resultAffine) {
+		t.Errorf("Adding infinity should not change the point")
+	}
+}
+
+// TestMulAdd2WithGenJacobian verifies that the Jacobian implementation produces
+// the same results as the affine implementation.
+func TestMulAdd2WithGenJacobian(t *testing.T) {
+	testCases := []struct {
+		name    string
+		b       WeierstrassPoint
+		scalarA ECgFp5Scalar
+		scalarB ECgFp5Scalar
+	}{
+		{
+			name: "random point and scalars",
+			b: WeierstrassPoint{
+				X: gFp5.Element{
+					g.GoldilocksField(7887569478949190020),
+					g.GoldilocksField(11586418388990522938),
+					g.GoldilocksField(13676447623055915878),
+					g.GoldilocksField(5945168854809921881),
+					g.GoldilocksField(16291886980725359814),
+				},
+				Y: gFp5.Element{
+					g.GoldilocksField(7556511254681645335),
+					g.GoldilocksField(17611929280367064763),
+					g.GoldilocksField(9410908488141053806),
+					g.GoldilocksField(11351540010214108766),
+					g.GoldilocksField(4846226015431423207),
+				},
+				IsInf: false,
+			},
+			scalarA: ECgFp5Scalar{
+				6950590877883398434,
+				17178336263794770543,
+				11012823478139181320,
+				16445091359523510936,
+				5882925226143600273,
+			},
+			scalarB: ECgFp5Scalar{
+				4544744459434870309,
+				4180764085957612004,
+				3024669018778978615,
+				15433417688859446606,
+				6775027260348937828,
+			},
+		},
+		{
+			name:    "generator as second point",
+			b:       GENERATOR_WEIERSTRASS,
+			scalarA: SampleScalar(),
+			scalarB: SampleScalar(),
+		},
+		{
+			name: "zero scalars",
+			b: WeierstrassPoint{
+				X: gFp5.Element{
+					g.GoldilocksField(10440794216646581227),
+					g.GoldilocksField(13992847258701590930),
+					g.GoldilocksField(11213401763785319360),
+					g.GoldilocksField(12830171931568113117),
+					g.GoldilocksField(6220154342199499160),
+				},
+				Y: gFp5.Element{
+					g.GoldilocksField(7971683838841472962),
+					g.GoldilocksField(1639066249976938469),
+					g.GoldilocksField(15015315060237521031),
+					g.GoldilocksField(10847769264696425470),
+					g.GoldilocksField(9177491810370773777),
+				},
+				IsInf: false,
+			},
+			scalarA: ZERO,
+			scalarB: ZERO,
+		},
+		{
+			name: "one and two scalars",
+			b: WeierstrassPoint{
+				X: gFp5.Element{
+					g.GoldilocksField(10440794216646581227),
+					g.GoldilocksField(13992847258701590930),
+					g.GoldilocksField(11213401763785319360),
+					g.GoldilocksField(12830171931568113117),
+					g.GoldilocksField(6220154342199499160),
+				},
+				Y: gFp5.Element{
+					g.GoldilocksField(7971683838841472962),
+					g.GoldilocksField(1639066249976938469),
+					g.GoldilocksField(15015315060237521031),
+					g.GoldilocksField(10847769264696425470),
+					g.GoldilocksField(9177491810370773777),
+				},
+				IsInf: false,
+			},
+			scalarA: ONE,
+			scalarB: TWO,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Compute using affine method
+			resultAffine := MulAdd2WithGen(tc.b, tc.scalarA, tc.scalarB)
+
+			// Compute using Jacobian method
+			resultJacobian := MulAdd2WithGenJacobian(tc.b, tc.scalarA, tc.scalarB)
+
+			// Verify they produce the same result
+			if !resultAffine.Equals(resultJacobian) {
+				t.Errorf("MulAdd2WithGenJacobian produces different result than MulAdd2WithGen")
+				t.Errorf("  Affine result:    X=%v, Y=%v", resultAffine.X, resultAffine.Y)
+				t.Errorf("  Jacobian result:  X=%v, Y=%v", resultJacobian.X, resultJacobian.Y)
+			}
+		})
+	}
+}
+
+// BenchmarkMulAdd2WithGenJacobian benchmarks the Jacobian-optimized method.
+func BenchmarkMulAdd2WithGenJacobian(b *testing.B) {
+	point := WeierstrassPoint{
+		X: gFp5.Element{
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
+		},
+		Y: gFp5.Element{
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
+		},
+		IsInf: false,
+	}
+	scalarA := SampleScalar()
+	scalarB := SampleScalar()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = MulAdd2WithGenJacobian(point, scalarA, scalarB)
+	}
+}

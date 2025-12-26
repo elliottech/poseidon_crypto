@@ -5,11 +5,23 @@ import (
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
-// A curve point in short Weirstrass form (x, y). This is used by the in-circuit representation
+// A curve point in short Weierstrass form (x, y). This is used by the in-circuit representation
 type WeierstrassPoint struct {
 	X     gFp5.Element
 	Y     gFp5.Element
 	IsInf bool
+}
+
+// WeierstrassPointJacobian represents a point in Jacobian coordinates (X:Y:Z).
+// The affine point (x, y) corresponds to (X/Z^2, Y/Z^3) in Jacobian coordinates.
+// This representation avoids expensive field divisions during point doubling and addition.
+//
+// Curve equation in Jacobian coordinates: Y^2 = X^3 + a*X*Z^4 + b*Z^6
+// where a and b are the Weierstrass curve parameters.
+type WeierstrassPointJacobian struct {
+	X gFp5.Element
+	Y gFp5.Element
+	Z gFp5.Element
 }
 
 var (
@@ -416,6 +428,165 @@ func (p WeierstrassPoint) Double() WeierstrassPoint {
 	return WeierstrassPoint{X: x2, Y: y2, IsInf: is_inf}
 }
 
+// ToJacobian converts an affine Weierstrass point to Jacobian coordinates.
+// Affine (x, y) -> Jacobian (x, y, 1)
+func (p WeierstrassPoint) ToJacobian() WeierstrassPointJacobian {
+	if p.IsInf {
+		// Point at infinity: (1, 1, 0)
+		return WeierstrassPointJacobian{
+			X: gFp5.FP5_ONE,
+			Y: gFp5.FP5_ONE,
+			Z: gFp5.FP5_ZERO,
+		}
+	}
+	return WeierstrassPointJacobian{
+		X: p.X,
+		Y: p.Y,
+		Z: gFp5.FP5_ONE,
+	}
+}
+
+// ToAffine converts a Jacobian point back to affine coordinates.
+// Jacobian (X, Y, Z) -> Affine (X/Z^2, Y/Z^3)
+func (p WeierstrassPointJacobian) ToAffine() WeierstrassPoint {
+	if gFp5.IsZero(p.Z) {
+		return NEUTRAL_WEIERSTRASS
+	}
+
+	zInv := gFp5.InverseOrZero(p.Z)       // 1/Z
+	zInv2 := gFp5.Square(zInv)  // 1/Z^2
+	zInv3 := gFp5.Mul(zInv2, zInv) // 1/Z^3
+
+	return WeierstrassPoint{
+		X:     gFp5.Mul(p.X, zInv2),
+		Y:     gFp5.Mul(p.Y, zInv3),
+		IsInf: false,
+	}
+}
+
+// IsInfinity checks if the Jacobian point is the point at infinity.
+func (p WeierstrassPointJacobian) IsInfinity() bool {
+	return gFp5.IsZero(p.Z)
+}
+
+// DoubleJacobian performs point doubling in Jacobian coordinates.
+// This is faster than affine doubling as it avoids field divisions.
+//
+// Algorithm: dbl-2007-bl from https://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html
+// Cost: 1M + 8S + 1*a + 10add + 2*2 + 1*3 + 1*4 + 1*8
+func (p WeierstrassPointJacobian) DoubleJacobian() WeierstrassPointJacobian {
+	if p.IsInfinity() {
+		return p
+	}
+
+	// XX = X^2
+	XX := gFp5.Square(p.X)
+	// YY = Y^2
+	YY := gFp5.Square(p.Y)
+	// YYYY = YY^2
+	YYYY := gFp5.Square(YY)
+	// ZZ = Z^2
+	ZZ := gFp5.Square(p.Z)
+
+	// S = 2*((X+YY)^2-XX-YYYY)
+	tmp := gFp5.Add(p.X, YY)
+	tmp = gFp5.Square(tmp)
+	tmp = gFp5.Sub(tmp, XX)
+	tmp = gFp5.Sub(tmp, YYYY)
+	S := gFp5.Double(tmp)
+
+	// M = 3*XX + a*ZZ^2
+	M := gFp5.Triple(XX)
+	ZZZZ := gFp5.Square(ZZ)
+	M = gFp5.Add(M, gFp5.Mul(A_WEIERSTRASS, ZZZZ))
+
+	// T = M^2 - 2*S
+	T := gFp5.Square(M)
+	T = gFp5.Sub(T, gFp5.Double(S))
+
+	// X' = T
+	X3 := T
+
+	// Y' = M*(S-T) - 8*YYYY
+	Y3 := gFp5.Sub(S, T)
+	Y3 = gFp5.Mul(M, Y3)
+	eight_YYYY := gFp5.Double(gFp5.Double(gFp5.Double(YYYY)))
+	Y3 = gFp5.Sub(Y3, eight_YYYY)
+
+	// Z' = (Y+Z)^2 - YY - ZZ
+	Z3 := gFp5.Add(p.Y, p.Z)
+	Z3 = gFp5.Square(Z3)
+	Z3 = gFp5.Sub(Z3, YY)
+	Z3 = gFp5.Sub(Z3, ZZ)
+
+	return WeierstrassPointJacobian{X: X3, Y: Y3, Z: Z3}
+}
+
+// AddMixed performs mixed addition: Jacobian + Affine -> Jacobian.
+// This is more efficient than full Jacobian addition when one point is in affine form.
+//
+// Algorithm: madd-2007-bl from https://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian.html
+// Cost: 7M + 4S + 9add + 3*2 + 1*4
+func (p WeierstrassPointJacobian) AddMixed(q WeierstrassPoint) WeierstrassPointJacobian {
+	if p.IsInfinity() {
+		return q.ToJacobian()
+	}
+	if q.IsInf {
+		return p
+	}
+
+	// Z1Z1 = Z1^2
+	Z1Z1 := gFp5.Square(p.Z)
+
+	// U2 = X2*Z1Z1
+	U2 := gFp5.Mul(q.X, Z1Z1)
+
+	// S2 = Y2*Z1*Z1Z1
+	S2 := gFp5.Mul(q.Y, p.Z)
+	S2 = gFp5.Mul(S2, Z1Z1)
+
+	// H = U2 - X1
+	H := gFp5.Sub(U2, p.X)
+	// HH = H^2
+	HH := gFp5.Square(H)
+	// I = 4*HH
+	I := gFp5.Double(gFp5.Double(HH))
+	// J = H*I
+	J := gFp5.Mul(H, I)
+
+	// r = 2*(S2 - Y1)
+	r := gFp5.Sub(S2, p.Y)
+	r = gFp5.Double(r)
+
+	// V = X1*I
+	V := gFp5.Mul(p.X, I)
+
+	// X3 = r^2 - J - 2*V
+	X3 := gFp5.Square(r)
+	X3 = gFp5.Sub(X3, J)
+	X3 = gFp5.Sub(X3, gFp5.Double(V))
+
+	// Y3 = r*(V - X3) - 2*Y1*J
+	Y3 := gFp5.Sub(V, X3)
+	Y3 = gFp5.Mul(r, Y3)
+	tmp := gFp5.Mul(p.Y, J)
+	Y3 = gFp5.Sub(Y3, gFp5.Double(tmp))
+
+	// Z3 = (Z1 + H)^2 - Z1Z1 - HH
+	Z3 := gFp5.Add(p.Z, H)
+	Z3 = gFp5.Square(Z3)
+	Z3 = gFp5.Sub(Z3, Z1Z1)
+	Z3 = gFp5.Sub(Z3, HH)
+
+	// Check if points were equal (H = 0)
+	if gFp5.IsZero(H) {
+		// Points are equal, use doubling
+		return p.DoubleJacobian()
+	}
+
+	return WeierstrassPointJacobian{X: X3, Y: Y3, Z: Z3}
+}
+
 func (p WeierstrassPoint) PrecomputeWindow(windowBits uint32) []WeierstrassPoint {
 	if windowBits < 2 {
 		panic("windowBits in PrecomputeWindow for WeierstrassPoint must be at least 2")
@@ -480,4 +651,47 @@ func MulAdd2WithGen(b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) Weierstra
 	}
 
 	return res
+}
+// MulAdd2WithGenJacobian computes scalarA * G + scalarB * b using Jacobian coordinates.
+// This avoids expensive field divisions by keeping the accumulator in Jacobian form throughout
+// the computation, only converting back to affine at the end.
+//
+// Performance: Expected ~20-30% speedup over affine-only MulAdd2WithGen due to:
+//   - No divisions during point doubling (uses only multiplications and squarings)
+//   - Mixed addition (Jacobian + Affine) is faster than affine addition
+//   - Single conversion back to affine at the end
+//
+// Algorithm: Jacobian-optimized dual-scalar multiplication with mixed addition.
+func MulAdd2WithGenJacobian(b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPoint {
+	// Use precomputed table for generator, compute window for b
+	bWindow := b.PrecomputeWindow(4)
+
+	// Split both scalars into 4-bit limbs (80 limbs each for 320-bit scalars)
+	aFourBitLimbs := scalarA.SplitTo4BitLimbs()
+	bFourBitLimbs := scalarB.SplitTo4BitLimbs()
+
+	numLimbs := len(aFourBitLimbs)
+
+	// Initialize result in Jacobian coordinates with the most significant limbs
+	// Start by adding the two affine points, then convert to Jacobian
+	initialPoint := GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[numLimbs-1]].Add(bWindow[bFourBitLimbs[numLimbs-1]])
+	res := initialPoint.ToJacobian()
+
+	// Process remaining limbs from most to least significant
+	for i := numLimbs - 2; i >= 0; i-- {
+		// Double the accumulator 4 times in Jacobian coordinates (much faster than affine)
+		for j := 0; j < 4; j++ {
+			res = res.DoubleJacobian()
+		}
+
+		// Add the next window using mixed addition (Jacobian + Affine -> Jacobian)
+		// First combine the two affine points
+		contribution := GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[i]].Add(bWindow[bFourBitLimbs[i]])
+
+		// Then add to accumulator using mixed addition
+		res = res.AddMixed(contribution)
+	}
+
+	// Convert final result back to affine coordinates
+	return res.ToAffine()
 }

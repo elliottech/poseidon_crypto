@@ -734,8 +734,6 @@ func (r ECgFp5Point) Mul(s ECgFp5Scalar) ECgFp5Point {
 // MulGenerator multiplies the generator point by a scalar using the precomputed window table.
 // This is significantly faster than the generic Mul() function for the generator point,
 // as it avoids recomputing the window table on every call.
-//
-// Performance: ~15-20% faster than GENERATOR_ECgFp5Point.Mul(s) for scalar multiplication.
 func MulGenerator(s ECgFp5Scalar) ECgFp5Point {
 	// Use the precomputed window table
 	digits := make([]int32, (319+WINDOW)/WINDOW)

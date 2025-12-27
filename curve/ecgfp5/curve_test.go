@@ -885,6 +885,52 @@ func TestDecodeAsWeierstrass(t *testing.T) {
 	}
 }
 
+// TestGeneratorWeierstrassWindow verifies that the precomputed GENERATOR_WEIERSTRASS_WINDOW
+// table contains the correct values [0, G, 2G, 3G, ..., 15G].
+func TestGeneratorWeierstrassWindow(t *testing.T) {
+	// Compute the window table dynamically for comparison
+	dynamicTable := GENERATOR_WEIERSTRASS.PrecomputeWindow(4)
+
+	// Verify the table has the correct size (16 points for 4-bit window)
+	expectedSize := 16
+	if len(GENERATOR_WEIERSTRASS_WINDOW) != expectedSize {
+		t.Fatalf("GENERATOR_WEIERSTRASS_WINDOW has incorrect size: expected %d, got %d",
+			expectedSize, len(GENERATOR_WEIERSTRASS_WINDOW))
+	}
+
+	if len(dynamicTable) != expectedSize {
+		t.Fatalf("Dynamically computed table has incorrect size: expected %d, got %d",
+			expectedSize, len(dynamicTable))
+	}
+
+	// Verify each entry in the precomputed table matches the dynamically computed one
+	for i := 0; i < expectedSize; i++ {
+		precomputed := GENERATOR_WEIERSTRASS_WINDOW[i]
+		dynamic := dynamicTable[i]
+
+		if !precomputed.Equals(dynamic) {
+			t.Errorf("GENERATOR_WEIERSTRASS_WINDOW[%d] does not match dynamically computed value", i)
+			t.Errorf("  Precomputed: X=%v, Y=%v, IsInf=%v", precomputed.X, precomputed.Y, precomputed.IsInf)
+			t.Errorf("  Dynamic:     X=%v, Y=%v, IsInf=%v", dynamic.X, dynamic.Y, dynamic.IsInf)
+		}
+	}
+
+	// Additionally verify by direct computation: each entry should be i*G
+	current := NEUTRAL_WEIERSTRASS
+	for i := 0; i < expectedSize; i++ {
+		if !GENERATOR_WEIERSTRASS_WINDOW[i].Equals(current) {
+			t.Errorf("GENERATOR_WEIERSTRASS_WINDOW[%d] is not equal to %d*G", i, i)
+			t.Errorf("  Expected: %v", current)
+			t.Errorf("  Got:      %v", GENERATOR_WEIERSTRASS_WINDOW[i])
+		}
+
+		// Compute next multiple for next iteration
+		if i < expectedSize-1 {
+			current = current.Add(GENERATOR_WEIERSTRASS)
+		}
+	}
+}
+
 func TestWeierstrassPrecomputeWindow(t *testing.T) {
 	qwe := WeierstrassPoint{
 		X: gFp5.Element{
@@ -1442,5 +1488,396 @@ func TestWeierstrassMulAdd2(t *testing.T) {
 		if muladd.Y[i] != expectedMulAdd.Y[i] {
 			t.Fatalf("Expected Y[%d] to be %v, but got %v", i, expectedMulAdd.Y[i], muladd.Y[i])
 		}
+	}
+}
+
+// TestGeneratorWindowAffine verifies that the precomputed GENERATOR_WINDOW_AFFINE table
+// contains the correct values [G, 2G, 3G, ..., 16G].
+func TestGeneratorWindowAffine(t *testing.T) {
+	// Compute the window table dynamically for comparison
+	dynamicTable := GENERATOR_ECgFp5Point.MakeWindowAffine()
+
+	// Verify the table has the correct size
+	if len(GENERATOR_WINDOW_AFFINE) != WIN_SIZE {
+		t.Fatalf("GENERATOR_WINDOW_AFFINE has incorrect size: expected %d, got %d", WIN_SIZE, len(GENERATOR_WINDOW_AFFINE))
+	}
+
+	if len(dynamicTable) != WIN_SIZE {
+		t.Fatalf("Dynamically computed table has incorrect size: expected %d, got %d", WIN_SIZE, len(dynamicTable))
+	}
+
+	// Verify each entry in the precomputed table matches the dynamically computed one
+	for i := 0; i < WIN_SIZE; i++ {
+		precomputed := GENERATOR_WINDOW_AFFINE[i]
+		dynamic := dynamicTable[i]
+
+		// Check x coordinate
+		if !gFp5.Equals(precomputed.x, dynamic.x) {
+			t.Errorf("GENERATOR_WINDOW_AFFINE[%d].x does not match dynamically computed value", i)
+			t.Errorf("  Precomputed x: %v", precomputed.x)
+			t.Errorf("  Dynamic x:     %v", dynamic.x)
+		}
+
+		// Check u coordinate
+		if !gFp5.Equals(precomputed.u, dynamic.u) {
+			t.Errorf("GENERATOR_WINDOW_AFFINE[%d].u does not match dynamically computed value", i)
+			t.Errorf("  Precomputed u: %v", precomputed.u)
+			t.Errorf("  Dynamic u:     %v", dynamic.u)
+		}
+	}
+
+	// Additionally verify that each entry is (i+1)*G by converting to projective and comparing
+	current := GENERATOR_ECgFp5Point
+	for i := 0; i < WIN_SIZE; i++ {
+		// Convert precomputed affine to projective
+		fromPrecomputed := GENERATOR_WINDOW_AFFINE[i].ToPoint()
+
+		// Check if they are equal
+		if !current.Equals(fromPrecomputed) {
+			t.Errorf("GENERATOR_WINDOW_AFFINE[%d] is not equal to %d*G", i, i+1)
+			t.Errorf("  Expected: %v", current)
+			t.Errorf("  Got:      %v", fromPrecomputed)
+		}
+
+		// Compute next multiple for next iteration
+		if i < WIN_SIZE-1 {
+			current = current.Add(GENERATOR_ECgFp5Point)
+		}
+	}
+}
+
+// TestMulGenerator verifies that MulGenerator produces the same results as
+// GENERATOR_ECgFp5Point.Mul() but uses the precomputed table for better performance.
+func TestMulGenerator(t *testing.T) {
+	// Test with several different scalars
+	testScalars := []ECgFp5Scalar{
+		ZERO,
+		ONE,
+		TWO,
+		SampleScalar(),
+		SampleScalar(),
+		SampleScalar(),
+	}
+
+	for i, scalar := range testScalars {
+		// Compute using the old method (dynamically creates window)
+		resultOld := GENERATOR_ECgFp5Point.Mul(scalar)
+
+		// Compute using the new optimized method (uses precomputed window)
+		resultNew := MulGenerator(scalar)
+
+		// Verify they produce the same result
+		if !resultOld.Equals(resultNew) {
+			t.Errorf("Test case %d: MulGenerator produces different result than Mul", i)
+			t.Errorf("  Scalar: %v", scalar)
+			t.Errorf("  Mul result:         %v", resultOld)
+			t.Errorf("  MulGenerator result: %v", resultNew)
+		}
+
+		// Also verify the encoded forms are identical
+		encodedOld := resultOld.Encode()
+		encodedNew := resultNew.Encode()
+		if !gFp5.Equals(encodedOld, encodedNew) {
+			t.Errorf("Test case %d: Encoded results differ", i)
+			t.Errorf("  Mul encoded:         %v", encodedOld)
+			t.Errorf("  MulGenerator encoded: %v", encodedNew)
+		}
+	}
+}
+
+// BenchmarkGeneratorMul benchmarks the old method: GENERATOR_ECgFp5Point.Mul(scalar)
+// which dynamically creates the window table on every call.
+func BenchmarkGeneratorMul(b *testing.B) {
+	scalar := SampleScalar()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = GENERATOR_ECgFp5Point.Mul(scalar)
+	}
+}
+
+// BenchmarkMulGenerator benchmarks the optimized method: MulGenerator(scalar)
+// which uses the precomputed GENERATOR_WINDOW_AFFINE table.
+func BenchmarkMulGenerator(b *testing.B) {
+	scalar := SampleScalar()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = MulGenerator(scalar)
+	}
+}
+
+// BenchmarkMulAdd2 benchmarks the old method: MulAdd2(GENERATOR_WEIERSTRASS, b, scalarA, scalarB)
+// which dynamically creates window tables for both points.
+func BenchmarkMulAdd2(b *testing.B) {
+	point := WeierstrassPoint{
+		X: gFp5.Element{
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
+		},
+		Y: gFp5.Element{
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
+		},
+		IsInf: false,
+	}
+	scalarA := SampleScalar()
+	scalarB := SampleScalar()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = MulAdd2(GENERATOR_WEIERSTRASS, point, scalarA, scalarB)
+	}
+}
+
+// TestJacobianConversion verifies conversion between affine and Jacobian coordinates.
+func TestJacobianConversion(t *testing.T) {
+	// Test with generator
+	genJac := GENERATOR_WEIERSTRASS.ToJacobian()
+	genBack := genJac.ToAffine()
+	if !GENERATOR_WEIERSTRASS.Equals(genBack) {
+		t.Errorf("Generator: affine -> Jacobian -> affine should preserve the point")
+	}
+
+	// Test with random point
+	point := WeierstrassPoint{
+		X: gFp5.Element{
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
+		},
+		Y: gFp5.Element{
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
+		},
+		IsInf: false,
+	}
+
+	pointJac := point.ToJacobian()
+	pointBack := pointJac.ToAffine()
+	if !point.Equals(pointBack) {
+		t.Errorf("Random point: affine -> Jacobian -> affine should preserve the point")
+	}
+
+	// Test with infinity
+	infJac := NEUTRAL_WEIERSTRASS.ToJacobian()
+	if !infJac.IsInfinity() {
+		t.Errorf("Converted infinity point should be infinity in Jacobian")
+	}
+	infBack := infJac.ToAffine()
+	if !infBack.IsInf {
+		t.Errorf("Jacobian infinity -> affine should give infinity")
+	}
+}
+
+// TestJacobianDoubling verifies that Jacobian doubling produces correct results.
+func TestJacobianDoubling(t *testing.T) {
+	// Test doubling generator
+	genJac := GENERATOR_WEIERSTRASS.ToJacobian()
+	doubledJac := genJac.DoubleJacobian()
+	doubledAffine := doubledJac.ToAffine()
+
+	expectedDouble := GENERATOR_WEIERSTRASS.Double()
+	if !expectedDouble.Equals(doubledAffine) {
+		t.Errorf("Jacobian doubling of generator produces incorrect result")
+		t.Errorf("  Expected: X=%v, Y=%v", expectedDouble.X, expectedDouble.Y)
+		t.Errorf("  Got:      X=%v, Y=%v", doubledAffine.X, doubledAffine.Y)
+	}
+
+	// Test multiple doublings
+	point := GENERATOR_WEIERSTRASS
+	pointJac := point.ToJacobian()
+	for i := 0; i < 10; i++ {
+		point = point.Double()
+		pointJac = pointJac.DoubleJacobian()
+
+		pointJacAffine := pointJac.ToAffine()
+		if !point.Equals(pointJacAffine) {
+			t.Errorf("After %d doublings, Jacobian and affine results differ", i+1)
+			break
+		}
+	}
+}
+
+// TestJacobianMixedAddition verifies mixed addition (Jacobian + Affine).
+func TestJacobianMixedAddition(t *testing.T) {
+	// Test adding generator to itself
+	genJac := GENERATOR_WEIERSTRASS.ToJacobian()
+	resultJac := genJac.AddMixed(GENERATOR_WEIERSTRASS)
+	resultAffine := resultJac.ToAffine()
+
+	expectedDouble := GENERATOR_WEIERSTRASS.Double()
+	if !expectedDouble.Equals(resultAffine) {
+		t.Errorf("Mixed addition G + G should equal 2G")
+	}
+
+	// Test adding different points
+	p1 := GENERATOR_WEIERSTRASS
+	p2 := GENERATOR_WEIERSTRASS.Double()
+
+	p1Jac := p1.ToJacobian()
+	resultJac = p1Jac.AddMixed(p2)
+	resultAffine = resultJac.ToAffine()
+
+	expectedSum := p1.Add(p2)
+	if !expectedSum.Equals(resultAffine) {
+		t.Errorf("Mixed addition produces incorrect result")
+		t.Errorf("  Expected: X=%v, Y=%v", expectedSum.X, expectedSum.Y)
+		t.Errorf("  Got:      X=%v, Y=%v", resultAffine.X, resultAffine.Y)
+	}
+
+	// Test adding infinity
+	resultJac = genJac.AddMixed(NEUTRAL_WEIERSTRASS)
+	resultAffine = resultJac.ToAffine()
+	if !GENERATOR_WEIERSTRASS.Equals(resultAffine) {
+		t.Errorf("Adding infinity should not change the point")
+	}
+}
+
+// TestMulAdd2WithGenJacobian verifies that the Jacobian implementation produces
+// the same results as the affine implementation.
+func TestMulAdd2WithGenJacobian(t *testing.T) {
+	testCases := []struct {
+		name    string
+		b       WeierstrassPoint
+		scalarA ECgFp5Scalar
+		scalarB ECgFp5Scalar
+	}{
+		{
+			name: "random point and scalars",
+			b: WeierstrassPoint{
+				X: gFp5.Element{
+					g.GoldilocksField(7887569478949190020),
+					g.GoldilocksField(11586418388990522938),
+					g.GoldilocksField(13676447623055915878),
+					g.GoldilocksField(5945168854809921881),
+					g.GoldilocksField(16291886980725359814),
+				},
+				Y: gFp5.Element{
+					g.GoldilocksField(7556511254681645335),
+					g.GoldilocksField(17611929280367064763),
+					g.GoldilocksField(9410908488141053806),
+					g.GoldilocksField(11351540010214108766),
+					g.GoldilocksField(4846226015431423207),
+				},
+				IsInf: false,
+			},
+			scalarA: ECgFp5Scalar{
+				6950590877883398434,
+				17178336263794770543,
+				11012823478139181320,
+				16445091359523510936,
+				5882925226143600273,
+			},
+			scalarB: ECgFp5Scalar{
+				4544744459434870309,
+				4180764085957612004,
+				3024669018778978615,
+				15433417688859446606,
+				6775027260348937828,
+			},
+		},
+		{
+			name:    "generator as second point",
+			b:       GENERATOR_WEIERSTRASS,
+			scalarA: SampleScalar(),
+			scalarB: SampleScalar(),
+		},
+		{
+			name: "zero scalars",
+			b: WeierstrassPoint{
+				X: gFp5.Element{
+					g.GoldilocksField(10440794216646581227),
+					g.GoldilocksField(13992847258701590930),
+					g.GoldilocksField(11213401763785319360),
+					g.GoldilocksField(12830171931568113117),
+					g.GoldilocksField(6220154342199499160),
+				},
+				Y: gFp5.Element{
+					g.GoldilocksField(7971683838841472962),
+					g.GoldilocksField(1639066249976938469),
+					g.GoldilocksField(15015315060237521031),
+					g.GoldilocksField(10847769264696425470),
+					g.GoldilocksField(9177491810370773777),
+				},
+				IsInf: false,
+			},
+			scalarA: ZERO,
+			scalarB: ZERO,
+		},
+		{
+			name: "one and two scalars",
+			b: WeierstrassPoint{
+				X: gFp5.Element{
+					g.GoldilocksField(10440794216646581227),
+					g.GoldilocksField(13992847258701590930),
+					g.GoldilocksField(11213401763785319360),
+					g.GoldilocksField(12830171931568113117),
+					g.GoldilocksField(6220154342199499160),
+				},
+				Y: gFp5.Element{
+					g.GoldilocksField(7971683838841472962),
+					g.GoldilocksField(1639066249976938469),
+					g.GoldilocksField(15015315060237521031),
+					g.GoldilocksField(10847769264696425470),
+					g.GoldilocksField(9177491810370773777),
+				},
+				IsInf: false,
+			},
+			scalarA: ONE,
+			scalarB: TWO,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Compute using affine method
+			resultAffine := MulAdd2(GENERATOR_WEIERSTRASS, tc.b, tc.scalarA, tc.scalarB)
+
+			// Compute using Jacobian method
+			resultJacobian := MulAdd2WithGenJacobian(tc.b, tc.scalarA, tc.scalarB)
+
+			// Verify they produce the same result
+			if !resultAffine.Equals(resultJacobian) {
+				t.Errorf("MulAdd2WithGenJacobian produces different result than MulAdd2WithGen")
+				t.Errorf("  Affine result:    X=%v, Y=%v", resultAffine.X, resultAffine.Y)
+				t.Errorf("  Jacobian result:  X=%v, Y=%v", resultJacobian.X, resultJacobian.Y)
+			}
+		})
+	}
+}
+
+// BenchmarkMulAdd2WithGenJacobian benchmarks the Jacobian-optimized method.
+func BenchmarkMulAdd2WithGenJacobian(b *testing.B) {
+	point := WeierstrassPoint{
+		X: gFp5.Element{
+			g.GoldilocksField(7887569478949190020),
+			g.GoldilocksField(11586418388990522938),
+			g.GoldilocksField(13676447623055915878),
+			g.GoldilocksField(5945168854809921881),
+			g.GoldilocksField(16291886980725359814),
+		},
+		Y: gFp5.Element{
+			g.GoldilocksField(7556511254681645335),
+			g.GoldilocksField(17611929280367064763),
+			g.GoldilocksField(9410908488141053806),
+			g.GoldilocksField(11351540010214108766),
+			g.GoldilocksField(4846226015431423207),
+		},
+		IsInf: false,
+	}
+	scalarA := SampleScalar()
+	scalarB := SampleScalar()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = MulAdd2WithGenJacobian(point, scalarA, scalarB)
 	}
 }

@@ -58,8 +58,8 @@ var (
 	}
 
 	// GENERATOR_WEIERSTRASS_WINDOW is a precomputed window table for the Weierstrass generator.
-// This table contains points [0, G, 2G, 3G, ..., 15G] where G is the generator.
-// Window size = 4 bits (16 points), matching the window size used in MulAdd2.
+	// This table contains points [0, G, 2G, 3G, ..., 15G] where G is the generator.
+	// Window size = 4 bits (16 points), matching the window size used in MulAdd2.
 	GENERATOR_WEIERSTRASS_WINDOW = []WeierstrassPoint{
 		{ // 0G (neutral/infinity)
 			X:     gFp5.FP5_ZERO,
@@ -322,7 +322,6 @@ var (
 			IsInf: false,
 		},
 	}
-
 )
 
 func (p WeierstrassPoint) Equals(q WeierstrassPoint) bool {
@@ -453,9 +452,9 @@ func (p WeierstrassPointJacobian) ToAffine() WeierstrassPoint {
 		return NEUTRAL_WEIERSTRASS
 	}
 
-	zInv := gFp5.InverseOrZero(p.Z)       // 1/Z
-	zInv2 := gFp5.Square(zInv)  // 1/Z^2
-	zInv3 := gFp5.Mul(zInv2, zInv) // 1/Z^3
+	zInv := gFp5.InverseOrZero(p.Z) // 1/Z
+	zInv2 := gFp5.Square(zInv)      // 1/Z^2
+	zInv3 := gFp5.Mul(zInv2, zInv)  // 1/Z^3
 
 	return WeierstrassPoint{
 		X:     gFp5.Mul(p.X, zInv2),
@@ -617,49 +616,9 @@ func MulAdd2(a, b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPo
 	return res
 }
 
-// MulAdd2WithGen computes scalarA * G + scalarB * b where G is the generator point.
-// This is optimized for signature verification where one point is always the generator.
-//
-// Performance: Uses the precomputed GENERATOR_WEIERSTRASS_WINDOW table to avoid
-// recomputing multiples of the generator on every call, providing ~15-20% speedup
-// over MulAdd2(GENERATOR_WEIERSTRASS, b, scalarA, scalarB).
-//
-// Algorithm: Simultaneous dual-scalar multiplication using 4-bit windows.
-// Processes both scalars in parallel, accumulating scalarA*G + scalarB*b.
-func MulAdd2WithGen(b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPoint {
-	// Use precomputed table for generator, compute window for b
-	bWindow := b.PrecomputeWindow(4)
-
-	// Split both scalars into 4-bit limbs (80 limbs each for 320-bit scalars)
-	aFourBitLimbs := scalarA.SplitTo4BitLimbs()
-	bFourBitLimbs := scalarB.SplitTo4BitLimbs()
-
-	numLimbs := len(aFourBitLimbs)
-
-	// Initialize result with the most significant limbs
-	// res = aFourBitLimbs[79]*G + bFourBitLimbs[79]*b
-	res := GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[numLimbs-1]].Add(bWindow[bFourBitLimbs[numLimbs-1]])
-
-	// Process remaining limbs from most to least significant
-	for i := numLimbs - 2; i >= 0; i-- {
-		// Double the accumulator 4 times (multiply by 16, since we're processing 4-bit windows)
-		for j := 0; j < 4; j++ {
-			res = res.Double()
-		}
-		// Add the next window: res = res + aFourBitLimbs[i]*G + bFourBitLimbs[i]*b
-		res = res.Add(GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[i]].Add(bWindow[bFourBitLimbs[i]]))
-	}
-
-	return res
-}
 // MulAdd2WithGenJacobian computes scalarA * G + scalarB * b using Jacobian coordinates.
 // This avoids expensive field divisions by keeping the accumulator in Jacobian form throughout
 // the computation, only converting back to affine at the end.
-//
-// Performance: Expected ~20-30% speedup over affine-only MulAdd2WithGen due to:
-//   - No divisions during point doubling (uses only multiplications and squarings)
-//   - Mixed addition (Jacobian + Affine) is faster than affine addition
-//   - Single conversion back to affine at the end
 //
 // Algorithm: Jacobian-optimized dual-scalar multiplication with mixed addition.
 func MulAdd2WithGenJacobian(b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) WeierstrassPoint {
@@ -673,9 +632,9 @@ func MulAdd2WithGenJacobian(b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) W
 	numLimbs := len(aFourBitLimbs)
 
 	// Initialize result in Jacobian coordinates with the most significant limbs
-	// Start by adding the two affine points, then convert to Jacobian
-	initialPoint := GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[numLimbs-1]].Add(bWindow[bFourBitLimbs[numLimbs-1]])
-	res := initialPoint.ToJacobian()
+	// Convert first point to Jacobian, then use mixed addition with second point
+	res := GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[numLimbs-1]].ToJacobian()
+	res = res.AddMixed(bWindow[bFourBitLimbs[numLimbs-1]])
 
 	// Process remaining limbs from most to least significant
 	for i := numLimbs - 2; i >= 0; i-- {
@@ -684,12 +643,10 @@ func MulAdd2WithGenJacobian(b WeierstrassPoint, scalarA, scalarB ECgFp5Scalar) W
 			res = res.DoubleJacobian()
 		}
 
-		// Add the next window using mixed addition (Jacobian + Affine -> Jacobian)
-		// First combine the two affine points
-		contribution := GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[i]].Add(bWindow[bFourBitLimbs[i]])
-
-		// Then add to accumulator using mixed addition
-		res = res.AddMixed(contribution)
+		// Add the next window using mixed addition
+		// First add the generator contribution, then add the b contribution
+		res = res.AddMixed(GENERATOR_WEIERSTRASS_WINDOW[aFourBitLimbs[i]])
+		res = res.AddMixed(bWindow[bFourBitLimbs[i]])
 	}
 
 	// Convert final result back to affine coordinates

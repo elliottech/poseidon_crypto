@@ -3,10 +3,17 @@ package poseidon2_plonky2
 import (
 	"bytes"
 	"math"
+	"math/bits"
+	"math/rand/v2"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	. "github.com/elliottech/poseidon_crypto/int"
 )
+
+func getRandomGoldilocks() g.GoldilocksField {
+	return g.GoldilocksField(rand.Uint64())
+}
 
 func TestPermute(t *testing.T) {
 	inp := [WIDTH]g.GoldilocksField{
@@ -300,4 +307,412 @@ func TestConstantsAreInTheField(t *testing.T) {
 			t.Fail()
 		}
 	}
+}
+
+func mulAccF_test1(self, x, y g.GoldilocksField) g.GoldilocksField {
+	// u64 + u64 * u64 cannot overflow.
+	return g.Reduce128Bit(AddUInt128(g.AsUInt128(self), MulUInt64(uint64(x), uint64(y))))
+}
+
+func mulAccF_test2(self, x, y g.GoldilocksField) g.GoldilocksField {
+	hi, lo := bits.Mul64(uint64(x), uint64(y))
+	lo, c := bits.Add64(lo, uint64(self), 0)
+	hi += c
+
+	t0, borrow := bits.Sub64(lo, hi>>32, 0)
+	t0 -= g.EPSILON * borrow
+	resWrapped, c := bits.Add64(t0, (hi&g.EPSILON)*g.EPSILON, 0)
+	return g.GoldilocksField(resWrapped + g.EPSILON*c)
+}
+
+func mulAccF_test3(self, x, y g.GoldilocksField) g.GoldilocksField {
+	hi, lo := bits.Mul64(uint64(x), uint64(y))
+	lo, c := bits.Add64(lo, uint64(self), 0)
+	hi += c
+	return g.Reduce128Bit(UInt128{Hi: hi, Lo: lo})
+}
+
+func BenchmarkMulAccF(b *testing.B) {
+	len := 100000000
+	x := make([]g.GoldilocksField, len)
+	y := make([]g.GoldilocksField, len)
+	z := make([]g.GoldilocksField, len)
+	for i := 0; i < len; i++ {
+		x[i] = getRandomGoldilocks()
+		y[i] = getRandomGoldilocks()
+		z[i] = getRandomGoldilocks()
+	}
+	var res g.GoldilocksField
+	id := 0
+	b.Run("Original-MulAccF", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res = mulAccF_test1(x[id], y[id], z[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+
+	id = 0
+	b.Run("Half-Inlined-MulF", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res = mulAccF_test3(x[id], y[id], z[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+
+	id = 0
+	b.Run("Full-Inlined-MulF", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res = mulAccF_test2(x[id], y[id], z[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+	_ = res
+}
+
+func sbox_test1(state *[12]g.GoldilocksField) {
+	// fully unrolled 3 passes
+	p2_0 := g.SquareF(state[0])
+	p2_1 := g.SquareF(state[1])
+	p2_2 := g.SquareF(state[2])
+	p2_3 := g.SquareF(state[3])
+	p2_4 := g.SquareF(state[4])
+	p2_5 := g.SquareF(state[5])
+	p2_6 := g.SquareF(state[6])
+	p2_7 := g.SquareF(state[7])
+	p2_8 := g.SquareF(state[8])
+	p2_9 := g.SquareF(state[9])
+	p2_10 := g.SquareF(state[10])
+	p2_11 := g.SquareF(state[11])
+
+	p3_0 := g.MulF(state[0], p2_0)
+	p4_0 := g.SquareF(p2_0)
+	p3_1 := g.MulF(state[1], p2_1)
+	p4_1 := g.SquareF(p2_1)
+	p3_2 := g.MulF(state[2], p2_2)
+	p4_2 := g.SquareF(p2_2)
+	p3_3 := g.MulF(state[3], p2_3)
+	p4_3 := g.SquareF(p2_3)
+	p3_4 := g.MulF(state[4], p2_4)
+	p4_4 := g.SquareF(p2_4)
+	p3_5 := g.MulF(state[5], p2_5)
+	p4_5 := g.SquareF(p2_5)
+	p3_6 := g.MulF(state[6], p2_6)
+	p4_6 := g.SquareF(p2_6)
+	p3_7 := g.MulF(state[7], p2_7)
+	p4_7 := g.SquareF(p2_7)
+	p3_8 := g.MulF(state[8], p2_8)
+	p4_8 := g.SquareF(p2_8)
+	p3_9 := g.MulF(state[9], p2_9)
+	p4_9 := g.SquareF(p2_9)
+	p3_10 := g.MulF(state[10], p2_10)
+	p4_10 := g.SquareF(p2_10)
+	p3_11 := g.MulF(state[11], p2_11)
+	p4_11 := g.SquareF(p2_11)
+
+	state[0] = g.MulF(p3_0, p4_0)
+	state[1] = g.MulF(p3_1, p4_1)
+	state[2] = g.MulF(p3_2, p4_2)
+	state[3] = g.MulF(p3_3, p4_3)
+	state[4] = g.MulF(p3_4, p4_4)
+	state[5] = g.MulF(p3_5, p4_5)
+	state[6] = g.MulF(p3_6, p4_6)
+	state[7] = g.MulF(p3_7, p4_7)
+	state[8] = g.MulF(p3_8, p4_8)
+	state[9] = g.MulF(p3_9, p4_9)
+	state[10] = g.MulF(p3_10, p4_10)
+	state[11] = g.MulF(p3_11, p4_11)
+}
+
+func sbox_test2(state *[12]g.GoldilocksField) {
+	// original single loop unroll
+	state[0] = sboxP(state[0])
+	state[1] = sboxP(state[1])
+	state[2] = sboxP(state[2])
+	state[3] = sboxP(state[3])
+	state[4] = sboxP(state[4])
+	state[5] = sboxP(state[5])
+	state[6] = sboxP(state[6])
+	state[7] = sboxP(state[7])
+	state[8] = sboxP(state[8])
+	state[9] = sboxP(state[9])
+	state[10] = sboxP(state[10])
+	state[11] = sboxP(state[11])
+}
+
+func sbox_group3(state *[WIDTH]g.GoldilocksField) {
+	// group 0-3
+	p2_0 := g.SquareF(state[0])
+	p2_1 := g.SquareF(state[1])
+	p2_2 := g.SquareF(state[2])
+	p2_3 := g.SquareF(state[3])
+	p3_0 := g.MulF(state[0], p2_0)
+	p4_0 := g.SquareF(p2_0)
+	p3_1 := g.MulF(state[1], p2_1)
+	p4_1 := g.SquareF(p2_1)
+	p3_2 := g.MulF(state[2], p2_2)
+	p4_2 := g.SquareF(p2_2)
+	p3_3 := g.MulF(state[3], p2_3)
+	p4_3 := g.SquareF(p2_3)
+	state[0] = g.MulF(p3_0, p4_0)
+	state[1] = g.MulF(p3_1, p4_1)
+	state[2] = g.MulF(p3_2, p4_2)
+	state[3] = g.MulF(p3_3, p4_3)
+
+	// group 4-7
+	p2_4 := g.SquareF(state[4])
+	p2_5 := g.SquareF(state[5])
+	p2_6 := g.SquareF(state[6])
+	p2_7 := g.SquareF(state[7])
+	p3_4 := g.MulF(state[4], p2_4)
+	p4_4 := g.SquareF(p2_4)
+	p3_5 := g.MulF(state[5], p2_5)
+	p4_5 := g.SquareF(p2_5)
+	p3_6 := g.MulF(state[6], p2_6)
+	p4_6 := g.SquareF(p2_6)
+	p3_7 := g.MulF(state[7], p2_7)
+	p4_7 := g.SquareF(p2_7)
+	state[4] = g.MulF(p3_4, p4_4)
+	state[5] = g.MulF(p3_5, p4_5)
+	state[6] = g.MulF(p3_6, p4_6)
+	state[7] = g.MulF(p3_7, p4_7)
+
+	// group 8-11
+	p2_8 := g.SquareF(state[8])
+	p2_9 := g.SquareF(state[9])
+	p2_10 := g.SquareF(state[10])
+	p2_11 := g.SquareF(state[11])
+	p3_8 := g.MulF(state[8], p2_8)
+	p4_8 := g.SquareF(p2_8)
+	p3_9 := g.MulF(state[9], p2_9)
+	p4_9 := g.SquareF(p2_9)
+	p3_10 := g.MulF(state[10], p2_10)
+	p4_10 := g.SquareF(p2_10)
+	p3_11 := g.MulF(state[11], p2_11)
+	p4_11 := g.SquareF(p2_11)
+	state[8] = g.MulF(p3_8, p4_8)
+	state[9] = g.MulF(p3_9, p4_9)
+	state[10] = g.MulF(p3_10, p4_10)
+	state[11] = g.MulF(p3_11, p4_11)
+}
+
+func sbox_group4(state *[WIDTH]g.GoldilocksField) {
+	// group 0-5
+	p0_2 := g.SquareF(state[0])
+	p1_2 := g.SquareF(state[1])
+	p2_2 := g.SquareF(state[2])
+	p3_2 := g.SquareF(state[3])
+	p4_2 := g.SquareF(state[4])
+	p5_2 := g.SquareF(state[5])
+	p0_3 := g.MulF(state[0], p0_2)
+	p0_4 := g.SquareF(p0_2)
+	p1_3 := g.MulF(state[1], p1_2)
+	p1_4 := g.SquareF(p1_2)
+	p2_3 := g.MulF(state[2], p2_2)
+	p2_4 := g.SquareF(p2_2)
+	p3_3 := g.MulF(state[3], p3_2)
+	p3_4 := g.SquareF(p3_2)
+	p4_3 := g.MulF(state[4], p4_2)
+	p4_4 := g.SquareF(p4_2)
+	p5_3 := g.MulF(state[5], p5_2)
+	p5_4 := g.SquareF(p5_2)
+	state[0] = g.MulF(p0_3, p0_4)
+	state[1] = g.MulF(p1_3, p1_4)
+	state[2] = g.MulF(p2_3, p2_4)
+	state[3] = g.MulF(p3_3, p3_4)
+	state[4] = g.MulF(p4_3, p4_4)
+	state[5] = g.MulF(p5_3, p5_4)
+
+	// group 6-11
+	p6_2 := g.SquareF(state[6])
+	p7_2 := g.SquareF(state[7])
+	p8_2 := g.SquareF(state[8])
+	p9_2 := g.SquareF(state[9])
+	p10_2 := g.SquareF(state[10])
+	p11_2 := g.SquareF(state[11])
+	p6_3 := g.MulF(state[6], p6_2)
+	p6_4 := g.SquareF(p6_2)
+	p7_3 := g.MulF(state[7], p7_2)
+	p7_4 := g.SquareF(p7_2)
+	p8_3 := g.MulF(state[8], p8_2)
+	p8_4 := g.SquareF(p8_2)
+	p9_3 := g.MulF(state[9], p9_2)
+	p9_4 := g.SquareF(p9_2)
+	p10_3 := g.MulF(state[10], p10_2)
+	p10_4 := g.SquareF(p10_2)
+	p11_3 := g.MulF(state[11], p11_2)
+	p11_4 := g.SquareF(p11_2)
+	state[6] = g.MulF(p6_3, p6_4)
+	state[7] = g.MulF(p7_3, p7_4)
+	state[8] = g.MulF(p8_3, p8_4)
+	state[9] = g.MulF(p9_3, p9_4)
+	state[10] = g.MulF(p10_3, p10_4)
+	state[11] = g.MulF(p11_3, p11_4)
+}
+
+func BenchmarkSboxLoop(b *testing.B) {
+	len := 10000000
+	states := make([][12]g.GoldilocksField, len)
+	for i := range states {
+		for j := 0; j < 12; j++ {
+			states[i][j] = getRandomGoldilocks()
+		}
+	}
+	id := 0
+	b.Run("Linear-Unroll-Sbox", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			sbox_test1(&states[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+	id = 0
+	b.Run("Original-Sbox", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			sbox_test2(&states[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+	id = 0
+	b.Run("Grouping-4-Sbox", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			sbox_group3(&states[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+	id = 0
+	b.Run("Grouping-6-Sbox", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			sbox_group4(&states[id])
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+}
+
+func externalLayerOriginal(s *[WIDTH]UInt128) {
+	for i := 0; i < WIDTH; i += 4 {
+		t01 := AddUInt128(s[i], s[i+1])
+		t23 := AddUInt128(s[i+2], s[i+3])
+		t0123 := AddUInt128(t01, t23)
+
+		x0 := s[i]
+		x2 := s[i+2]
+
+		s[i] = AddUInt128(AddUInt128(t0123, t01), s[i+1])
+		s[i+1] = AddUInt128(AddUInt128(AddUInt128(t0123, s[i+1]), x2), x2)
+		s[i+2] = AddUInt128(AddUInt128(t0123, t23), s[i+3])
+		s[i+3] = AddUInt128(AddUInt128(AddUInt128(t0123, s[i+3]), x0), x0)
+	}
+}
+
+func externalLayerUnrolled(s *[WIDTH]UInt128) {
+	x0, x1, x2, x3 := s[0], s[1], s[2], s[3]
+	t01 := AddUInt128(x0, x1)
+	t23 := AddUInt128(x2, x3)
+	t0123 := AddUInt128(t01, t23)
+	s[0] = AddUInt128(AddUInt128(t0123, t01), x1)
+	s[1] = AddUInt128(AddUInt128(t0123, x1), AddUInt128(x2, x2))
+	s[2] = AddUInt128(AddUInt128(t0123, t23), x3)
+	s[3] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
+
+	x0, x1, x2, x3 = s[4], s[5], s[6], s[7]
+	t01 = AddUInt128(x0, x1)
+	t23 = AddUInt128(x2, x3)
+	t0123 = AddUInt128(t01, t23)
+	s[4] = AddUInt128(AddUInt128(t0123, t01), x1)
+	s[5] = AddUInt128(AddUInt128(t0123, x1), AddUInt128(x2, x2))
+	s[6] = AddUInt128(AddUInt128(t0123, t23), x3)
+	s[7] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
+
+	x0, x1, x2, x3 = s[8], s[9], s[10], s[11]
+	t01 = AddUInt128(x0, x1)
+	t23 = AddUInt128(x2, x3)
+	t0123 = AddUInt128(t01, t23)
+	s[8] = AddUInt128(AddUInt128(t0123, t01), x1)
+	s[9] = AddUInt128(AddUInt128(t0123, x1), AddUInt128(x2, x2))
+	s[10] = AddUInt128(AddUInt128(t0123, t23), x3)
+	s[11] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
+}
+
+func externalLayerParallel(s *[WIDTH]UInt128) {
+	x0, x1, x2, x3 := s[0], s[1], s[2], s[3]
+	t := AddUInt128(AddUInt128(x0, x1), AddUInt128(x2, x3))
+	s[0] = AddUInt128(AddUInt128(t, x0), AddUInt128(x1, x1))
+	s[1] = AddUInt128(AddUInt128(t, x1), AddUInt128(x2, x2))
+	s[2] = AddUInt128(AddUInt128(t, x2), AddUInt128(x3, x3))
+	s[3] = AddUInt128(AddUInt128(t, x3), AddUInt128(x0, x0))
+
+	x0, x1, x2, x3 = s[4], s[5], s[6], s[7]
+	t = AddUInt128(AddUInt128(x0, x1), AddUInt128(x2, x3))
+	s[4] = AddUInt128(AddUInt128(t, x0), AddUInt128(x1, x1))
+	s[5] = AddUInt128(AddUInt128(t, x1), AddUInt128(x2, x2))
+	s[6] = AddUInt128(AddUInt128(t, x2), AddUInt128(x3, x3))
+	s[7] = AddUInt128(AddUInt128(t, x3), AddUInt128(x0, x0))
+
+	x0, x1, x2, x3 = s[8], s[9], s[10], s[11]
+	t = AddUInt128(AddUInt128(x0, x1), AddUInt128(x2, x3))
+	s[8] = AddUInt128(AddUInt128(t, x0), AddUInt128(x1, x1))
+	s[9] = AddUInt128(AddUInt128(t, x1), AddUInt128(x2, x2))
+	s[10] = AddUInt128(AddUInt128(t, x2), AddUInt128(x3, x3))
+	s[11] = AddUInt128(AddUInt128(t, x3), AddUInt128(x0, x0))
+}
+
+func BenchmarkExternalLayer(b *testing.B) {
+	size := 10000000
+	states := make([][WIDTH]UInt128, size)
+	for i := range states {
+		for j := 0; j < WIDTH; j++ {
+			states[i][j] = UInt128{Lo: uint64(getRandomGoldilocks()), Hi: uint64(getRandomGoldilocks())}
+		}
+	}
+
+	id := 0
+	b.Run("Original-ExternalLayer", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			externalLayerOriginal(&states[id])
+			id++
+			if id == size {
+				id -= size
+			}
+		}
+	})
+
+	b.Run("Unrolled-ExternalLayer", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			externalLayerUnrolled(&states[id])
+			id++
+			if id == size {
+				id -= size
+			}
+		}
+	})
+
+	b.Run("Parallel-ExternalLayer", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			externalLayerParallel(&states[id])
+			id++
+			if id == size {
+				id -= size
+			}
+		}
+	})
 }

@@ -124,6 +124,27 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 	}
 }
 
+func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
+	if len(input)%g.Bytes != 0 {
+		panic("input length should be multiple of 8")
+	}
+
+	inputLen := len(input) / g.Bytes
+
+	var perm [WIDTH]g.GoldilocksField
+	for j := 0; j < inputLen; j++ {
+		index := j * g.Bytes
+		perm[j] = g.FromCanonicalLittleEndianBytesF(input[index : index+g.Bytes])
+	}
+	Permute(&perm)
+
+	output = append(output, g.ToLittleEndianBytesF(perm[0])...)
+	output = append(output, g.ToLittleEndianBytesF(perm[1])...)
+	output = append(output, g.ToLittleEndianBytesF(perm[2])...)
+	output = append(output, g.ToLittleEndianBytesF(perm[3])...)
+	return output
+}
+
 func Permute(input *[WIDTH]g.GoldilocksField) {
 	externalLinearLayer(input)
 	fullRounds(input, 0)
@@ -350,13 +371,8 @@ func (d *digest) Write(p []byte) (n int, err error) {
 // Sum appends the current hash to b and returns the resulting slice.
 // It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
-	h := HashNToMNoPadBytes(d.data, 4)
+	b = HashNToMNoPadBytesOptimized(d.data, b)
 	d.Reset()
-
-	for _, elem := range h {
-		b = append(b, g.ToLittleEndianBytesF(elem)...)
-	}
-
 	return b
 }
 

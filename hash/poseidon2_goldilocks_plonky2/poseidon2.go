@@ -142,7 +142,14 @@ func fullRounds(state *[WIDTH]g.GoldilocksField, start int) {
 func partialRounds(state *[WIDTH]g.GoldilocksField) {
 	for r := 0; r < ROUNDS_P; r++ {
 		addRCI(state, r)
-		sboxP(0, state)
+
+		// Manual-inlining for sboxP
+		p := state[0]
+		p2 := g.SquareF(p)       // x^2
+		p4 := g.SquareF(p2)      // x^4
+		p = g.MulF(p, p2)        // x^3
+		state[0] = g.MulF(p, p4) // x^7
+
 		internalLinearLayer(state)
 	}
 }
@@ -161,28 +168,57 @@ func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
 }
 
 func externalLinearLayer128(s *[WIDTH]UInt128) {
-	for i := 0; i < WIDTH; i += 4 {
-		t01 := AddUInt128(s[i], s[i+1])
-		t23 := AddUInt128(s[i+2], s[i+3])
-		t0123 := AddUInt128(t01, t23)
+	// chunk 0
+	x0, x1, x2, x3 := s[0], s[1], s[2], s[3]
+	t01 := AddUInt128(x0, x1)
+	t23 := AddUInt128(x2, x3)
+	t0123 := AddUInt128(t01, t23)
+	s[0] = AddUInt128(AddUInt128(t0123, t01), x1)
+	s[1] = AddUInt128(AddUInt128(t0123, x1), AddUInt128(x2, x2))
+	s[2] = AddUInt128(AddUInt128(t0123, t23), x3)
+	s[3] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
 
-		x0 := s[i]
-		x2 := s[i+2]
+	// chunk 2
+	x0, x1, x2, x3 = s[4], s[5], s[6], s[7]
+	t01 = AddUInt128(x0, x1)
+	t23 = AddUInt128(x2, x3)
+	t0123 = AddUInt128(t01, t23)
+	s[4] = AddUInt128(AddUInt128(t0123, t01), x1)
+	s[5] = AddUInt128(AddUInt128(t0123, x1), AddUInt128(x2, x2))
+	s[6] = AddUInt128(AddUInt128(t0123, t23), x3)
+	s[7] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
 
-		s[i] = AddUInt128(AddUInt128(t0123, t01), s[i+1])
-		s[i+1] = AddUInt128(AddUInt128(AddUInt128(t0123, s[i+1]), x2), x2)
-		s[i+2] = AddUInt128(AddUInt128(t0123, t23), s[i+3])
-		s[i+3] = AddUInt128(AddUInt128(AddUInt128(t0123, s[i+3]), x0), x0)
-	}
+	// chunk 3
+	x0, x1, x2, x3 = s[8], s[9], s[10], s[11]
+	t01 = AddUInt128(x0, x1)
+	t23 = AddUInt128(x2, x3)
+	t0123 = AddUInt128(t01, t23)
+	s[8] = AddUInt128(AddUInt128(t0123, t01), x1)
+	s[9] = AddUInt128(AddUInt128(t0123, x1), AddUInt128(x2, x2))
+	s[10] = AddUInt128(AddUInt128(t0123, t23), x3)
+	s[11] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
 
 	sums := [4]UInt128{}
-	for i := 0; i < 4; i++ {
-		sums[i] = AddUInt128(AddUInt128(s[i], s[i+4]), s[i+8])
-	}
+	sums[0] = AddUInt128(s[0], AddUInt128(s[4], s[8]))
+	sums[1] = AddUInt128(s[1], AddUInt128(s[5], s[9]))
+	sums[2] = AddUInt128(s[2], AddUInt128(s[6], s[10]))
+	sums[3] = AddUInt128(s[3], AddUInt128(s[7], s[11]))
 
-	for i := 0; i < WIDTH; i++ {
-		s[i] = AddUInt128(s[i], sums[i%4])
-	}
+	s[0] = AddUInt128(s[0], sums[0])
+	s[4] = AddUInt128(s[4], sums[0])
+	s[8] = AddUInt128(s[8], sums[0])
+
+	s[1] = AddUInt128(s[1], sums[1])
+	s[5] = AddUInt128(s[5], sums[1])
+	s[9] = AddUInt128(s[9], sums[1])
+
+	s[2] = AddUInt128(s[2], sums[2])
+	s[6] = AddUInt128(s[6], sums[2])
+	s[10] = AddUInt128(s[10], sums[2])
+
+	s[3] = AddUInt128(s[3], sums[3])
+	s[7] = AddUInt128(s[7], sums[3])
+	s[11] = AddUInt128(s[11], sums[3])
 }
 
 func internalLinearLayer(state *[WIDTH]g.GoldilocksField) {
@@ -225,20 +261,64 @@ func addRCI(state *[WIDTH]g.GoldilocksField, round int) {
 }
 
 func sbox(state *[WIDTH]g.GoldilocksField) {
-	for i := range state {
-		sboxP(i, state)
-	}
+	// group 0-5
+	p0_2 := g.SquareF(state[0])
+	p1_2 := g.SquareF(state[1])
+	p2_2 := g.SquareF(state[2])
+	p3_2 := g.SquareF(state[3])
+	p4_2 := g.SquareF(state[4])
+	p5_2 := g.SquareF(state[5])
+	p0_3 := g.MulF(state[0], p0_2)
+	p0_4 := g.SquareF(p0_2)
+	p1_3 := g.MulF(state[1], p1_2)
+	p1_4 := g.SquareF(p1_2)
+	p2_3 := g.MulF(state[2], p2_2)
+	p2_4 := g.SquareF(p2_2)
+	p3_3 := g.MulF(state[3], p3_2)
+	p3_4 := g.SquareF(p3_2)
+	p4_3 := g.MulF(state[4], p4_2)
+	p4_4 := g.SquareF(p4_2)
+	p5_3 := g.MulF(state[5], p5_2)
+	p5_4 := g.SquareF(p5_2)
+	state[0] = g.MulF(p0_3, p0_4)
+	state[1] = g.MulF(p1_3, p1_4)
+	state[2] = g.MulF(p2_3, p2_4)
+	state[3] = g.MulF(p3_3, p3_4)
+	state[4] = g.MulF(p4_3, p4_4)
+	state[5] = g.MulF(p5_3, p5_4)
+
+	// group 6-11
+	p6_2 := g.SquareF(state[6])
+	p7_2 := g.SquareF(state[7])
+	p8_2 := g.SquareF(state[8])
+	p9_2 := g.SquareF(state[9])
+	p10_2 := g.SquareF(state[10])
+	p11_2 := g.SquareF(state[11])
+	p6_3 := g.MulF(state[6], p6_2)
+	p6_4 := g.SquareF(p6_2)
+	p7_3 := g.MulF(state[7], p7_2)
+	p7_4 := g.SquareF(p7_2)
+	p8_3 := g.MulF(state[8], p8_2)
+	p8_4 := g.SquareF(p8_2)
+	p9_3 := g.MulF(state[9], p9_2)
+	p9_4 := g.SquareF(p9_2)
+	p10_3 := g.MulF(state[10], p10_2)
+	p10_4 := g.SquareF(p10_2)
+	p11_3 := g.MulF(state[11], p11_2)
+	p11_4 := g.SquareF(p11_2)
+	state[6] = g.MulF(p6_3, p6_4)
+	state[7] = g.MulF(p7_3, p7_4)
+	state[8] = g.MulF(p8_3, p8_4)
+	state[9] = g.MulF(p9_3, p9_4)
+	state[10] = g.MulF(p10_3, p10_4)
+	state[11] = g.MulF(p11_3, p11_4)
 }
 
-func sboxP(index int, state *[WIDTH]g.GoldilocksField) {
-	tmp := state[index]
-	tmpSquare := g.SquareF(tmp)
-
-	var tmpSixth g.GoldilocksField
-	tmpSixth = g.MulF(tmpSquare, tmp)
-	tmpSixth = g.SquareF(tmpSixth)
-
-	state[index] = g.MulF(tmpSixth, tmp)
+func sboxP(state g.GoldilocksField) g.GoldilocksField {
+	p2 := g.SquareF(state)    // x^2
+	p4 := g.SquareF(p2)       // x^4
+	state = g.MulF(state, p2) // x^3
+	return g.MulF(state, p4)  // x^7
 }
 
 const BlockSize = g.Bytes * WIDTH // BlockSize size that poseidon consumes

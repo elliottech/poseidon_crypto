@@ -124,6 +124,8 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 	}
 }
 
+// Output size is assumed to be 32 bytes.
+// Input size can be 0 or 4 or 8 bytes.
 func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
 	if len(input)%g.Bytes != 0 {
 		panic("input length should be multiple of 8")

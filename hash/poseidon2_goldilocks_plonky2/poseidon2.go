@@ -140,10 +140,10 @@ func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
 	}
 	Permute(&perm)
 
-	output = append(output, g.ToLittleEndianBytesF(perm[0])...)
-	output = append(output, g.ToLittleEndianBytesF(perm[1])...)
-	output = append(output, g.ToLittleEndianBytesF(perm[2])...)
-	output = append(output, g.ToLittleEndianBytesF(perm[3])...)
+	copy(output[0:8], g.ToLittleEndianBytesF(perm[0]))
+	copy(output[8:16], g.ToLittleEndianBytesF(perm[1]))
+	copy(output[16:24], g.ToLittleEndianBytesF(perm[2]))
+	copy(output[24:], g.ToLittleEndianBytesF(perm[3]))
 	return output
 }
 
@@ -373,6 +373,9 @@ func (d *digest) Write(p []byte) (n int, err error) {
 // Sum appends the current hash to b and returns the resulting slice.
 // It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
+	if len(b) < 32 { // Just a quick check
+		b = make([]byte, 32)
+	}
 	b = HashNToMNoPadBytesOptimized(d.data, b)
 	d.Reset()
 	return b

@@ -2,7 +2,7 @@ package goldilocks
 
 import (
 	"math/bits"
-	"math/rand"
+	rand "math/rand/v2"
 	"testing"
 )
 

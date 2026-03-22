@@ -1,6 +1,7 @@
 package poseidon2_plonky2
 
 import (
+	"encoding/binary"
 	"fmt"
 	"hash"
 
@@ -125,7 +126,7 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 }
 
 // Output size is assumed to be 32 bytes.
-// Input size can be 0 or 8 bytes.
+// Input size can be 0 or 8 bytes. Do not use for input length > 8.
 func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
 	if len(input)%g.Bytes != 0 {
 		panic("input length should be multiple of 8")
@@ -140,10 +141,11 @@ func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
 	}
 	Permute(&perm)
 
-	copy(output[0:8], g.ToLittleEndianBytesF(perm[0]))
-	copy(output[8:16], g.ToLittleEndianBytesF(perm[1]))
-	copy(output[16:24], g.ToLittleEndianBytesF(perm[2]))
-	copy(output[24:], g.ToLittleEndianBytesF(perm[3]))
+	binary.LittleEndian.PutUint64(output[0:8], perm[0].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[8:16], perm[1].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[16:24], perm[2].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[24:], perm[3].ToCanonicalUint64())
+
 	return output
 }
 

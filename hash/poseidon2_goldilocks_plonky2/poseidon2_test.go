@@ -2,9 +2,10 @@ package poseidon2_plonky2
 
 import (
 	"bytes"
+	"crypto/rand"
 	"math"
+	"math/big"
 	"math/bits"
-	"math/rand/v2"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -12,7 +13,9 @@ import (
 )
 
 func getRandomGoldilocks() g.GoldilocksField {
-	return g.GoldilocksField(rand.Uint64())
+	mx := new(big.Int).SetUint64(0xFFFFFFFF00000000) // ORDER - 1
+	a, _ := rand.Int(rand.Reader, mx)
+	return g.GoldilocksField(a.Uint64())
 }
 
 func TestPermute(t *testing.T) {

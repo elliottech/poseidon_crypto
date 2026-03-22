@@ -1,13 +1,16 @@
 package goldilocks
 
 import (
+	rand "crypto/rand"
+	"math/big"
 	"math/bits"
-	rand "math/rand/v2"
 	"testing"
 )
 
 func getRandomGoldilocks() GoldilocksField {
-	return GoldilocksField(rand.Uint64())
+	mx := new(big.Int).SetUint64(0xFFFFFFFF00000000) // ORDER - 1
+	a, _ := rand.Int(rand.Reader, mx)
+	return GoldilocksField(a.Uint64())
 }
 
 // Tests for multiplication

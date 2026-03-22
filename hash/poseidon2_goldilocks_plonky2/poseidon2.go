@@ -125,7 +125,7 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 }
 
 // Output size is assumed to be 32 bytes.
-// Input size can be 0 or 4 or 8 bytes.
+// Input size can be 0 or 8 bytes.
 func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
 	if len(input)%g.Bytes != 0 {
 		panic("input length should be multiple of 8")
@@ -134,7 +134,7 @@ func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
 	inputLen := len(input) / g.Bytes
 
 	var perm [WIDTH]g.GoldilocksField
-	for j := 0; j < inputLen; j++ {
+	for j := 0; j < min(inputLen, 8); j++ {
 		index := j * g.Bytes
 		perm[j] = g.FromCanonicalLittleEndianBytesF(input[index : index+g.Bytes])
 	}

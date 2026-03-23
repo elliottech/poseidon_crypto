@@ -372,8 +372,7 @@ func (d *digest) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
+// Sum writes onto the slices given. Be cautious using it.
 func (d *digest) Sum(b []byte) []byte {
 	if len(b) < 32 { // Just a quick check
 		b = make([]byte, 32)

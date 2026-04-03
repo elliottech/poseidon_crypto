@@ -126,20 +126,24 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 }
 
 // Output size is assumed to be 32 bytes.
-// Input size can be 0 or 8 bytes. Do not use for input length > 8.
-func HashNToMNoPadBytesOptimized(input []byte, output []byte) []byte {
-	if len(input)%g.Bytes != 0 {
-		panic("input length should be multiple of 8")
+// Input sizes can be only 8 bytes.
+func HashNToMNoPadBytesOptimized(left, right []byte) []byte {
+	if !(len(left) == 32 && len(right) == 32) {
+		panic("input lengths should be 32")
 	}
-
-	inputLen := len(input) / g.Bytes
 
 	var perm [WIDTH]g.GoldilocksField
-	for j := 0; j < min(inputLen, 8); j++ {
+	for j := 0; j < 4; j++ {
 		index := j * g.Bytes
-		perm[j] = g.FromCanonicalLittleEndianBytesF(input[index : index+g.Bytes])
+		perm[j] = g.FromCanonicalLittleEndianBytesF(left[index : index+g.Bytes])
+	}
+	for j := 0; j < 4; j++ {
+		index := j * g.Bytes
+		perm[j+4] = g.FromCanonicalLittleEndianBytesF(right[index : index+g.Bytes])
 	}
 	Permute(&perm)
+
+	output := make([]byte, 32)
 
 	binary.LittleEndian.PutUint64(output[0:8], perm[0].ToCanonicalUint64())
 	binary.LittleEndian.PutUint64(output[8:16], perm[1].ToCanonicalUint64())
@@ -372,13 +376,16 @@ func (d *digest) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// Sum writes onto the slices given. Be cautious using it.
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
 func (d *digest) Sum(b []byte) []byte {
-	if len(b) < 32 { // Just a quick check
-		b = make([]byte, 32)
-	}
-	b = HashNToMNoPadBytesOptimized(d.data, b)
+	h := HashNToMNoPadBytes(d.data, 4)
 	d.Reset()
+
+	for _, elem := range h {
+		b = append(b, g.ToLittleEndianBytesF(elem)...)
+	}
+
 	return b
 }
 

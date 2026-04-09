@@ -126,8 +126,8 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 }
 
 // Output size is assumed to be 32 bytes.
-// Input sizes can be only 8 bytes, or 0 bytes.
-func HashNToMNoPadBytesOptimized(left, right []byte) []byte {
+// Input sizes can be only 0 or 32 bytes.
+func HashPair(left, right []byte) []byte {
 	if !((len(left) == 0 || len(left) == 32) && (len(right) == 0 || len(right) == 32)) {
 		panic("input lengths should be 32 or 0")
 	}
@@ -213,7 +213,7 @@ func externalLinearLayer128(s *[WIDTH]UInt128) {
 	s[2] = AddUInt128(AddUInt128(t0123, t23), x3)
 	s[3] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
 
-	// chunk 2
+	// chunk 1
 	x0, x1, x2, x3 = s[4], s[5], s[6], s[7]
 	t01 = AddUInt128(x0, x1)
 	t23 = AddUInt128(x2, x3)
@@ -223,7 +223,7 @@ func externalLinearLayer128(s *[WIDTH]UInt128) {
 	s[6] = AddUInt128(AddUInt128(t0123, t23), x3)
 	s[7] = AddUInt128(AddUInt128(t0123, x3), AddUInt128(x0, x0))
 
-	// chunk 3
+	// chunk 2
 	x0, x1, x2, x3 = s[8], s[9], s[10], s[11]
 	t01 = AddUInt128(x0, x1)
 	t23 = AddUInt128(x2, x3)

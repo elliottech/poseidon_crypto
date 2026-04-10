@@ -21,27 +21,18 @@ func UInt128FromUint64(v uint64) UInt128 {
 }
 
 func AddUInt128(x, y UInt128) UInt128 {
-	var carry uint64
-	var z UInt128
-	z.Lo, carry = bits.Add64(x.Lo, y.Lo, 0)
-	z.Hi = x.Hi + y.Hi + carry
-	return z
+	sum, carry := bits.Add64(x.Lo, y.Lo, 0)
+	return UInt128{Hi: x.Hi + y.Hi + carry, Lo: sum}
 }
 
 func AddUint128AndUint64(x UInt128, y uint64) UInt128 {
-	var carry uint64
-	var v UInt128
-	v.Lo, carry = bits.Add64(x.Lo, y, 0)
-	v.Hi = x.Hi + carry
-	return v
+	sum, carry := bits.Add64(x.Lo, y, 0)
+	return UInt128{Hi: x.Hi + carry, Lo: sum}
 }
 
 func SubUint128AndUint64(x UInt128, y uint64) UInt128 {
-	var borrowed uint64
-	var v UInt128
-	v.Lo, borrowed = bits.Sub64(x.Lo, y, 0)
-	v.Hi = x.Hi - borrowed
-	return v
+	res, borrowed := bits.Sub64(x.Lo, y, 0)
+	return UInt128{Hi: x.Hi - borrowed, Lo: res}
 }
 
 func MulUInt64(x, y uint64) UInt128 {
@@ -50,11 +41,8 @@ func MulUInt64(x, y uint64) UInt128 {
 }
 
 func AddUint64(x, y uint64) UInt128 {
-	var carry uint64
-	var v UInt128
-	v.Lo, carry = bits.Add64(x, y, 0)
-	v.Hi = carry
-	return v
+	sum, carry := bits.Add64(x, y, 0)
+	return UInt128{Hi: carry, Lo: sum}
 }
 
 func MulUint128AndUint64(u UInt128, n uint64) (dest UInt128) {

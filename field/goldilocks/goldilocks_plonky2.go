@@ -56,10 +56,7 @@ func (z GoldilocksField) ToCanonicalUint64() uint64 {
 func AddF(lhs, rhs GoldilocksField) GoldilocksField {
 	sum, over := bits.Add64(uint64(lhs), uint64(rhs), 0)
 	sum, over = bits.Add64(sum, over*EPSILON, 0)
-	if over == 1 {
-		branchHint()
-		sum += EPSILON // this can't overflow
-	}
+	sum += EPSILON * over // this can't overflow
 
 	return GoldilocksField(sum)
 }
@@ -79,10 +76,7 @@ func DoubleF(lhs GoldilocksField) GoldilocksField {
 func SubF(lhs, rhs GoldilocksField) GoldilocksField {
 	diff, borrow := bits.Sub64(uint64(lhs), uint64(rhs), 0)
 	diff, borrow = bits.Sub64(diff, borrow*EPSILON, 0)
-	if borrow == 1 {
-		branchHint()
-		diff -= EPSILON // this can't underflow
-	}
+	diff -= EPSILON * borrow // this can't underflow
 
 	return GoldilocksField(diff)
 }
@@ -95,10 +89,8 @@ func MulF(lhs, rhs GoldilocksField) GoldilocksField {
 	x_hi_lo := x_hi & EPSILON
 
 	t0, borrow := bits.Sub64(x_lo, x_hi_hi, 0)
-	if borrow == 1 {
-		branchHint()
-		t0 -= EPSILON
-	}
+	t0 -= EPSILON * borrow
+
 	t1 := x_hi_lo * EPSILON
 
 	sum, over := bits.Add64(t0, t1, 0)
@@ -112,8 +104,14 @@ func SquareF(x GoldilocksField) GoldilocksField {
 
 // Returns self + x * y
 func MulAccF(self, x, y GoldilocksField) GoldilocksField {
-	// u64 + u64 * u64 cannot overflow.
-	return Reduce128Bit(AddUInt128(AsUInt128(self), MulUInt64(uint64(x), uint64(y))))
+	hi, lo := bits.Mul64(uint64(x), uint64(y))
+	lo, c := bits.Add64(lo, uint64(self), 0)
+	hi += c
+
+	t0, borrow := bits.Sub64(lo, hi>>32, 0)
+	t0 -= EPSILON * borrow
+	resWrapped, c := bits.Add64(t0, (hi&EPSILON)*EPSILON, 0)
+	return GoldilocksField(resWrapped + EPSILON*c)
 }
 
 func ExpPowerOf2(x GoldilocksField, n uint) GoldilocksField {
@@ -187,10 +185,8 @@ func Reduce128Bit(x UInt128) GoldilocksField {
 	x_hi_lo := x.Hi & EPSILON
 
 	t0, borrow := bits.Sub64(x.Lo, x_hi_hi, 0)
-	if borrow == 1 {
-		branchHint()
-		t0 -= EPSILON
-	}
+	t0 -= EPSILON * borrow
+
 	t1 := x_hi_lo * EPSILON
 
 	resWrapped, carry := bits.Add64(t0, t1, 0)

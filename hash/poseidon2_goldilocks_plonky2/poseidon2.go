@@ -16,6 +16,13 @@ func EmptyHashOut() HashOut {
 	return HashOut{g.ZeroF(), g.ZeroF(), g.ZeroF(), g.ZeroF()}
 }
 
+func EqualHashOut(a, b HashOut) bool {
+	return (a[0].ToCanonicalUint64() == b[0].ToCanonicalUint64()) &&
+		(a[1].ToCanonicalUint64() == b[1].ToCanonicalUint64()) &&
+		(a[2].ToCanonicalUint64() == b[2].ToCanonicalUint64()) &&
+		(a[3].ToCanonicalUint64() == b[3].ToCanonicalUint64())
+}
+
 func (h HashOut) ToLittleEndianBytes() []byte {
 	res := make([]byte, 0, 4*g.Bytes)
 	for _, elem := range h {

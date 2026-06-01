@@ -31,6 +31,15 @@ func (h HashOut) ToLittleEndianBytes() []byte {
 	return res
 }
 
+func (h HashOut) ToLittleEndianBytesArray() [32]byte {
+	var res [32]byte
+	binary.BigEndian.PutUint64(res[0:8], h[0].ToCanonicalUint64())
+	binary.BigEndian.PutUint64(res[8:16], h[1].ToCanonicalUint64())
+	binary.BigEndian.PutUint64(res[16:24], h[2].ToCanonicalUint64())
+	binary.BigEndian.PutUint64(res[24:32], h[3].ToCanonicalUint64())
+	return res
+}
+
 func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
 	if len(b) != 4*g.Bytes {
 		return HashOut{}, fmt.Errorf("input bytes len should be 32 but is %d", len(b))

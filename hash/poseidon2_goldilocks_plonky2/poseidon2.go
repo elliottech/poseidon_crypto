@@ -166,27 +166,27 @@ func HashPairBytes(left, right []byte) []byte {
 	return output
 }
 
-func HashPair(left, right HashOut) HashOut {
+func HashPair(left, right [32]byte) [32]byte {
 	var perm [WIDTH]g.GoldilocksField
 
-	perm[0] = left[0]
-	perm[1] = left[1]
-	perm[2] = left[2]
-	perm[3] = left[3]
+	perm[0] = g.GoldilocksField(binary.LittleEndian.Uint64(left[0:8]))
+	perm[1] = g.GoldilocksField(binary.LittleEndian.Uint64(left[8:16]))
+	perm[2] = g.GoldilocksField(binary.LittleEndian.Uint64(left[16:24]))
+	perm[3] = g.GoldilocksField(binary.LittleEndian.Uint64(left[24:]))
 
-	perm[4] = right[0]
-	perm[5] = right[1]
-	perm[6] = right[2]
-	perm[7] = right[3]
+	perm[4] = g.GoldilocksField(binary.LittleEndian.Uint64(right[0:8]))
+	perm[5] = g.GoldilocksField(binary.LittleEndian.Uint64(right[8:16]))
+	perm[6] = g.GoldilocksField(binary.LittleEndian.Uint64(right[16:24]))
+	perm[7] = g.GoldilocksField(binary.LittleEndian.Uint64(right[24:]))
 
 	Permute(&perm)
 
-	var output HashOut
+	var output [32]byte
 
-	output[0] = g.GoldilocksField(perm[0].ToCanonicalUint64())
-	output[1] = g.GoldilocksField(perm[1].ToCanonicalUint64())
-	output[2] = g.GoldilocksField(perm[2].ToCanonicalUint64())
-	output[3] = g.GoldilocksField(perm[3].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[0:8], perm[0].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[8:16], perm[1].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[16:24], perm[2].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[24:], perm[3].ToCanonicalUint64())
 
 	return output
 }

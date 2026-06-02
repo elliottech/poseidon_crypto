@@ -99,7 +99,19 @@ func MulF(lhs, rhs GoldilocksField) GoldilocksField {
 }
 
 func SquareF(x GoldilocksField) GoldilocksField {
-	return MulF(x, x)
+	x_hi, x_lo := bits.Mul64(uint64(x), uint64(x))
+
+	x_hi_hi := x_hi >> 32
+	x_hi_lo := x_hi & EPSILON
+
+	t0, borrow := bits.Sub64(x_lo, x_hi_hi, 0)
+	t0 -= EPSILON * borrow
+
+	t1 := x_hi_lo * EPSILON
+
+	sum, over := bits.Add64(t0, t1, 0)
+	t2 := sum + EPSILON*over
+	return GoldilocksField(t2)
 }
 
 // Returns self + x * y

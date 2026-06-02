@@ -24,6 +24,15 @@ func (h HashOut) ToLittleEndianBytes() []byte {
 	return res
 }
 
+func (h HashOut) ToLittleEndianBytesArray() [32]byte {
+	var res [32]byte
+	binary.LittleEndian.PutUint64(res[0:8], h[0].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(res[8:16], h[1].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(res[16:24], h[2].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(res[24:], h[3].ToCanonicalUint64())
+	return res
+}
+
 func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
 	if len(b) != 4*g.Bytes {
 		return HashOut{}, fmt.Errorf("input bytes len should be 32 but is %d", len(b))
@@ -33,6 +42,15 @@ func HashOutFromLittleEndianBytes(b []byte) (HashOut, error) {
 		res[i] = g.FromCanonicalLittleEndianBytesF(b[i*g.Bytes : (i+1)*g.Bytes])
 	}
 
+	return res, nil
+}
+
+func HashOutFromLittleEndianBytesArray(b [32]byte) (HashOut, error) {
+	var res HashOut
+	res[0] = g.FromCanonicalLittleEndianBytesF(b[0:8])
+	res[1] = g.FromCanonicalLittleEndianBytesF(b[8:16])
+	res[2] = g.FromCanonicalLittleEndianBytesF(b[16:24])
+	res[3] = g.FromCanonicalLittleEndianBytesF(b[24:32])
 	return res, nil
 }
 
@@ -127,7 +145,7 @@ func HashNToMNoPadBytes(input []byte, numOutputs int) []g.GoldilocksField {
 
 // Output size is assumed to be 32 bytes.
 // Input sizes can be only 0 or 32 bytes.
-func HashPair(left, right []byte) []byte {
+func HashPairBytes(left, right []byte) []byte {
 	if !((len(left) == 0 || len(left) == 32) && (len(right) == 0 || len(right) == 32)) {
 		panic("input lengths should be 32 or 0")
 	}
@@ -150,6 +168,31 @@ func HashPair(left, right []byte) []byte {
 	Permute(&perm)
 
 	output := make([]byte, 32)
+
+	binary.LittleEndian.PutUint64(output[0:8], perm[0].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[8:16], perm[1].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[16:24], perm[2].ToCanonicalUint64())
+	binary.LittleEndian.PutUint64(output[24:], perm[3].ToCanonicalUint64())
+
+	return output
+}
+
+func HashPair(left, right [32]byte) [32]byte {
+	var perm [WIDTH]g.GoldilocksField
+
+	perm[0] = g.GoldilocksField(binary.LittleEndian.Uint64(left[0:8]))
+	perm[1] = g.GoldilocksField(binary.LittleEndian.Uint64(left[8:16]))
+	perm[2] = g.GoldilocksField(binary.LittleEndian.Uint64(left[16:24]))
+	perm[3] = g.GoldilocksField(binary.LittleEndian.Uint64(left[24:]))
+
+	perm[4] = g.GoldilocksField(binary.LittleEndian.Uint64(right[0:8]))
+	perm[5] = g.GoldilocksField(binary.LittleEndian.Uint64(right[8:16]))
+	perm[6] = g.GoldilocksField(binary.LittleEndian.Uint64(right[16:24]))
+	perm[7] = g.GoldilocksField(binary.LittleEndian.Uint64(right[24:]))
+
+	Permute(&perm)
+
+	var output [32]byte
 
 	binary.LittleEndian.PutUint64(output[0:8], perm[0].ToCanonicalUint64())
 	binary.LittleEndian.PutUint64(output[8:16], perm[1].ToCanonicalUint64())

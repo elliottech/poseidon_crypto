@@ -719,3 +719,88 @@ func BenchmarkExternalLayer(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkArray(b *testing.B) {
+	len := 100000
+	x1 := make([]HashOut, len)
+	x2 := make([]HashOut, len)
+	y1 := make([][32]byte, len)
+	y2 := make([][32]byte, len)
+	z1 := make([][]byte, len)
+	z2 := make([][]byte, len)
+	for i := 0; i < len; i++ {
+		for j := 0; j < 4; j++ {
+			x1[i][j] = getRandomGoldilocks()
+			x2[i][j] = getRandomGoldilocks()
+		}
+		z1[i] = make([]byte, 32)
+		z2[i] = make([]byte, 32)
+		for j := 0; j < 32; j++ {
+			z1[i][j] = byte(getRandomGoldilocks())
+			z2[i][j] = byte(getRandomGoldilocks())
+			y1[i][j] = byte(getRandomGoldilocks())
+			y2[i][j] = byte(getRandomGoldilocks())
+		}
+	}
+	var res1 HashOut
+	var res2 [32]byte
+	var res3 []byte
+	id := 0
+	b.Run("Original-HashPair", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res1 = HashTwoToOne(x1[id], x2[id])
+			_ = res1
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+
+	id = 0
+	b.Run("HashArrayPair", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res2 = HashPair(y1[id], y2[id])
+			_ = res2
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+
+	b.Run("HashPair", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			res3 = HashPairBytes(z1[id], z2[id])
+			_ = res3
+			id++
+			if id == len {
+				id -= len
+			}
+		}
+	})
+}
+
+func TestHashPair(t *testing.T) {
+	len := 100000
+	for i := 0; i < len; i++ {
+		var X1, Y1 [32]byte
+		var X2, Y2 []byte
+		X2 = make([]byte, 32)
+		Y2 = make([]byte, 32)
+		for j := 0; j < 32; j++ {
+			X1[j] = byte(getRandomGoldilocks())
+			Y1[j] = byte(getRandomGoldilocks())
+			X2[j] = X1[j]
+			Y2[j] = Y1[j]
+		}
+		res1 := HashPair(X1, Y1)
+		res2 := HashPairBytes(X2, Y2)
+		for j := 0; j < 32; j++ {
+			if res1[j] != res2[j] {
+				t.Errorf("Hashes don't match %d %d", res1, res2)
+			}
+		}
+	}
+
+}

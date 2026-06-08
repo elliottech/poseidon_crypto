@@ -221,12 +221,14 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 	for r := 0; r < ROUNDS_P; r++ {
 		// addRCI
 		state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[r]))
+
 		// Manual-inlining for sboxP
 		p := state[0]
 		p2 := g.SquareF(p)       // x^2
 		p4 := g.SquareF(p2)      // x^4
 		p = g.MulF(p, p2)        // x^3
 		state[0] = g.MulF(p, p4) // x^7
+
 		// Internal Linear Layer - inlined
 		v0 := g.AsUInt128(state[0])
 		v1 := g.AsUInt128(state[1])
@@ -292,69 +294,6 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 }
 
 func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
-	v0 := g.AsUInt128(s[0])
-	v1 := g.AsUInt128(s[1])
-	v2 := g.AsUInt128(s[2])
-	v3 := g.AsUInt128(s[3])
-	v4 := g.AsUInt128(s[4])
-	v5 := g.AsUInt128(s[5])
-	v6 := g.AsUInt128(s[6])
-	v7 := g.AsUInt128(s[7])
-	v8 := g.AsUInt128(s[8])
-	v9 := g.AsUInt128(s[9])
-	v10 := g.AsUInt128(s[10])
-	v11 := g.AsUInt128(s[11])
-
-	// chunk 0
-	t01 := AddUInt128(v0, v1)
-	t23 := AddUInt128(v2, v3)
-	t := AddUInt128(t01, t23)
-	n0 := AddUInt128(AddUInt128(t, t01), v1)
-	n1 := AddUInt128(AddUInt128(t, v1), AddUInt128(v2, v2))
-	n2 := AddUInt128(AddUInt128(t, t23), v3)
-	n3 := AddUInt128(AddUInt128(t, v3), AddUInt128(v0, v0))
-
-	// chunk 1
-	t01 = AddUInt128(v4, v5)
-	t23 = AddUInt128(v6, v7)
-	t = AddUInt128(t01, t23)
-	n4 := AddUInt128(AddUInt128(t, t01), v5)
-	n5 := AddUInt128(AddUInt128(t, v5), AddUInt128(v6, v6))
-	n6 := AddUInt128(AddUInt128(t, t23), v7)
-	n7 := AddUInt128(AddUInt128(t, v7), AddUInt128(v4, v4))
-
-	// chunk 2
-	t01 = AddUInt128(v8, v9)
-	t23 = AddUInt128(v10, v11)
-	t = AddUInt128(t01, t23)
-	n8 := AddUInt128(AddUInt128(t, t01), v9)
-	n9 := AddUInt128(AddUInt128(t, v9), AddUInt128(v10, v10))
-	n10 := AddUInt128(AddUInt128(t, t23), v11)
-	n11 := AddUInt128(AddUInt128(t, v11), AddUInt128(v8, v8))
-
-	sum0 := AddUInt128(n0, AddUInt128(n4, n8))
-	sum1 := AddUInt128(n1, AddUInt128(n5, n9))
-	sum2 := AddUInt128(n2, AddUInt128(n6, n10))
-	sum3 := AddUInt128(n3, AddUInt128(n7, n11))
-
-	s[0] = g.Reduce96Bit(AddUInt128(n0, sum0))
-	s[4] = g.Reduce96Bit(AddUInt128(n4, sum0))
-	s[8] = g.Reduce96Bit(AddUInt128(n8, sum0))
-
-	s[1] = g.Reduce96Bit(AddUInt128(n1, sum1))
-	s[5] = g.Reduce96Bit(AddUInt128(n5, sum1))
-	s[9] = g.Reduce96Bit(AddUInt128(n9, sum1))
-
-	s[2] = g.Reduce96Bit(AddUInt128(n2, sum2))
-	s[6] = g.Reduce96Bit(AddUInt128(n6, sum2))
-	s[10] = g.Reduce96Bit(AddUInt128(n10, sum2))
-
-	s[3] = g.Reduce96Bit(AddUInt128(n3, sum3))
-	s[7] = g.Reduce96Bit(AddUInt128(n7, sum3))
-	s[11] = g.Reduce96Bit(AddUInt128(n11, sum3))
-}
-
-func internalLinearLayer(s *[WIDTH]g.GoldilocksField) {
 	v0 := g.AsUInt128(s[0])
 	v1 := g.AsUInt128(s[1])
 	v2 := g.AsUInt128(s[2])

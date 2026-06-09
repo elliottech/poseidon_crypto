@@ -215,7 +215,6 @@ func Permute(input *[WIDTH]g.GoldilocksField) {
 
 	partialRounds(input)
 
-	addRC(input, 4)
 	sbox(input)
 	externalLinearLayerRC(input, &EXTERNAL_CONSTANTS[5])
 	sbox(input)
@@ -227,10 +226,12 @@ func Permute(input *[WIDTH]g.GoldilocksField) {
 }
 
 func partialRounds(state *[WIDTH]g.GoldilocksField) {
-	for r := 0; r < ROUNDS_P; r++ {
-		// addRCI
-		state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[r]))
+	// Only the first internal round constant is added explicitly.
+	// Each later one is folded into the previous round's lane-0 accumulator, and the round-4 external
+	// constants are folded into the last round's accumulators, so no constant add sits on the critical path.
+	state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[0]))
 
+	for r := 0; r < ROUNDS_P; r++ {
 		// Manual-inlining for sboxP
 		p := state[0]
 		p2 := g.SquareF(p)  // x^2
@@ -261,20 +262,43 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 		q1 := AddUInt128(r2, r3)
 		q2 := AddUInt128(r4, g.AsUInt128(s11))
 		restSum := AddUInt128(AddUInt128(q0, q1), q2)
-		sumF := g.Reduce96Bit(AddUInt128(restSum, g.AsUInt128(s0)))
+		// The 12-lane sum stays unreduced (< 2^68); it is added into each lane's 128-bit product and
+		// reduced once per lane. Product hi < 2^64 - 2^32 since the diagonal is canonical, so no overflow.
+		sum := AddUInt128(restSum, g.AsUInt128(s0))
 
-		state[0] = g.MulAccF(sumF, s0, MATRIX_DIAG_12_U64[0])
-		state[1] = g.MulAccF(sumF, s1, MATRIX_DIAG_12_U64[1])
-		state[2] = g.MulAccF(sumF, s2, MATRIX_DIAG_12_U64[2])
-		state[3] = g.MulAccF(sumF, s3, MATRIX_DIAG_12_U64[3])
-		state[4] = g.MulAccF(sumF, s4, MATRIX_DIAG_12_U64[4])
-		state[5] = g.MulAccF(sumF, s5, MATRIX_DIAG_12_U64[5])
-		state[6] = g.MulAccF(sumF, s6, MATRIX_DIAG_12_U64[6])
-		state[7] = g.MulAccF(sumF, s7, MATRIX_DIAG_12_U64[7])
-		state[8] = g.MulAccF(sumF, s8, MATRIX_DIAG_12_U64[8])
-		state[9] = g.MulAccF(sumF, s9, MATRIX_DIAG_12_U64[9])
-		state[10] = g.MulAccF(sumF, s10, MATRIX_DIAG_12_U64[10])
-		state[11] = g.MulAccF(sumF, s11, MATRIX_DIAG_12_U64[11])
+		var rc0 uint64
+		if r+1 < ROUNDS_P {
+			rc0 = uint64(INTERNAL_CONSTANTS[r+1])
+		} else {
+			rc0 = uint64(EXTERNAL_CONSTANTS[4][0])
+		}
+		state[0] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s0), uint64(MATRIX_DIAG_12_U64[0])), sum), rc0))
+
+		if r+1 < ROUNDS_P {
+			state[1] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s1), uint64(MATRIX_DIAG_12_U64[1])), sum))
+			state[2] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s2), uint64(MATRIX_DIAG_12_U64[2])), sum))
+			state[3] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s3), uint64(MATRIX_DIAG_12_U64[3])), sum))
+			state[4] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s4), uint64(MATRIX_DIAG_12_U64[4])), sum))
+			state[5] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s5), uint64(MATRIX_DIAG_12_U64[5])), sum))
+			state[6] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s6), uint64(MATRIX_DIAG_12_U64[6])), sum))
+			state[7] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s7), uint64(MATRIX_DIAG_12_U64[7])), sum))
+			state[8] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s8), uint64(MATRIX_DIAG_12_U64[8])), sum))
+			state[9] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s9), uint64(MATRIX_DIAG_12_U64[9])), sum))
+			state[10] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s10), uint64(MATRIX_DIAG_12_U64[10])), sum))
+			state[11] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s11), uint64(MATRIX_DIAG_12_U64[11])), sum))
+		} else {
+			state[1] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s1), uint64(MATRIX_DIAG_12_U64[1])), sum), uint64(EXTERNAL_CONSTANTS[4][1])))
+			state[2] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s2), uint64(MATRIX_DIAG_12_U64[2])), sum), uint64(EXTERNAL_CONSTANTS[4][2])))
+			state[3] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s3), uint64(MATRIX_DIAG_12_U64[3])), sum), uint64(EXTERNAL_CONSTANTS[4][3])))
+			state[4] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s4), uint64(MATRIX_DIAG_12_U64[4])), sum), uint64(EXTERNAL_CONSTANTS[4][4])))
+			state[5] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s5), uint64(MATRIX_DIAG_12_U64[5])), sum), uint64(EXTERNAL_CONSTANTS[4][5])))
+			state[6] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s6), uint64(MATRIX_DIAG_12_U64[6])), sum), uint64(EXTERNAL_CONSTANTS[4][6])))
+			state[7] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s7), uint64(MATRIX_DIAG_12_U64[7])), sum), uint64(EXTERNAL_CONSTANTS[4][7])))
+			state[8] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s8), uint64(MATRIX_DIAG_12_U64[8])), sum), uint64(EXTERNAL_CONSTANTS[4][8])))
+			state[9] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s9), uint64(MATRIX_DIAG_12_U64[9])), sum), uint64(EXTERNAL_CONSTANTS[4][9])))
+			state[10] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s10), uint64(MATRIX_DIAG_12_U64[10])), sum), uint64(EXTERNAL_CONSTANTS[4][10])))
+			state[11] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s11), uint64(MATRIX_DIAG_12_U64[11])), sum), uint64(EXTERNAL_CONSTANTS[4][11])))
+		}
 	}
 }
 
@@ -387,27 +411,23 @@ func externalLinearLayerRC(s *[WIDTH]g.GoldilocksField, rc *[WIDTH]g.GoldilocksF
 	sum2 := AddUInt128(n2, AddUInt128(n6, n10))
 	sum3 := AddUInt128(n3, AddUInt128(n7, n11))
 
-	s[0] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n0, sum0)), uint64(rc[0]))
-	s[4] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n4, sum0)), uint64(rc[4]))
-	s[8] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n8, sum0)), uint64(rc[8]))
+	// The round constant is folded into the 128-bit accumulator so each lane needs a single reduction.
+	// Accumulator stays < 2^70, well within Reduce96Bit's contract.
+	s[0] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n0, sum0), uint64(rc[0])))
+	s[4] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n4, sum0), uint64(rc[4])))
+	s[8] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n8, sum0), uint64(rc[8])))
 
-	s[1] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n1, sum1)), uint64(rc[1]))
-	s[5] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n5, sum1)), uint64(rc[5]))
-	s[9] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n9, sum1)), uint64(rc[9]))
+	s[1] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n1, sum1), uint64(rc[1])))
+	s[5] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n5, sum1), uint64(rc[5])))
+	s[9] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n9, sum1), uint64(rc[9])))
 
-	s[2] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n2, sum2)), uint64(rc[2]))
-	s[6] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n6, sum2)), uint64(rc[6]))
-	s[10] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n10, sum2)), uint64(rc[10]))
+	s[2] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n2, sum2), uint64(rc[2])))
+	s[6] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n6, sum2), uint64(rc[6])))
+	s[10] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n10, sum2), uint64(rc[10])))
 
-	s[3] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n3, sum3)), uint64(rc[3]))
-	s[7] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n7, sum3)), uint64(rc[7]))
-	s[11] = g.AddCanonicalUint64(g.Reduce96Bit(AddUInt128(n11, sum3)), uint64(rc[11]))
-}
-
-func addRC(state *[WIDTH]g.GoldilocksField, externalRound int) {
-	for i := 0; i < WIDTH; i++ {
-		state[i] = g.AddCanonicalUint64(state[i], uint64(EXTERNAL_CONSTANTS[externalRound][i]))
-	}
+	s[3] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n3, sum3), uint64(rc[3])))
+	s[7] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n7, sum3), uint64(rc[7])))
+	s[11] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n11, sum3), uint64(rc[11])))
 }
 
 func sbox(state *[WIDTH]g.GoldilocksField) {

@@ -202,6 +202,8 @@ func HashPair(left, right [32]byte) [32]byte {
 	return output
 }
 
+// Permute runs the Poseidon2 permutation: 4 external rounds, 22 partial rounds, 4 external rounds.
+// EXTERNAL_CONSTANTS[4] is not applied here because partialRounds folds it into its last round.
 func Permute(input *[WIDTH]g.GoldilocksField) {
 	externalLinearLayerRC(input, &EXTERNAL_CONSTANTS[0])
 	sbox(input)
@@ -225,84 +227,9 @@ func Permute(input *[WIDTH]g.GoldilocksField) {
 	externalLinearLayer(input)
 }
 
-func partialRounds(state *[WIDTH]g.GoldilocksField) {
-	// Only the first internal round constant is added explicitly.
-	// Each later one is folded into the previous round's lane-0 accumulator, and the round-4 external
-	// constants are folded into the last round's accumulators, so no constant add sits on the critical path.
-	state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[0]))
-
-	for r := 0; r < ROUNDS_P; r++ {
-		// Manual-inlining for sboxP
-		p := state[0]
-		p2 := g.SquareF(p)  // x^2
-		p4 := g.SquareF(p2) // x^4
-		p = g.MulF(p, p2)   // x^3
-		s0 := g.MulF(p, p4)
-
-		// Internal Linear Layer - inlined
-		s1 := state[1]
-		s2 := state[2]
-		s3 := state[3]
-		s4 := state[4]
-		s5 := state[5]
-		s6 := state[6]
-		s7 := state[7]
-		s8 := state[8]
-		s9 := state[9]
-		s10 := state[10]
-		s11 := state[11]
-
-		// Summing in a tree structure
-		r0 := AddUInt128(g.AsUInt128(s1), g.AsUInt128(s2))
-		r1 := AddUInt128(g.AsUInt128(s3), g.AsUInt128(s4))
-		r2 := AddUInt128(g.AsUInt128(s5), g.AsUInt128(s6))
-		r3 := AddUInt128(g.AsUInt128(s7), g.AsUInt128(s8))
-		r4 := AddUInt128(g.AsUInt128(s9), g.AsUInt128(s10))
-		q0 := AddUInt128(r0, r1)
-		q1 := AddUInt128(r2, r3)
-		q2 := AddUInt128(r4, g.AsUInt128(s11))
-		restSum := AddUInt128(AddUInt128(q0, q1), q2)
-		// The 12-lane sum stays unreduced (< 2^68); it is added into each lane's 128-bit product and
-		// reduced once per lane. Product hi < 2^64 - 2^32 since the diagonal is canonical, so no overflow.
-		sum := AddUInt128(restSum, g.AsUInt128(s0))
-
-		var rc0 uint64
-		if r+1 < ROUNDS_P {
-			rc0 = uint64(INTERNAL_CONSTANTS[r+1])
-		} else {
-			rc0 = uint64(EXTERNAL_CONSTANTS[4][0])
-		}
-		state[0] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s0), uint64(MATRIX_DIAG_12_U64[0])), sum), rc0))
-
-		if r+1 < ROUNDS_P {
-			state[1] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s1), uint64(MATRIX_DIAG_12_U64[1])), sum))
-			state[2] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s2), uint64(MATRIX_DIAG_12_U64[2])), sum))
-			state[3] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s3), uint64(MATRIX_DIAG_12_U64[3])), sum))
-			state[4] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s4), uint64(MATRIX_DIAG_12_U64[4])), sum))
-			state[5] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s5), uint64(MATRIX_DIAG_12_U64[5])), sum))
-			state[6] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s6), uint64(MATRIX_DIAG_12_U64[6])), sum))
-			state[7] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s7), uint64(MATRIX_DIAG_12_U64[7])), sum))
-			state[8] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s8), uint64(MATRIX_DIAG_12_U64[8])), sum))
-			state[9] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s9), uint64(MATRIX_DIAG_12_U64[9])), sum))
-			state[10] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s10), uint64(MATRIX_DIAG_12_U64[10])), sum))
-			state[11] = g.Reduce128Bit(AddUInt128(MulUInt64(uint64(s11), uint64(MATRIX_DIAG_12_U64[11])), sum))
-		} else {
-			state[1] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s1), uint64(MATRIX_DIAG_12_U64[1])), sum), uint64(EXTERNAL_CONSTANTS[4][1])))
-			state[2] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s2), uint64(MATRIX_DIAG_12_U64[2])), sum), uint64(EXTERNAL_CONSTANTS[4][2])))
-			state[3] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s3), uint64(MATRIX_DIAG_12_U64[3])), sum), uint64(EXTERNAL_CONSTANTS[4][3])))
-			state[4] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s4), uint64(MATRIX_DIAG_12_U64[4])), sum), uint64(EXTERNAL_CONSTANTS[4][4])))
-			state[5] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s5), uint64(MATRIX_DIAG_12_U64[5])), sum), uint64(EXTERNAL_CONSTANTS[4][5])))
-			state[6] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s6), uint64(MATRIX_DIAG_12_U64[6])), sum), uint64(EXTERNAL_CONSTANTS[4][6])))
-			state[7] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s7), uint64(MATRIX_DIAG_12_U64[7])), sum), uint64(EXTERNAL_CONSTANTS[4][7])))
-			state[8] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s8), uint64(MATRIX_DIAG_12_U64[8])), sum), uint64(EXTERNAL_CONSTANTS[4][8])))
-			state[9] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s9), uint64(MATRIX_DIAG_12_U64[9])), sum), uint64(EXTERNAL_CONSTANTS[4][9])))
-			state[10] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s10), uint64(MATRIX_DIAG_12_U64[10])), sum), uint64(EXTERNAL_CONSTANTS[4][10])))
-			state[11] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s11), uint64(MATRIX_DIAG_12_U64[11])), sum), uint64(EXTERNAL_CONSTANTS[4][11])))
-		}
-	}
-}
-
-func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
+// externalLinearLayer combined with addRC in the end
+func externalLinearLayerRC(s *[WIDTH]g.GoldilocksField, rc *[WIDTH]g.GoldilocksField) {
+	// Load the current state
 	v0 := g.AsUInt128(s[0])
 	v1 := g.AsUInt128(s[1])
 	v2 := g.AsUInt128(s[2])
@@ -348,6 +275,73 @@ func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
 	sum2 := AddUInt128(n2, AddUInt128(n6, n10))
 	sum3 := AddUInt128(n3, AddUInt128(n7, n11))
 
+	// Putting sums back to the state & addRC
+	s[0] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n0, sum0), uint64(rc[0])))
+	s[4] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n4, sum0), uint64(rc[4])))
+	s[8] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n8, sum0), uint64(rc[8])))
+
+	s[1] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n1, sum1), uint64(rc[1])))
+	s[5] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n5, sum1), uint64(rc[5])))
+	s[9] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n9, sum1), uint64(rc[9])))
+
+	s[2] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n2, sum2), uint64(rc[2])))
+	s[6] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n6, sum2), uint64(rc[6])))
+	s[10] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n10, sum2), uint64(rc[10])))
+
+	s[3] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n3, sum3), uint64(rc[3])))
+	s[7] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n7, sum3), uint64(rc[7])))
+	s[11] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n11, sum3), uint64(rc[11])))
+}
+
+// externalLinearLayer is externalLinearLayerRC without the addRC
+func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
+	// Load from the current state
+	v0 := g.AsUInt128(s[0])
+	v1 := g.AsUInt128(s[1])
+	v2 := g.AsUInt128(s[2])
+	v3 := g.AsUInt128(s[3])
+	v4 := g.AsUInt128(s[4])
+	v5 := g.AsUInt128(s[5])
+	v6 := g.AsUInt128(s[6])
+	v7 := g.AsUInt128(s[7])
+	v8 := g.AsUInt128(s[8])
+	v9 := g.AsUInt128(s[9])
+	v10 := g.AsUInt128(s[10])
+	v11 := g.AsUInt128(s[11])
+
+	// chunk 0
+	t01 := AddUInt128(v0, v1)
+	t23 := AddUInt128(v2, v3)
+	t := AddUInt128(t01, t23)
+	n0 := AddUInt128(AddUInt128(t, t01), v1)
+	n1 := AddUInt128(AddUInt128(t, v1), AddUInt128(v2, v2))
+	n2 := AddUInt128(AddUInt128(t, t23), v3)
+	n3 := AddUInt128(AddUInt128(t, v3), AddUInt128(v0, v0))
+
+	// chunk 1
+	t01 = AddUInt128(v4, v5)
+	t23 = AddUInt128(v6, v7)
+	t = AddUInt128(t01, t23)
+	n4 := AddUInt128(AddUInt128(t, t01), v5)
+	n5 := AddUInt128(AddUInt128(t, v5), AddUInt128(v6, v6))
+	n6 := AddUInt128(AddUInt128(t, t23), v7)
+	n7 := AddUInt128(AddUInt128(t, v7), AddUInt128(v4, v4))
+
+	// chunk 2
+	t01 = AddUInt128(v8, v9)
+	t23 = AddUInt128(v10, v11)
+	t = AddUInt128(t01, t23)
+	n8 := AddUInt128(AddUInt128(t, t01), v9)
+	n9 := AddUInt128(AddUInt128(t, v9), AddUInt128(v10, v10))
+	n10 := AddUInt128(AddUInt128(t, t23), v11)
+	n11 := AddUInt128(AddUInt128(t, v11), AddUInt128(v8, v8))
+
+	sum0 := AddUInt128(n0, AddUInt128(n4, n8))
+	sum1 := AddUInt128(n1, AddUInt128(n5, n9))
+	sum2 := AddUInt128(n2, AddUInt128(n6, n10))
+	sum3 := AddUInt128(n3, AddUInt128(n7, n11))
+
+	// Put the sums back to the current state
 	s[0] = g.Reduce96Bit(AddUInt128(n0, sum0))
 	s[4] = g.Reduce96Bit(AddUInt128(n4, sum0))
 	s[8] = g.Reduce96Bit(AddUInt128(n8, sum0))
@@ -365,69 +359,83 @@ func externalLinearLayer(s *[WIDTH]g.GoldilocksField) {
 	s[11] = g.Reduce96Bit(AddUInt128(n11, sum3))
 }
 
-func externalLinearLayerRC(s *[WIDTH]g.GoldilocksField, rc *[WIDTH]g.GoldilocksField) {
-	v0 := g.AsUInt128(s[0])
-	v1 := g.AsUInt128(s[1])
-	v2 := g.AsUInt128(s[2])
-	v3 := g.AsUInt128(s[3])
-	v4 := g.AsUInt128(s[4])
-	v5 := g.AsUInt128(s[5])
-	v6 := g.AsUInt128(s[6])
-	v7 := g.AsUInt128(s[7])
-	v8 := g.AsUInt128(s[8])
-	v9 := g.AsUInt128(s[9])
-	v10 := g.AsUInt128(s[10])
-	v11 := g.AsUInt128(s[11])
+func partialRounds(state *[WIDTH]g.GoldilocksField) {
+	// addRCI (just the first one)
+	state[0] = g.AddCanonicalUint64(state[0], uint64(INTERNAL_CONSTANTS[0]))
 
-	// chunk 0
-	t01 := AddUInt128(v0, v1)
-	t23 := AddUInt128(v2, v3)
-	t := AddUInt128(t01, t23)
-	n0 := AddUInt128(AddUInt128(t, t01), v1)
-	n1 := AddUInt128(AddUInt128(t, v1), AddUInt128(v2, v2))
-	n2 := AddUInt128(AddUInt128(t, t23), v3)
-	n3 := AddUInt128(AddUInt128(t, v3), AddUInt128(v0, v0))
+	for r := 0; r < ROUNDS_P; r++ {
+		// sboxP inlined: s0 = state[0]^7
+		p := state[0]
+		p2 := g.SquareF(p)
+		p4 := g.SquareF(p2)
+		p = g.MulF(p, p2)
+		s0 := g.MulF(p, p4)
 
-	// chunk 1
-	t01 = AddUInt128(v4, v5)
-	t23 = AddUInt128(v6, v7)
-	t = AddUInt128(t01, t23)
-	n4 := AddUInt128(AddUInt128(t, t01), v5)
-	n5 := AddUInt128(AddUInt128(t, v5), AddUInt128(v6, v6))
-	n6 := AddUInt128(AddUInt128(t, t23), v7)
-	n7 := AddUInt128(AddUInt128(t, v7), AddUInt128(v4, v4))
+		// internalLinearLayer inlined
+		u1 := uint64(state[1])
+		u2 := uint64(state[2])
+		u3 := uint64(state[3])
+		u4 := uint64(state[4])
+		u5 := uint64(state[5])
+		u6 := uint64(state[6])
+		u7 := uint64(state[7])
+		u8 := uint64(state[8])
+		u9 := uint64(state[9])
+		u10 := uint64(state[10])
+		u11 := uint64(state[11])
 
-	// chunk 2
-	t01 = AddUInt128(v8, v9)
-	t23 = AddUInt128(v10, v11)
-	t = AddUInt128(t01, t23)
-	n8 := AddUInt128(AddUInt128(t, t01), v9)
-	n9 := AddUInt128(AddUInt128(t, v9), AddUInt128(v10, v10))
-	n10 := AddUInt128(AddUInt128(t, t23), v11)
-	n11 := AddUInt128(AddUInt128(t, v11), AddUInt128(v8, v8))
+		// summing up in a tree-way
+		r0 := AddUint64(u1, u2)
+		r1 := AddUint64(u3, u4)
+		r2 := AddUint64(u5, u6)
+		r3 := AddUint64(u7, u8)
+		r4 := AddUint64(u9, u10)
+		q0 := AddUInt128(r0, r1)
+		q1 := AddUInt128(r2, r3)
+		q2 := AddUint128AndUint64(r4, u11)
+		restSum := AddUInt128(AddUInt128(q0, q1), q2)
+		sum := AddUint128AndUint64(restSum, uint64(s0))
+		// sum < 2^68
 
-	sum0 := AddUInt128(n0, AddUInt128(n4, n8))
-	sum1 := AddUInt128(n1, AddUInt128(n5, n9))
-	sum2 := AddUInt128(n2, AddUInt128(n6, n10))
-	sum3 := AddUInt128(n3, AddUInt128(n7, n11))
+		var rc0 uint64
+		if r+1 < ROUNDS_P {
+			rc0 = uint64(INTERNAL_CONSTANTS[r+1])
+		} else {
+			rc0 = uint64(EXTERNAL_CONSTANTS[4][0])
+		}
+		// combining addRCI and add in the internalLinearLayer together
+		// state[0] = (state[0] * MATRIX_DIAG_12_U64[0] + sum) + rc0
+		// no overflows since: sum+rc0 = 68-bit + 64-bit < (2^128 - F*F) = 2^128 - (2^128-2^97+2^64) = 2^97-2^64
+		state[0] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s0), uint64(MATRIX_DIAG_12_U64[0])), sum), rc0))
 
-	// The round constant is folded into the 128-bit accumulator so each lane needs a single reduction.
-	// Accumulator stays < 2^70, well within Reduce96Bit's contract.
-	s[0] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n0, sum0), uint64(rc[0])))
-	s[4] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n4, sum0), uint64(rc[4])))
-	s[8] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n8, sum0), uint64(rc[8])))
-
-	s[1] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n1, sum1), uint64(rc[1])))
-	s[5] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n5, sum1), uint64(rc[5])))
-	s[9] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n9, sum1), uint64(rc[9])))
-
-	s[2] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n2, sum2), uint64(rc[2])))
-	s[6] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n6, sum2), uint64(rc[6])))
-	s[10] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n10, sum2), uint64(rc[10])))
-
-	s[3] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n3, sum3), uint64(rc[3])))
-	s[7] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n7, sum3), uint64(rc[7])))
-	s[11] = g.Reduce96Bit(AddUint128AndUint64(AddUInt128(n11, sum3), uint64(rc[11])))
+		// each lane: state[i] = state[i] * MATRIX_DIAG_12_U64[i] + sum
+		if r+1 < ROUNDS_P {
+			state[1] = g.Reduce128Bit(AddUInt128(MulUInt64(u1, uint64(MATRIX_DIAG_12_U64[1])), sum))
+			state[2] = g.Reduce128Bit(AddUInt128(MulUInt64(u2, uint64(MATRIX_DIAG_12_U64[2])), sum))
+			state[3] = g.Reduce128Bit(AddUInt128(MulUInt64(u3, uint64(MATRIX_DIAG_12_U64[3])), sum))
+			state[4] = g.Reduce128Bit(AddUInt128(MulUInt64(u4, uint64(MATRIX_DIAG_12_U64[4])), sum))
+			state[5] = g.Reduce128Bit(AddUInt128(MulUInt64(u5, uint64(MATRIX_DIAG_12_U64[5])), sum))
+			state[6] = g.Reduce128Bit(AddUInt128(MulUInt64(u6, uint64(MATRIX_DIAG_12_U64[6])), sum))
+			state[7] = g.Reduce128Bit(AddUInt128(MulUInt64(u7, uint64(MATRIX_DIAG_12_U64[7])), sum))
+			state[8] = g.Reduce128Bit(AddUInt128(MulUInt64(u8, uint64(MATRIX_DIAG_12_U64[8])), sum))
+			state[9] = g.Reduce128Bit(AddUInt128(MulUInt64(u9, uint64(MATRIX_DIAG_12_U64[9])), sum))
+			state[10] = g.Reduce128Bit(AddUInt128(MulUInt64(u10, uint64(MATRIX_DIAG_12_U64[10])), sum))
+			state[11] = g.Reduce128Bit(AddUInt128(MulUInt64(u11, uint64(MATRIX_DIAG_12_U64[11])), sum))
+		} else {
+			// only works in the last round to combine addRC too
+			state[1] = g.Reduce128Bit(AddUInt128(MulUInt64(u1, uint64(MATRIX_DIAG_12_U64[1])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][1]))))
+			state[2] = g.Reduce128Bit(AddUInt128(MulUInt64(u2, uint64(MATRIX_DIAG_12_U64[2])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][2]))))
+			state[3] = g.Reduce128Bit(AddUInt128(MulUInt64(u3, uint64(MATRIX_DIAG_12_U64[3])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][3]))))
+			state[4] = g.Reduce128Bit(AddUInt128(MulUInt64(u4, uint64(MATRIX_DIAG_12_U64[4])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][4]))))
+			state[5] = g.Reduce128Bit(AddUInt128(MulUInt64(u5, uint64(MATRIX_DIAG_12_U64[5])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][5]))))
+			state[6] = g.Reduce128Bit(AddUInt128(MulUInt64(u6, uint64(MATRIX_DIAG_12_U64[6])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][6]))))
+			state[7] = g.Reduce128Bit(AddUInt128(MulUInt64(u7, uint64(MATRIX_DIAG_12_U64[7])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][7]))))
+			state[8] = g.Reduce128Bit(AddUInt128(MulUInt64(u8, uint64(MATRIX_DIAG_12_U64[8])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][8]))))
+			state[9] = g.Reduce128Bit(AddUInt128(MulUInt64(u9, uint64(MATRIX_DIAG_12_U64[9])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][9]))))
+			state[10] = g.Reduce128Bit(AddUInt128(MulUInt64(u10, uint64(MATRIX_DIAG_12_U64[10])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][10]))))
+			state[11] = g.Reduce128Bit(AddUInt128(MulUInt64(u11, uint64(MATRIX_DIAG_12_U64[11])), AddUint128AndUint64(sum, uint64(EXTERNAL_CONSTANTS[4][11]))))
+		}
+	}
 }
 
 func sbox(state *[WIDTH]g.GoldilocksField) {

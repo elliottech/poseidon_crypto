@@ -405,7 +405,7 @@ func partialRounds(state *[WIDTH]g.GoldilocksField) {
 		}
 		// combining addRCI and add in the internalLinearLayer together
 		// state[0] = (state[0] * MATRIX_DIAG_12_U64[0] + sum) + rc0
-		// no overflows since: sum+rc0 = 68-bit + 64-bit < (2^128 - F*F) = 2^128 - (2^128-2^97+2^64) = 2^97-2^64
+		// no overflows since: sum+rc0 = 68-bit + 64-bit < (2^128 - 2^64*F) = 2^128 - (2^128-2^96+2^64) = 2^96-2^64
 		state[0] = g.Reduce128Bit(AddUint128AndUint64(AddUInt128(MulUInt64(uint64(s0), uint64(MATRIX_DIAG_12_U64[0])), sum), rc0))
 
 		// each lane: state[i] = state[i] * MATRIX_DIAG_12_U64[i] + sum

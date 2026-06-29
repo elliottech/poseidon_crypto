@@ -2,6 +2,7 @@ package goldilocks_quintic_extension
 
 import (
 	"errors"
+	"math/bits"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 )
@@ -96,52 +97,103 @@ func Sub(a, b Element) Element {
 	}
 }
 
+// reduce128 reduces hi*2^64 + lo modulo the Goldilocks prime.
+func reduce128(lo, hi uint64) uint64 {
+	x_hi_hi := hi >> 32
+	x_hi_lo := hi & g.EPSILON
+
+	t0, borrow := bits.Sub64(lo, x_hi_hi, 0)
+	t0 -= (g.EPSILON & -borrow)
+
+	t1 := x_hi_lo * g.EPSILON
+
+	resWrapped, carry := bits.Add64(t0, t1, 0)
+	t2 := resWrapped + (g.EPSILON & -carry)
+	return t2
+}
+
+// acc192 is a 192-bit accumulator of unreduced products (each < p^2 < 2^128;
+// a coefficient sums up to ~13 of them, < 2^132, so the hi limb stays tiny).
+type acc192 struct{ lo, mid, hi uint64 }
+
+func (s *acc192) addProduct(a, b uint64) { // s += a*b   (no reduction)
+	hi, lo := bits.Mul64(a, b)
+	var c uint64
+	s.lo, c = bits.Add64(s.lo, lo, 0)
+	s.mid, c = bits.Add64(s.mid, hi, c)
+	s.hi += c
+}
+
+func (s *acc192) addProduct3(a, b uint64) { // s += 3*a*b  (the X^5 = 3 fold)
+	hi, lo := bits.Mul64(a, b)
+	d0 := lo << 1 // 3*(hi:lo) = (hi:lo)<<1 + (hi:lo)
+	d1 := (hi << 1) | (lo >> 63)
+	d2 := hi >> 63
+	var c uint64
+	d0, c = bits.Add64(d0, lo, 0)
+	d1, c = bits.Add64(d1, hi, c)
+	d2 += c
+	s.lo, c = bits.Add64(s.lo, d0, 0)
+	s.mid, c = bits.Add64(s.mid, d1, c)
+	s.hi += d2 + c
+}
+
+func (s acc192) reduce() uint64 {
+	// value = (lo + mid*2^64) + hi*2^128 ;  2^128 ≡ -2^32 (mod p)
+	rLow := reduce128(s.lo, s.mid)
+	r2 := reduce128(s.hi<<32, s.hi>>32) // = hi*2^32 mod p
+	if rLow >= r2 {
+		return rLow - r2
+	}
+	return g.ORDER - (r2 - rLow)
+}
+
+// Mul multiplies two F_{p^5} elements with lazy reduction: 25 raw products,
+// 192-bit accumulation, and 5 reductions instead of ~30.
 func Mul(a, b Element) Element {
-	w := FP5_W
+	a0, a1, a2, a3, a4 := uint64(a[0]), uint64(a[1]), uint64(a[2]), uint64(a[3]), uint64(a[4])
+	b0, b1, b2, b3, b4 := uint64(b[0]), uint64(b[1]), uint64(b[2]), uint64(b[3]), uint64(b[4])
 
-	a0b0 := g.MulF(a[0], b[0])
-	a1b4 := g.MulF(a[1], b[4])
-	a2b3 := g.MulF(a[2], b[3])
-	a3b2 := g.MulF(a[3], b[2])
-	a4b1 := g.MulF(a[4], b[1])
-	added := g.AddF(g.AddF(a1b4, a2b3), g.AddF(a3b2, a4b1))
-	muld := g.MulF(w, added)
-	c0 := g.AddF(a0b0, muld)
+	var s0, s1, s2, s3, s4 acc192
 
-	a0b1 := g.MulF(a[0], b[1])
-	a1b0 := g.MulF(a[1], b[0])
-	a2b4 := g.MulF(a[2], b[4])
-	a3b3 := g.MulF(a[3], b[3])
-	a4b2 := g.MulF(a[4], b[2])
-	added = g.AddF(g.AddF(a2b4, a3b3), a4b2)
-	muld = g.MulF(w, added)
-	c1 := g.AddF(g.AddF(a0b1, a1b0), muld)
+	// c0 = a0b0 + 3(a1b4 + a2b3 + a3b2 + a4b1)
+	s0.addProduct(a0, b0)
+	s0.addProduct3(a1, b4)
+	s0.addProduct3(a2, b3)
+	s0.addProduct3(a3, b2)
+	s0.addProduct3(a4, b1)
+	// c1 = a0b1 + a1b0 + 3(a2b4 + a3b3 + a4b2)
+	s1.addProduct(a0, b1)
+	s1.addProduct(a1, b0)
+	s1.addProduct3(a2, b4)
+	s1.addProduct3(a3, b3)
+	s1.addProduct3(a4, b2)
+	// c2 = a0b2 + a1b1 + a2b0 + 3(a3b4 + a4b3)
+	s2.addProduct(a0, b2)
+	s2.addProduct(a1, b1)
+	s2.addProduct(a2, b0)
+	s2.addProduct3(a3, b4)
+	s2.addProduct3(a4, b3)
+	// c3 = a0b3 + a1b2 + a2b1 + a3b0 + 3 a4b4
+	s3.addProduct(a0, b3)
+	s3.addProduct(a1, b2)
+	s3.addProduct(a2, b1)
+	s3.addProduct(a3, b0)
+	s3.addProduct3(a4, b4)
+	// c4 = a0b4 + a1b3 + a2b2 + a3b1 + a4b0
+	s4.addProduct(a0, b4)
+	s4.addProduct(a1, b3)
+	s4.addProduct(a2, b2)
+	s4.addProduct(a3, b1)
+	s4.addProduct(a4, b0)
 
-	a0b2 := g.MulF(a[0], b[2])
-	a1b1 := g.MulF(a[1], b[1])
-	a2b0 := g.MulF(a[2], b[0])
-	a3b4 := g.MulF(a[3], b[4])
-	a4b3 := g.MulF(a[4], b[3])
-	added = g.AddF(a3b4, a4b3)
-	muld = g.MulF(w, added)
-	c2 := g.AddF(g.AddF(a0b2, a1b1), g.AddF(a2b0, muld))
-
-	a0b3 := g.MulF(a[0], b[3])
-	a1b2 := g.MulF(a[1], b[2])
-	a2b1 := g.MulF(a[2], b[1])
-	a3b0 := g.MulF(a[3], b[0])
-	a4b4 := g.MulF(a[4], b[4])
-	muld = g.MulF(w, a4b4)
-	c3 := g.AddF(g.AddF(g.AddF(a0b3, a1b2), g.AddF(a2b1, a3b0)), muld)
-
-	a0b4 := g.MulF(a[0], b[4])
-	a1b3 := g.MulF(a[1], b[3])
-	a2b2 := g.MulF(a[2], b[2])
-	a3b1 := g.MulF(a[3], b[1])
-	a4b0 := g.MulF(a[4], b[0])
-	c4 := g.AddF(g.AddF(g.AddF(a0b4, a1b3), g.AddF(a2b2, a3b1)), a4b0)
-
-	return Element{c0, c1, c2, c3, c4}
+	return Element{
+		g.GoldilocksField(s0.reduce()),
+		g.GoldilocksField(s1.reduce()),
+		g.GoldilocksField(s2.reduce()),
+		g.GoldilocksField(s3.reduce()),
+		g.GoldilocksField(s4.reduce()),
+	}
 }
 
 // Returns a / b. Panics if b == 0.

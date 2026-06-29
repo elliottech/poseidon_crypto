@@ -166,7 +166,7 @@ func Validate(pubKey, hashedMsg, sig []byte) error {
 
 	valid := IsSchnorrSignatureValid(pk, hashedMsgElem, s)
 	if !valid {
-		// return errors.New("signature is invalid")
+		return errors.New("signature is invalid")
 	}
 
 	return nil

@@ -112,19 +112,21 @@ func reduce128(lo, hi uint64) uint64 {
 	return t2
 }
 
-// acc192 is a 192-bit accumulator of unreduced products (each < p^2 < 2^128;
-// a coefficient sums up to ~13 of them, < 2^132, so the hi limb stays tiny).
+// acc192 is a 192-bit accumulator of unreduced products
 type acc192 struct{ lo, mid, hi uint64 }
 
-func (s *acc192) addProduct(a, b uint64) { // s += a*b   (no reduction)
+func (s acc192) addProduct(a, b uint64) (res acc192) { // s += a*b   (no reduction)
+	res = s
 	hi, lo := bits.Mul64(a, b)
 	var c uint64
-	s.lo, c = bits.Add64(s.lo, lo, 0)
-	s.mid, c = bits.Add64(s.mid, hi, c)
-	s.hi += c
+	res.lo, c = bits.Add64(s.lo, lo, 0)
+	res.mid, c = bits.Add64(s.mid, hi, c)
+	res.hi += c
+	return
 }
 
-func (s *acc192) addProduct3(a, b uint64) { // s += 3*a*b  (the X^5 = 3 fold)
+func (s acc192) addProduct3(a, b uint64) (res acc192) { // s += 3*a*b  (the X^5 = 3 fold)
+	res = s
 	hi, lo := bits.Mul64(a, b)
 	d0 := lo << 1 // 3*(hi:lo) = (hi:lo)<<1 + (hi:lo)
 	d1 := (hi << 1) | (lo >> 63)
@@ -133,23 +135,21 @@ func (s *acc192) addProduct3(a, b uint64) { // s += 3*a*b  (the X^5 = 3 fold)
 	d0, c = bits.Add64(d0, lo, 0)
 	d1, c = bits.Add64(d1, hi, c)
 	d2 += c
-	s.lo, c = bits.Add64(s.lo, d0, 0)
-	s.mid, c = bits.Add64(s.mid, d1, c)
-	s.hi += d2 + c
+	res.lo, c = bits.Add64(s.lo, d0, 0)
+	res.mid, c = bits.Add64(s.mid, d1, c)
+	res.hi += d2 + c
+	return
 }
 
 func (s acc192) reduce() uint64 {
 	// value = (lo + mid*2^64) + hi*2^128 ;  2^128 ≡ -2^32 (mod p)
 	rLow := reduce128(s.lo, s.mid)
 	r2 := reduce128(s.hi<<32, s.hi>>32) // = hi*2^32 mod p
-	if rLow >= r2 {
-		return rLow - r2
-	}
-	return g.ORDER - (r2 - rLow)
+	res, borrow := bits.Sub64(rLow, r2, 0)
+	return res - (g.EPSILON & -borrow)
 }
 
-// Mul multiplies two F_{p^5} elements with lazy reduction: 25 raw products,
-// 192-bit accumulation, and 5 reductions instead of ~30.
+// Mul multiplies two F_{p^5} elements with lazy reduction
 func Mul(a, b Element) Element {
 	a0, a1, a2, a3, a4 := uint64(a[0]), uint64(a[1]), uint64(a[2]), uint64(a[3]), uint64(a[4])
 	b0, b1, b2, b3, b4 := uint64(b[0]), uint64(b[1]), uint64(b[2]), uint64(b[3]), uint64(b[4])
@@ -157,35 +157,35 @@ func Mul(a, b Element) Element {
 	var s0, s1, s2, s3, s4 acc192
 
 	// c0 = a0b0 + 3(a1b4 + a2b3 + a3b2 + a4b1)
-	s0.addProduct(a0, b0)
-	s0.addProduct3(a1, b4)
-	s0.addProduct3(a2, b3)
-	s0.addProduct3(a3, b2)
-	s0.addProduct3(a4, b1)
+	s0 = s0.addProduct(a0, b0)
+	s0 = s0.addProduct3(a1, b4)
+	s0 = s0.addProduct3(a2, b3)
+	s0 = s0.addProduct3(a3, b2)
+	s0 = s0.addProduct3(a4, b1)
 	// c1 = a0b1 + a1b0 + 3(a2b4 + a3b3 + a4b2)
-	s1.addProduct(a0, b1)
-	s1.addProduct(a1, b0)
-	s1.addProduct3(a2, b4)
-	s1.addProduct3(a3, b3)
-	s1.addProduct3(a4, b2)
+	s1 = s1.addProduct(a0, b1)
+	s1 = s1.addProduct(a1, b0)
+	s1 = s1.addProduct3(a2, b4)
+	s1 = s1.addProduct3(a3, b3)
+	s1 = s1.addProduct3(a4, b2)
 	// c2 = a0b2 + a1b1 + a2b0 + 3(a3b4 + a4b3)
-	s2.addProduct(a0, b2)
-	s2.addProduct(a1, b1)
-	s2.addProduct(a2, b0)
-	s2.addProduct3(a3, b4)
-	s2.addProduct3(a4, b3)
+	s2 = s2.addProduct(a0, b2)
+	s2 = s2.addProduct(a1, b1)
+	s2 = s2.addProduct(a2, b0)
+	s2 = s2.addProduct3(a3, b4)
+	s2 = s2.addProduct3(a4, b3)
 	// c3 = a0b3 + a1b2 + a2b1 + a3b0 + 3 a4b4
-	s3.addProduct(a0, b3)
-	s3.addProduct(a1, b2)
-	s3.addProduct(a2, b1)
-	s3.addProduct(a3, b0)
-	s3.addProduct3(a4, b4)
+	s3 = s3.addProduct(a0, b3)
+	s3 = s3.addProduct(a1, b2)
+	s3 = s3.addProduct(a2, b1)
+	s3 = s3.addProduct(a3, b0)
+	s3 = s3.addProduct3(a4, b4)
 	// c4 = a0b4 + a1b3 + a2b2 + a3b1 + a4b0
-	s4.addProduct(a0, b4)
-	s4.addProduct(a1, b3)
-	s4.addProduct(a2, b2)
-	s4.addProduct(a3, b1)
-	s4.addProduct(a4, b0)
+	s4 = s4.addProduct(a0, b4)
+	s4 = s4.addProduct(a1, b3)
+	s4 = s4.addProduct(a2, b2)
+	s4 = s4.addProduct(a3, b1)
+	s4 = s4.addProduct(a4, b0)
 
 	return Element{
 		g.GoldilocksField(s0.reduce()),
@@ -214,40 +214,65 @@ func ExpPowerOf2(x Element, power int) Element {
 	return res
 }
 
+// add3 adds the 3-limb value v2:v1:v0 into the accumulator.
+func (s acc192) add3(v0, v1, v2 uint64) (res acc192) {
+	res = s
+	var c uint64
+	res.lo, c = bits.Add64(s.lo, v0, 0)
+	res.mid, c = bits.Add64(s.mid, v1, c)
+	res.hi += v2 + c
+	return
+}
+
+func (s acc192) addProduct2(a, b uint64) acc192 { // s += 2*a*b  (shift the product left 1)
+	hi, lo := bits.Mul64(a, b)
+	return s.add3(lo<<1, (hi<<1)|(lo>>63), hi>>63)
+}
+
+func (s acc192) addProduct6(a, b uint64) acc192 { // s += 6*a*b = 4*ab + 2*ab
+	hi, lo := bits.Mul64(a, b)
+	q0, q1, q2 := lo<<2, (hi<<2)|(lo>>62), hi>>62 // 4x
+	r0, r1, r2 := lo<<1, (hi<<1)|(lo>>63), hi>>63 // 2x
+	var c uint64
+	q0, c = bits.Add64(q0, r0, 0)
+	q1, c = bits.Add64(q1, r1, c)
+	q2 += r2 + c
+	return s.add3(q0, q1, q2)
+}
+
+// Square squares an F_{p^5} element with lazy reduction
 func Square(a Element) Element {
-	w := FP5_W
-	double_w := g.AddF(w, w)
+	a0, a1, a2, a3, a4 := uint64(a[0]), uint64(a[1]), uint64(a[2]), uint64(a[3]), uint64(a[4])
+	var s0, s1, s2, s3, s4 acc192
 
-	a0s := g.MulF(a[0], a[0])
-	a1a4 := g.MulF(a[1], a[4])
-	a2a3 := g.MulF(a[2], a[3])
-	added := g.AddF(a1a4, a2a3)
-	muld := g.MulF(double_w, added)
-	c0 := g.AddF(a0s, muld)
+	// c0 = a0^2 + 6 a1a4 + 6 a2a3
+	s0 = s0.addProduct(a0, a0)
+	s0 = s0.addProduct6(a1, a4)
+	s0 = s0.addProduct6(a2, a3)
+	// c1 = 2 a0a1 + 6 a2a4 + 3 a3^2
+	s1 = s1.addProduct2(a0, a1)
+	s1 = s1.addProduct6(a2, a4)
+	s1 = s1.addProduct3(a3, a3)
+	// c2 = 2 a0a2 + a1^2 + 6 a3a4
+	s2 = s2.addProduct2(a0, a2)
+	s2 = s2.addProduct(a1, a1)
+	s2 = s2.addProduct6(a3, a4)
+	// c3 = 2 a0a3 + 2 a1a2 + 3 a4^2
+	s3 = s3.addProduct2(a0, a3)
+	s3 = s3.addProduct2(a1, a2)
+	s3 = s3.addProduct3(a4, a4)
+	// c4 = 2 a0a4 + 2 a1a3 + a2^2
+	s4 = s4.addProduct2(a0, a4)
+	s4 = s4.addProduct2(a1, a3)
+	s4 = s4.addProduct(a2, a2)
 
-	a0Double := g.AddF(a[0], a[0])
-	a0Doublea1 := g.MulF(a0Double, a[1])
-	a2a4DoubleW := g.MulF(g.MulF(a[2], a[4]), double_w)
-	a3a3w := g.MulF(g.MulF(a[3], a[3]), w)
-	c1 := g.AddF(g.AddF(a0Doublea1, a2a4DoubleW), a3a3w)
-
-	a0Doublea2 := g.MulF(a0Double, a[2])
-	a1Square := g.MulF(a[1], a[1])
-	a4a3DoubleW := g.MulF(g.MulF(a[4], a[3]), double_w)
-	c2 := g.AddF(g.AddF(a0Doublea2, a1Square), a4a3DoubleW)
-
-	a1Double := g.AddF(a[1], a[1])
-	a0Doublea3 := g.MulF(a0Double, a[3])
-	a1Doublea2 := g.MulF(a1Double, a[2])
-	a4SquareW := g.MulF(g.MulF(a[4], a[4]), w)
-	c3 := g.AddF(g.AddF(a0Doublea3, a1Doublea2), a4SquareW)
-
-	a0Doublea4 := g.MulF(a0Double, a[4])
-	a1Doublea3 := g.MulF(a1Double, a[3])
-	a2Square := g.MulF(a[2], a[2])
-	c4 := g.AddF(g.AddF(a0Doublea4, a1Doublea3), a2Square)
-
-	return Element{c0, c1, c2, c3, c4}
+	return Element{
+		g.GoldilocksField(s0.reduce()),
+		g.GoldilocksField(s1.reduce()),
+		g.GoldilocksField(s2.reduce()),
+		g.GoldilocksField(s3.reduce()),
+		g.GoldilocksField(s4.reduce()),
+	}
 }
 
 func Triple(a Element) Element {

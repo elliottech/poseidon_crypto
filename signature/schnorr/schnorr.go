@@ -192,12 +192,12 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool
 
 	// Decode public key (canonical decoding automatically ensures valid group element)
 	// No subgroup check needed due to prime order!
-	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
+	pubKeyWs, ok := curve.Decode(pubKey)
 	if !ok {
 		return false
 	}
 
-	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+	rV := curve.MulAddG(pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
 
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], rV[:])

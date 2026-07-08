@@ -149,6 +149,53 @@ func (s acc192) reduce() uint64 {
 	return res - (g.EPSILON & -borrow)
 }
 
+func Mul2(a, b Element) Element {
+	w := FP5_W
+	a0b0 := g.MulF(a[0], b[0])
+	a1b4 := g.MulF(a[1], b[4])
+	a2b3 := g.MulF(a[2], b[3])
+	a3b2 := g.MulF(a[3], b[2])
+	a4b1 := g.MulF(a[4], b[1])
+	added := g.AddF(g.AddF(a1b4, a2b3), g.AddF(a3b2, a4b1))
+	muld := g.MulF(w, added)
+	c0 := g.AddF(a0b0, muld)
+
+	a0b1 := g.MulF(a[0], b[1])
+	a1b0 := g.MulF(a[1], b[0])
+	a2b4 := g.MulF(a[2], b[4])
+	a3b3 := g.MulF(a[3], b[3])
+	a4b2 := g.MulF(a[4], b[2])
+	added = g.AddF(g.AddF(a2b4, a3b3), a4b2)
+	muld = g.MulF(w, added)
+	c1 := g.AddF(g.AddF(a0b1, a1b0), muld)
+
+	a0b2 := g.MulF(a[0], b[2])
+	a1b1 := g.MulF(a[1], b[1])
+	a2b0 := g.MulF(a[2], b[0])
+	a3b4 := g.MulF(a[3], b[4])
+	a4b3 := g.MulF(a[4], b[3])
+	added = g.AddF(a3b4, a4b3)
+	muld = g.MulF(w, added)
+	c2 := g.AddF(g.AddF(a0b2, a1b1), g.AddF(a2b0, muld))
+
+	a0b3 := g.MulF(a[0], b[3])
+	a1b2 := g.MulF(a[1], b[2])
+	a2b1 := g.MulF(a[2], b[1])
+	a3b0 := g.MulF(a[3], b[0])
+	a4b4 := g.MulF(a[4], b[4])
+	muld = g.MulF(w, a4b4)
+	c3 := g.AddF(g.AddF(g.AddF(a0b3, a1b2), g.AddF(a2b1, a3b0)), muld)
+
+	a0b4 := g.MulF(a[0], b[4])
+	a1b3 := g.MulF(a[1], b[3])
+	a2b2 := g.MulF(a[2], b[2])
+	a3b1 := g.MulF(a[3], b[1])
+	a4b0 := g.MulF(a[4], b[0])
+	c4 := g.AddF(g.AddF(g.AddF(a0b4, a1b3), g.AddF(a2b2, a3b1)), a4b0)
+
+	return Element{c0, c1, c2, c3, c4}
+}
+
 // Mul multiplies two F_{p^5} elements with lazy reduction
 func Mul(a, b Element) Element {
 	a0, a1, a2, a3, a4 := uint64(a[0]), uint64(a[1]), uint64(a[2]), uint64(a[3]), uint64(a[4])
@@ -202,7 +249,7 @@ func Div(a, b Element) Element {
 	if IsZero(bInv) {
 		panic("division by zero")
 	}
-	return Mul(a, bInv)
+	return Mul2(a, bInv)
 }
 
 // x^(2^power)
@@ -238,6 +285,42 @@ func (s acc192) addProduct6(a, b uint64) acc192 { // s += 6*a*b = 4*ab + 2*ab
 	q1, c = bits.Add64(q1, r1, c)
 	q2 += r2 + c
 	return s.add3(q0, q1, q2)
+}
+
+func Square2(a Element) Element {
+	w := FP5_W
+	double_w := g.AddF(w, w)
+
+	a0s := g.MulF(a[0], a[0])
+	a1a4 := g.MulF(a[1], a[4])
+	a2a3 := g.MulF(a[2], a[3])
+	added := g.AddF(a1a4, a2a3)
+	muld := g.MulF(double_w, added)
+	c0 := g.AddF(a0s, muld)
+
+	a0Double := g.AddF(a[0], a[0])
+	a0Doublea1 := g.MulF(a0Double, a[1])
+	a2a4DoubleW := g.MulF(g.MulF(a[2], a[4]), double_w)
+	a3a3w := g.MulF(g.MulF(a[3], a[3]), w)
+	c1 := g.AddF(g.AddF(a0Doublea1, a2a4DoubleW), a3a3w)
+
+	a0Doublea2 := g.MulF(a0Double, a[2])
+	a1Square := g.MulF(a[1], a[1])
+	a4a3DoubleW := g.MulF(g.MulF(a[4], a[3]), double_w)
+	c2 := g.AddF(g.AddF(a0Doublea2, a1Square), a4a3DoubleW)
+
+	a1Double := g.AddF(a[1], a[1])
+	a0Doublea3 := g.MulF(a0Double, a[3])
+	a1Doublea2 := g.MulF(a1Double, a[2])
+	a4SquareW := g.MulF(g.MulF(a[4], a[4]), w)
+	c3 := g.AddF(g.AddF(a0Doublea3, a1Doublea2), a4SquareW)
+
+	a0Doublea4 := g.MulF(a0Double, a[4])
+	a1Doublea3 := g.MulF(a1Double, a[3])
+	a2Square := g.MulF(a[2], a[2])
+	c4 := g.AddF(g.AddF(a0Doublea4, a1Doublea3), a2Square)
+
+	return Element{c0, c1, c2, c3, c4}
 }
 
 // Square squares an F_{p^5} element with lazy reduction
@@ -357,8 +440,8 @@ func InverseOrZero(a Element) Element {
 	}
 
 	d := Frobenius(a)
-	e := Mul(d, Frobenius(d))
-	f := Mul(e, RepeatedFrobenius(e, 2))
+	e := Mul2(d, Frobenius(d))
+	f := Mul2(e, RepeatedFrobenius(e, 2))
 
 	a0b0 := g.MulF(a[0], f[0])
 	a1b4 := g.MulF(a[1], f[4])

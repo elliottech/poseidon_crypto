@@ -206,3 +206,26 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool
 
 	return eV.Equals(sig.E) // e_v == e
 }
+
+func IsSchnorrSignatureValid2(pubKey, hashedMsg gFp5.Element, sig Signature) bool {
+	// Check signature canonicality (prevents malleability)
+	if !sig.IsCanonical() {
+		return false
+	}
+
+	// Decode public key (canonical decoding automatically ensures valid group element)
+	// No subgroup check needed due to prime order!
+	pubKeyWs, ok := curve.DecodeFp5AsWeierstrass(pubKey)
+	if !ok {
+		return false
+	}
+
+	rV := curve.MulAdd2(curve.GENERATOR_WEIERSTRASS, pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+
+	preImage := make([]g.GoldilocksField, 5+5)
+	copy(preImage[:5], rV[:])
+	copy(preImage[5:], hashedMsg[:])
+	eV := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
+
+	return eV.Equals(sig.E) // e_v == e
+}

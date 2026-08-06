@@ -450,7 +450,7 @@ func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
 const (
 	WINDOW                = 5
 	WIN_SIZE              = 1 << (WINDOW - 1)
-	generatorWindow       = 7
+	generatorWindow       = 6
 	generatorWindowSize   = 1 << (generatorWindow - 1)
 	generatorScalarDigits = (319 + generatorWindow) / generatorWindow
 )
@@ -590,6 +590,13 @@ func getGeneratorFixedWindowAffine() []AffinePoint {
 		generatorFixedWindowAffine = makeGeneratorFixedWindowAffine()
 	})
 	return generatorFixedWindowAffine
+}
+
+// WarmGeneratorTable builds the fixed-generator table ahead of a
+// latency-sensitive multiplication. The table is process-global and is built
+// at most once.
+func WarmGeneratorTable() {
+	_ = getGeneratorFixedWindowAffine()
 }
 
 // MulG multiplies the fixed curve generator by a scalar. Its position-weighted

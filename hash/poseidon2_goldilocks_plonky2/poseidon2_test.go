@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
+	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 	. "github.com/elliottech/poseidon_crypto/int"
 )
 
@@ -290,6 +291,32 @@ func TestHashToQuinticExtension(t *testing.T) {
 		if result[i].ToCanonicalUint64() != expected[i] {
 			t.Logf("Expected limb %d to be %x, but got %x", i, expected[i], result[i])
 			t.Fail()
+		}
+	}
+}
+
+func TestHashToQuinticExtensionKnownAnswers(t *testing.T) {
+	// Generated with origin/main at ca0ad1b, before the allocation-free
+	// HashToQuinticExtension implementation was introduced.
+	tests := []struct {
+		length int
+		want   gFp5.Element
+	}{
+		{0, gFp5.Element{0, 0, 0, 0, 0}},
+		{1, gFp5.Element{18307244851715322540, 3700494528959397187, 11006318565213025038, 16875625778335567248, 15670275921225307291}},
+		{5, gFp5.Element{4309675740993348975, 16484708150821318610, 11440901173928016921, 16151918261980042672, 8559850001824328600}},
+		{8, gFp5.Element{16663429693141532014, 13480885536584083576, 10689113998286065587, 529140796778810937, 16418358108241697819}},
+		{9, gFp5.Element{6337356309265316719, 3051880416340784969, 10114972673943395714, 16235767858383991590, 8567719049959466250}},
+		{10, gFp5.Element{1784431504029273515, 6768375076188675504, 9487987232220200039, 16287375587926988344, 14446444611121351896}},
+		{244, gFp5.Element{14363238127819134277, 8302689288488285294, 15463871311744153871, 6825082547958386432, 10519142466957289900}},
+	}
+	for _, test := range tests {
+		input := make([]g.GoldilocksField, test.length)
+		for i := range input {
+			input[i] = g.GoldilocksField(uint64(i+1) * 123456789)
+		}
+		if got := HashToQuinticExtension(input); got != test.want {
+			t.Fatalf("HashToQuinticExtension length %d = %v, want %v", test.length, got, test.want)
 		}
 	}
 }

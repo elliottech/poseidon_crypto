@@ -54,7 +54,7 @@ func Lookup(win []AffinePoint, k int32) AffinePoint {
 	}
 
 	// If k < 0, then we must negate the point.
-	c := uint64(sign) | (uint64(sign) << 32)
+	c := uint64(0) - uint64(sign&1)
 	negativeU := gFp5.Neg(u)
 	for limb := 0; limb < len(u); limb++ {
 		u[limb] = g.GoldilocksField(

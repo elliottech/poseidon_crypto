@@ -1,6 +1,9 @@
 package ecgfp5
 
 import (
+	"encoding/binary"
+	"math/big"
+	"math/rand"
 	"testing"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -364,6 +367,18 @@ func TestToAffineAndLookup(t *testing.T) {
 
 	// Test lookup
 	win := BatchToAffine(tab1)
+	for k := -len(win); k <= len(win); k++ {
+		got := Lookup(win, int32(k))
+		want := LookupVarTime(win, int32(k))
+		if got != want {
+			t.Fatalf("Lookup(%d) = %v, want exact limbs %v", k, got, want)
+		}
+	}
+	for _, k := range []int32{-int32(len(win)) - 1, int32(len(win)) + 1, 72} {
+		if got := Lookup(win, k); got != AFFINE_NEUTRAL {
+			t.Fatalf("Lookup(%d) = %v, want neutral", k, got)
+		}
+	}
 	p1Affine := Lookup(win, 72)
 
 	if !gFp5.Equals(p1Affine.x, gFp5.FP5_ZERO) {
@@ -469,15 +484,35 @@ func TestMulGMatchesGenericMultiplication(t *testing.T) {
 		TWO,
 		NEG_ONE,
 	}
-	for i := 0; i < 100; i++ {
-		scalars = append(scalars, SampleScalar())
+	appendIfCanonical := func(value *big.Int) {
+		if value.Sign() >= 0 && value.Cmp(ORDER) < 0 {
+			scalars = append(scalars, FromNonCanonicalBigInt(value))
+		}
+	}
+	appendIfCanonical(new(big.Int).Sub(ORDER, big.NewInt(2)))
+	for bit := 0; bit <= 318; bit += generatorWindow {
+		boundary := new(big.Int).Lsh(big.NewInt(1), uint(bit))
+		appendIfCanonical(new(big.Int).Sub(new(big.Int).Set(boundary), big.NewInt(1)))
+		appendIfCanonical(boundary)
+		appendIfCanonical(new(big.Int).Add(new(big.Int).Set(boundary), big.NewInt(1)))
+	}
+	appendIfCanonical(new(big.Int).Lsh(big.NewInt(1), 318))
+	appendIfCanonical(new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 319), big.NewInt(1)))
+
+	rng := rand.New(rand.NewSource(1)) //nolint:gosec // deterministic test corpus
+	var encoded [40]byte
+	for range 2_000 {
+		for offset := 0; offset < len(encoded); offset += 8 {
+			binary.LittleEndian.PutUint64(encoded[offset:], rng.Uint64())
+		}
+		scalars = append(scalars, ScalarElementFromLittleEndianBytes(encoded[:]))
 	}
 
 	for _, scalar := range scalars {
-		got := MulG(scalar)
-		want := GENERATOR_ECgFp5Point.Mul(scalar)
-		if !got.Equals(want) {
-			t.Fatalf("fixed-generator multiplication differs for scalar %v", scalar)
+		got := MulG(scalar).Encode()
+		want := GENERATOR_ECgFp5Point.Mul(scalar).Encode()
+		if got != want {
+			t.Fatalf("fixed-generator encoding differs for scalar %v: got %v, want %v", scalar, got, want)
 		}
 	}
 }

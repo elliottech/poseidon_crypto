@@ -462,6 +462,42 @@ func TestScalarMul(t *testing.T) {
 	}
 }
 
+func TestMulGMatchesGenericMultiplication(t *testing.T) {
+	scalars := []ECgFp5Scalar{
+		ZERO,
+		ONE,
+		TWO,
+		NEG_ONE,
+	}
+	for i := 0; i < 100; i++ {
+		scalars = append(scalars, SampleScalar())
+	}
+
+	for _, scalar := range scalars {
+		got := MulG(scalar)
+		want := GENERATOR_ECgFp5Point.Mul(scalar)
+		if !got.Equals(want) {
+			t.Fatalf("fixed-generator multiplication differs for scalar %v", scalar)
+		}
+	}
+}
+
+func BenchmarkGeneratorMul(b *testing.B) {
+	scalar := SampleScalar()
+
+	b.Run("generic", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = GENERATOR_ECgFp5Point.Mul(scalar)
+		}
+	})
+
+	b.Run("fixed", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = MulG(scalar)
+		}
+	})
+}
+
 func testVectors() [8]gFp5.Element {
 	// P0 is neutral of G.
 	// P1 is a random point in G (encoded as w1)

@@ -1,6 +1,7 @@
 package ecgfp5
 
 import (
+	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
 )
 
@@ -46,18 +47,19 @@ func Lookup(win []AffinePoint, k int32) AffinePoint {
 		m := km1 - uint32(i) //nolint:gosec
 		c_1 := (m | (^m + 1)) >> 31
 		c := uint64(c_1) - 1
-		if c != 0 {
-			x = win[i].x
-			u = win[i].u
+		for limb := 0; limb < len(x); limb++ {
+			x[limb] |= g.GoldilocksField(uint64(win[i].x[limb]) & c)
+			u[limb] |= g.GoldilocksField(uint64(win[i].u[limb]) & c)
 		}
-
 	}
 
 	// If k < 0, then we must negate the point.
 	c := uint64(sign) | (uint64(sign) << 32)
-
-	if c != 0 {
-		u = gFp5.Neg(u)
+	negativeU := gFp5.Neg(u)
+	for limb := 0; limb < len(u); limb++ {
+		u[limb] = g.GoldilocksField(
+			(uint64(u[limb]) &^ c) | (uint64(negativeU[limb]) & c),
+		)
 	}
 
 	return AffinePoint{x, u}

@@ -197,7 +197,11 @@ func IsSchnorrSignatureValid(pubKey, hashedMsg gFp5.Element, sig Signature) bool
 		return false
 	}
 
-	rV := curve.MulAddG(pubKeyWs, sig.S, sig.E).Encode() // r_v = s*G + e*pk
+	r := curve.MulAddG(pubKeyWs, sig.S, sig.E) // r = s*G + e*pk
+	if r.IsNeutral() {
+		return false
+	}
+	rV := r.Encode()
 
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], rV[:])

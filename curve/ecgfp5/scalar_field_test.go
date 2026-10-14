@@ -36,6 +36,51 @@ func TestScalarElementFromLittleEndianBytesReduces(t *testing.T) {
 	}
 }
 
+func TestFromGfp5MatchesBigIntReduction(t *testing.T) {
+	values := []gFp5.Element{
+		{},
+		{1, 2, 3, 4, 5},
+		{g.GoldilocksField(g.ORDER - 1), g.GoldilocksField(g.ORDER - 1), g.GoldilocksField(g.ORDER - 1), g.GoldilocksField(g.ORDER - 1), g.GoldilocksField(g.ORDER - 1)},
+		{g.GoldilocksField(^uint64(0)), g.GoldilocksField(^uint64(0)), g.GoldilocksField(^uint64(0)), g.GoldilocksField(^uint64(0)), g.GoldilocksField(^uint64(0))},
+	}
+	for range 256 {
+		values = append(values, gFp5.Sample())
+	}
+
+	for _, value := range values {
+		reference := new(big.Int)
+		for i := 4; i >= 0; i-- {
+			reference.Lsh(reference, 64)
+			reference.Or(reference, new(big.Int).SetUint64(value[i].ToCanonicalUint64()))
+		}
+		want := FromNonCanonicalBigInt(reference)
+		if got := FromGfp5(value); !got.Equals(want) {
+			t.Fatalf("FromGfp5(%v) = %v, want %v", value, got, want)
+		}
+	}
+}
+
+func TestScalarOrderBitLength(t *testing.T) {
+	if got := ORDER.BitLen(); got != 319 {
+		t.Fatalf("scalar order bit length = %d, SampleScalar assumes 319", got)
+	}
+}
+
+func BenchmarkFromGfp5(b *testing.B) {
+	value := gFp5.Sample()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = FromGfp5(value)
+	}
+}
+
+func BenchmarkSampleScalar(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = SampleScalar()
+	}
+}
+
 func FuzzSerdes(f *testing.F) {
 	f.Add([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40})
 	f.Add(ORDER.Bytes())
@@ -311,6 +356,24 @@ func TestRecodeSigned(t *testing.T) {
 		} else if elem != 0 {
 			t.Fatalf("Expected ss[%d] to be 0, but got %d", i, elem)
 		}
+	}
+}
+
+func TestGeneratorWindowRecodeReconstructsLargestScalar(t *testing.T) {
+	scalar := FromNonCanonicalBigInt(new(big.Int).Sub(ORDER, big.NewInt(1)))
+	var digits [generatorScalarDigits]int32
+	scalar.RecodeSigned(digits[:], generatorWindow)
+
+	reconstructed := new(big.Int)
+	for position, digit := range digits {
+		term := new(big.Int).Lsh(big.NewInt(int64(digit)), uint(position*generatorWindow))
+		reconstructed.Add(reconstructed, term)
+	}
+	if want := new(big.Int).Sub(ORDER, big.NewInt(1)); reconstructed.Cmp(want) != 0 {
+		t.Fatalf("window recoding reconstructed %v, want %v", reconstructed, want)
+	}
+	if digits[len(digits)-1] < 0 {
+		t.Fatalf("top recoded digit = %d, want non-negative", digits[len(digits)-1])
 	}
 }
 

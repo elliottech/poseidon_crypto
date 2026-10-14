@@ -63,7 +63,14 @@ func HashOutFromUint64Array(arr [4]uint64) HashOut {
 }
 
 func HashToQuinticExtension(m []g.GoldilocksField) gFp5.Element {
-	return gFp5.FromPlonky2GoldilocksField(HashNToMNoPad(m, 5))
+	var perm [WIDTH]g.GoldilocksField
+	for i := 0; i < len(m); i += RATE {
+		for j := 0; j < RATE && i+j < len(m); j++ {
+			perm[j] = m[i+j]
+		}
+		Permute(&perm)
+	}
+	return gFp5.Element{perm[0], perm[1], perm[2], perm[3], perm[4]}
 }
 
 type Poseidon2 struct{}

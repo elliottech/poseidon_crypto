@@ -42,6 +42,8 @@ package signature
 import (
 	"errors"
 	"fmt"
+	"os"
+	"sync/atomic"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
@@ -52,6 +54,56 @@ import (
 type Signature struct {
 	S curve.ECgFp5Scalar
 	E curve.ECgFp5Scalar
+}
+
+var (
+	ErrNilPreparedNonce      = errors.New("prepared Schnorr nonce is nil")
+	ErrPreparedNonceConsumed = errors.New("prepared Schnorr nonce has already been consumed")
+	ErrPreparedNonceForked   = errors.New("prepared Schnorr nonce belongs to another process")
+)
+
+// PreparedNonce holds an ephemeral Schnorr scalar and its fixed-generator
+// multiplication. It may be prepared before a latency-sensitive signing call.
+// A PreparedNonce is single-use: aliases and copied handles share the same
+// consumption state, so only one call to SchnorrSignHashedMessagePrepared can
+// succeed.
+type PreparedNonce struct {
+	state *preparedNonceState
+}
+
+type preparedNonceState struct {
+	consumed  atomic.Bool
+	processID int
+	k         curve.ECgFp5Scalar
+	r         gFp5.Element
+}
+
+// PrepareNonce samples a fresh Schnorr nonce and computes its commitment.
+func PrepareNonce() *PreparedNonce {
+	k := curve.SampleScalar()
+	return &PreparedNonce{state: &preparedNonceState{
+		processID: os.Getpid(),
+		k:         k,
+		r:         curve.MulG(k).Encode(),
+	}}
+}
+
+func (nonce *PreparedNonce) consume() (curve.ECgFp5Scalar, gFp5.Element, error) {
+	if nonce == nil || nonce.state == nil {
+		return curve.ZERO, gFp5.Element{}, ErrNilPreparedNonce
+	}
+	if !nonce.state.consumed.CompareAndSwap(false, true) {
+		return curve.ZERO, gFp5.Element{}, ErrPreparedNonceConsumed
+	}
+
+	processID := nonce.state.processID
+	k, r := nonce.state.k, nonce.state.r
+	nonce.state.k = curve.ZERO
+	nonce.state.r = gFp5.Element{}
+	if processID != os.Getpid() {
+		return curve.ZERO, gFp5.Element{}, ErrPreparedNonceForked
+	}
+	return k, r, nil
 }
 
 func (s Signature) IsCanonical() bool {
@@ -90,14 +142,28 @@ func SigFromBytes(b []byte) (Signature, error) {
 
 // Public key is actually an EC point (4 Fp5 elements), but it can be encoded as a single Fp5 element.
 func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
-	return curve.GENERATOR_ECgFp5Point.Mul(sk).Encode()
+	return curve.MulG(sk).Encode()
 }
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
 	// Sample random scalar `k` and compute `r = k * G`
 	k := curve.SampleScalar()
-	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
+	r := curve.MulG(k).Encode()
+	return schnorrSignHashedMessageWithNonce(hashedMsg, sk, k, r)
+}
 
+// SchnorrSignHashedMessagePrepared signs with a one-use nonce prepared by
+// PrepareNonce. The nonce is consumed even if signing later panics, ensuring it
+// cannot accidentally be reused with another message.
+func SchnorrSignHashedMessagePrepared(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar, nonce *PreparedNonce) (Signature, error) {
+	k, r, err := nonce.consume()
+	if err != nil {
+		return ZERO_SIG, err
+	}
+	return schnorrSignHashedMessageWithNonce(hashedMsg, sk, k, r), nil
+}
+
+func schnorrSignHashedMessageWithNonce(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar, r gFp5.Element) Signature {
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], r[:])
@@ -124,30 +190,8 @@ func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Sig
 }
 
 func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
-	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
-	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.GoldilocksField, 5+5)
-	copy(preImage[:5], r[:])
-	copy(preImage[5:], hashedMsg[:])
-
-	// TODO: Something to be considered later (and require coordinate with Rust)
-	//
-	// It is possible that we only use 128 bits for e (instread of 320 bits)
-	// That is, we can build e with the first 3 limbs of p2.HashToQuinticExtension(preImage)
-	// This should improve the performance of schnorr signature.
-	//
-	// see
-	//
-	// - Hash Function Requirements for Schnorr Signatures
-	//   Gregory Neven, Nigel P. Smart, and Bogdan Warinschi
-	// - Short Schnorr Signatures Require a Hash Function with More Than Just Random-Prefix Resistance
-	// 	 Daniel R. L. Brown
-
-	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
-	return Signature{
-		S: k.Sub(e.Mul(sk)),
-		E: e,
-	}
+	r := curve.MulG(k).Encode()
+	return schnorrSignHashedMessageWithNonce(hashedMsg, sk, k, r)
 }
 
 func Validate(pubKey, hashedMsg, sig []byte) error {

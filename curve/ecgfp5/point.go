@@ -2,6 +2,7 @@ package ecgfp5
 
 import (
 	"fmt"
+	"sync"
 
 	g "github.com/elliottech/poseidon_crypto/field/goldilocks"
 	gFp5 "github.com/elliottech/poseidon_crypto/field/goldilocks_quintic_extension"
@@ -447,8 +448,16 @@ func (p ECgFp5Point) AddAffine(rhs AffinePoint) ECgFp5Point {
 }
 
 const (
-	WINDOW   = 5
-	WIN_SIZE = 1 << (WINDOW - 1)
+	WINDOW                = 5
+	WIN_SIZE              = 1 << (WINDOW - 1)
+	generatorWindow       = 6
+	generatorWindowSize   = 1 << (generatorWindow - 1)
+	generatorScalarDigits = (319 + generatorWindow) / generatorWindow
+)
+
+var (
+	generatorFixedWindowOnce   sync.Once
+	generatorFixedWindowAffine []AffinePoint
 )
 
 // Convert points to affine coordinates.
@@ -551,6 +560,57 @@ func (r ECgFp5Point) Mul(s ECgFp5Scalar) ECgFp5Point {
 		p.SetMDouble(uint32(WINDOW))
 		lookup := Lookup(win, digits[i])
 		p = p.AddAffine(lookup)
+	}
+
+	return p
+}
+
+func makeGeneratorFixedWindowAffine() []AffinePoint {
+	points := make([]ECgFp5Point, generatorScalarDigits*generatorWindowSize)
+	base := GENERATOR_ECgFp5Point
+	for position := 0; position < generatorScalarDigits; position++ {
+		offset := position * generatorWindowSize
+		points[offset] = base
+		for i := 1; i < generatorWindowSize; i++ {
+			if i&1 == 0 {
+				points[offset+i] = points[offset+i-1].Add(base)
+			} else {
+				points[offset+i] = points[offset+(i>>1)].Double()
+			}
+		}
+		if position+1 < generatorScalarDigits {
+			base.SetMDouble(generatorWindow)
+		}
+	}
+	return BatchToAffine(points)
+}
+
+func getGeneratorFixedWindowAffine() []AffinePoint {
+	generatorFixedWindowOnce.Do(func() {
+		generatorFixedWindowAffine = makeGeneratorFixedWindowAffine()
+	})
+	return generatorFixedWindowAffine
+}
+
+// WarmGeneratorTable builds the fixed-generator table ahead of a
+// latency-sensitive multiplication. The table is process-global and is built
+// at most once.
+func WarmGeneratorTable() {
+	_ = getGeneratorFixedWindowAffine()
+}
+
+// MulG multiplies the fixed curve generator by a scalar. Its position-weighted
+// affine table removes both per-call window construction and all point
+// doublings from the multiplication path.
+func MulG(s ECgFp5Scalar) ECgFp5Point {
+	var digits [generatorScalarDigits]int32
+	s.RecodeSigned(digits[:], generatorWindow)
+	table := getGeneratorFixedWindowAffine()
+
+	p := Lookup(table[:generatorWindowSize], digits[0]).ToPoint()
+	for position := 1; position < len(digits); position++ {
+		offset := position * generatorWindowSize
+		p = p.AddAffine(Lookup(table[offset:offset+generatorWindowSize], digits[position]))
 	}
 
 	return p

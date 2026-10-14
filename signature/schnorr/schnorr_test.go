@@ -2,7 +2,12 @@ package signature
 
 import (
 	"encoding/binary"
+	"encoding/hex"
+	"errors"
 	"math/big"
+	"os"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	curve "github.com/elliottech/poseidon_crypto/curve/ecgfp5"
@@ -23,6 +28,102 @@ func TestSchnorrSignAndVerify(t *testing.T) {
 	pk := SchnorrPkFromSk(sk)
 	if !IsSchnorrSignatureValid(pk, hashedMsg, sig) {
 		t.Fatalf("Signature is invalid")
+	}
+}
+
+func TestSchnorrMatchesGoldilocksCryptoKnownAnswers(t *testing.T) {
+	// These vectors come from goldilocks-crypto v0.1.2, the independent Rust
+	// reference used by elliottech/p3-lighter-circuits for witness fixtures.
+	tests := []struct {
+		index     byte
+		publicKey string
+		signature string
+	}{
+		{1, "04000000000000000000000000000000000000000000000000000000000000000000000000000000", "58d95fcb40e5f6d045329748301f36f844a1df56b43a6ef5f8922d3c6836c4fd2d35ae12eabe23319a432cc955f41817576e8d8e093d52f0f464d87832c5918a1d6dd2c388c93b82d9ca516d1341dc4e"},
+		{2, "384c87fe1213197f4e1b457e9d43548fc00067c00ee5c1d872895e08ab103be54336d3d4b9d5bc8c", "76c92759ee9d1601fad7efdaf3398288c440a6d76f757f6d57990d7a65158c29516d57c2d403656f3738f8679f8a84e79fb4ace93f3f47a4d7e5e4e32e4540c96a33f9423ef539eb5e49d41e137e4d48"},
+		{8, "c97b633e9b0098e743e5b9750cb8b3678cd2e9e3ca8d674b73ed76dc778701e5f743c0d67623f7a6", "63b0ac4aa52c5d937cb633fd48eb2eb430c6de871013f69ba56611e7abc44188adbf2f2d81a56b63f9065fce034c9a446b4507912c45ada08f29e97c943d81bc33d31de364c7f71e0d085aea4e8b9223"},
+	}
+
+	for _, test := range tests {
+		var skBytes, nonceBytes, msgBytes [40]byte
+		skBytes[0] = test.index
+		nonceBytes[0] = test.index * 17
+		nonceBytes[1] = test.index * 29
+		msgBytes[0] = test.index
+		msgBytes[8] = test.index * 3
+		msgBytes[16] = test.index * 5
+
+		sk := curve.ScalarElementFromLittleEndianBytes(skBytes[:])
+		nonce := curve.ScalarElementFromLittleEndianBytes(nonceBytes[:])
+		message, err := gFp5.FromCanonicalLittleEndianBytes(msgBytes[:])
+		if err != nil {
+			t.Fatalf("decode message: %v", err)
+		}
+		if got := hex.EncodeToString(SchnorrPkFromSk(sk).ToLittleEndianBytes()); got != test.publicKey {
+			t.Fatalf("public key for vector %d = %s, want %s", test.index, got, test.publicKey)
+		}
+		if got := hex.EncodeToString(SchnorrSignHashedMessage2(message, sk, nonce).ToBytes()); got != test.signature {
+			t.Fatalf("signature for vector %d = %s, want %s", test.index, got, test.signature)
+		}
+	}
+}
+
+func TestPreparedNonceSignsOnce(t *testing.T) {
+	sk := curve.SampleScalar()
+	hashedMsg := p2.HashToQuinticExtension([]g.GoldilocksField{1, 2, 3})
+	nonce := PrepareNonce()
+	alias := *nonce
+
+	sig, err := SchnorrSignHashedMessagePrepared(hashedMsg, sk, nonce)
+	if err != nil {
+		t.Fatalf("prepared signing failed: %v", err)
+	}
+	if !IsSchnorrSignatureValid(SchnorrPkFromSk(sk), hashedMsg, sig) {
+		t.Fatal("prepared signature is invalid")
+	}
+
+	if _, err := SchnorrSignHashedMessagePrepared(hashedMsg, sk, &alias); !errors.Is(err, ErrPreparedNonceConsumed) {
+		t.Fatalf("copied nonce handle was reusable: %v", err)
+	}
+}
+
+func TestPreparedNonceConcurrentConsumption(t *testing.T) {
+	sk := curve.SampleScalar()
+	hashedMsg := p2.HashToQuinticExtension([]g.GoldilocksField{4, 5, 6})
+	nonce := PrepareNonce()
+
+	var successes atomic.Int32
+	var workers sync.WaitGroup
+	for range 32 {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			if _, err := SchnorrSignHashedMessagePrepared(hashedMsg, sk, nonce); err == nil {
+				successes.Add(1)
+			} else if !errors.Is(err, ErrPreparedNonceConsumed) {
+				t.Errorf("unexpected signing error: %v", err)
+			}
+		}()
+	}
+	workers.Wait()
+	if got := successes.Load(); got != 1 {
+		t.Fatalf("prepared nonce succeeded %d times, want exactly 1", got)
+	}
+}
+
+func TestNilPreparedNonce(t *testing.T) {
+	_, err := SchnorrSignHashedMessagePrepared(gFp5.Element{}, curve.ONE, nil)
+	if !errors.Is(err, ErrNilPreparedNonce) {
+		t.Fatalf("nil nonce error = %v", err)
+	}
+}
+
+func TestPreparedNonceCannotCrossProcessBoundary(t *testing.T) {
+	nonce := PrepareNonce()
+	nonce.state.processID = os.Getpid() + 1
+	_, err := SchnorrSignHashedMessagePrepared(gFp5.Element{}, curve.ONE, nonce)
+	if !errors.Is(err, ErrPreparedNonceForked) {
+		t.Fatalf("cross-process nonce error = %v", err)
 	}
 }
 
@@ -235,5 +336,29 @@ func BenchmarkSignatureSign(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = SchnorrSignHashedMessage(hashedMsg, sk)
+	}
+}
+
+func BenchmarkSignatureSignPreparedOnline(b *testing.B) {
+	sk := curve.SampleScalar()
+	msg := make([]g.GoldilocksField, 244)
+	for i := range msg {
+		msg[i] = g.SampleF()
+	}
+	hashedMsg := p2.HashToQuinticExtension(msg)
+	k := curve.SampleScalar()
+	r := curve.MulG(k).Encode()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = schnorrSignHashedMessageWithNonce(hashedMsg, sk, k, r)
+	}
+}
+
+func BenchmarkPrepareNonce(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = PrepareNonce()
 	}
 }

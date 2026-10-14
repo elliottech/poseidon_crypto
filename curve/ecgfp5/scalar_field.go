@@ -17,7 +17,8 @@ import (
 type ECgFp5Scalar [5]uint64
 
 func (s ECgFp5Scalar) IsCanonical() bool {
-	return ToNonCanonicalBigInt(s).Cmp(ORDER) < 0
+	_, borrow := s.SubInner(N)
+	return borrow != 0
 }
 
 var (
@@ -70,11 +71,26 @@ func (s ECgFp5Scalar) SplitTo4BitLimbs() [80]uint8 {
 }
 
 func SampleScalar() ECgFp5Scalar {
-	rng, err := cryptorand.Int(cryptorand.Reader, ORDER)
-	if err != nil {
-		panic("failed to read random bytes into buffer")
+	var encoded [40]byte
+	for {
+		if _, err := cryptorand.Read(encoded[:]); err != nil {
+			panic("failed to read random bytes into buffer")
+		}
+		// The scalar order has a 319-bit bit length. Masking the excess bit
+		// before rejection sampling gives the same uniform distribution as
+		// crypto/rand.Int without constructing big.Int values.
+		encoded[39] &= 0x7f
+		candidate := ECgFp5Scalar{
+			binary.LittleEndian.Uint64(encoded[0:8]),
+			binary.LittleEndian.Uint64(encoded[8:16]),
+			binary.LittleEndian.Uint64(encoded[16:24]),
+			binary.LittleEndian.Uint64(encoded[24:32]),
+			binary.LittleEndian.Uint64(encoded[32:40]),
+		}
+		if candidate.IsCanonical() {
+			return candidate
+		}
 	}
-	return FromNonCanonicalBigInt(rng)
 }
 
 var (
@@ -254,13 +270,21 @@ func (s ECgFp5Scalar) MontyMul(rhs ECgFp5Scalar) ECgFp5Scalar {
 }
 
 func FromGfp5(fp5 gFp5.Element) ECgFp5Scalar {
-	result := new(big.Int)
-	for i := 4; i >= 0; i-- {
-		result.Lsh(result, 64)
-		result.Or(result, new(big.Int).SetUint64(fp5[i].ToCanonicalUint64()))
+	result := ECgFp5Scalar{
+		fp5[0].ToCanonicalUint64(),
+		fp5[1].ToCanonicalUint64(),
+		fp5[2].ToCanonicalUint64(),
+		fp5[3].ToCanonicalUint64(),
+		fp5[4].ToCanonicalUint64(),
 	}
 
-	return FromNonCanonicalBigInt(result)
+	// A five-limb Goldilocks value is below 2^320, while the scalar
+	// modulus is greater than 2^320/3. Therefore at most two conditional
+	// subtractions are required to reduce the value modulo N.
+	reduced, borrow := result.SubInner(N)
+	result = Select(borrow, reduced, result)
+	reduced, borrow = result.SubInner(N)
+	return Select(borrow, reduced, result)
 }
 
 // Warn: This won't work in 32-bit systems!

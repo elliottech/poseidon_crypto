@@ -103,7 +103,9 @@ func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 
 	// note: paper has a typo. sx == 1 when x1 != x2, not when x1 == x2
 	xSame := gFp5.Equals(x1, x2)
-	yDiff := !gFp5.Equals(y1, y2)
+	if xSame && !gFp5.Equals(y1, y2) {
+		return NEUTRAL_WEIERSTRASS
+	}
 
 	var lambda0, lambda1 gFp5.Element
 	if xSame {
@@ -118,7 +120,7 @@ func (p WeierstrassPoint) Add(q WeierstrassPoint) WeierstrassPoint {
 	x3 := gFp5.Sub(gFp5.Sub(gFp5.Square(lambda), x1), x2)
 	y3 := gFp5.Sub(gFp5.Mul(lambda, gFp5.Sub(x1, x3)), y1)
 
-	return WeierstrassPoint{X: x3, Y: y3, IsInf: xSame && yDiff}
+	return WeierstrassPoint{X: x3, Y: y3, IsInf: false}
 }
 
 func (p WeierstrassPoint) Double() WeierstrassPoint {

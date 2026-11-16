@@ -94,37 +94,12 @@ func SchnorrPkFromSk(sk curve.ECgFp5Scalar) gFp5.Element {
 }
 
 func SchnorrSignHashedMessage(hashedMsg gFp5.Element, sk curve.ECgFp5Scalar) Signature {
-	// Sample random scalar `k` and compute `r = k * G`
-	k := curve.SampleScalar()
-	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
-
-	// Compute `e = H(r || H(m))`, which is a scalar point
-	preImage := make([]g.GoldilocksField, 5+5)
-	copy(preImage[:5], r[:])
-	copy(preImage[5:], hashedMsg[:])
-
-	// TODO: Something to be considered later (and require coordinate with Rust)
-	//
-	// It is possible that we only use 128 bits for e (instread of 320 bits)
-	// That is, we can build e with the first 3 limbs of p2.HashToQuinticExtension(preImage)
-	// This should improve the performance of schnorr signature.
-	//
-	// see
-	//
-	// - Hash Function Requirements for Schnorr Signatures
-	//   Gregory Neven, Nigel P. Smart, and Bogdan Warinschi
-	// - Short Schnorr Signatures Require a Hash Function with More Than Just Random-Prefix Resistance
-	// 	 Daniel R. L. Brown
-
-	e := curve.FromGfp5(p2.HashToQuinticExtension(preImage))
-	return Signature{
-		S: k.Sub(e.Mul(sk)),
-		E: e,
-	}
+	return signHashedMessage(hashedMsg, sk, curve.SampleScalar())
 }
 
-func SchnorrSignHashedMessage2(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
+func signHashedMessage(hashedMsg gFp5.Element, sk, k curve.ECgFp5Scalar) Signature {
 	r := curve.GENERATOR_ECgFp5Point.Mul(k).Encode()
+
 	// Compute `e = H(r || H(m))`, which is a scalar point
 	preImage := make([]g.GoldilocksField, 5+5)
 	copy(preImage[:5], r[:])

@@ -150,7 +150,7 @@ func TestComparativeSchnorrSignAndVerify(t *testing.T) {
 	}
 
 	for i := 0; i < len(sks); i++ {
-		sig := SchnorrSignHashedMessage2(hashedMessages[i], sks[i], ks[i])
+		sig := signHashedMessage(hashedMessages[i], sks[i], ks[i])
 		for j := 0; j < 5; j++ {
 			if sig.S[j] != expectedSs[i][j] {
 				t.Fatalf("sig.S[%d]: Expected %d, but got %d", j, expectedSs[i][j], sig.S[j])
@@ -212,7 +212,7 @@ func BenchmarkSignatureVerify(b *testing.B) {
 	hashedMsgBytes := hashedMsg.ToLittleEndianBytes()
 	k := curve.SampleScalar()
 
-	sig := SchnorrSignHashedMessage2(hashedMsg, sk, k).ToBytes()
+	sig := signHashedMessage(hashedMsg, sk, k).ToBytes()
 	pk := SchnorrPkFromSk(sk).ToLittleEndianBytes()
 
 	b.ResetTimer()
